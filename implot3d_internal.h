@@ -6,6 +6,7 @@
 //--------------------------------------------------
 
 // Table of Contents:
+// [SECTION] Context Utils
 // [SECTION] Structs
 
 #pragma once
@@ -14,10 +15,34 @@
 #include "implot3d.h"
 #endif
 
+#ifndef IMGUI_DISABLE
+#include "imgui_internal.h"
+
+namespace ImPlot3D {
+
+//-----------------------------------------------------------------------------
+// [SECTION] Context Utils
+//-----------------------------------------------------------------------------
+
+IMPLOT3D_API void InitializeContext(ImPlot3DContext* ctx); // Initialize ImPlot3DContext
+IMPLOT3D_API void ResetContext(ImPlot3DContext* ctx);      // Reset ImPlot3DContext
+
+} // namespace ImPlot3D
+
 //-----------------------------------------------------------------------------
 // [SECTION] Structs
 //-----------------------------------------------------------------------------
 
-struct ImPlot3DContext {
-    // TODO
+// Holds Plot state information that must persist after EndPlot
+struct ImPlot3DPlot {
+    ImGuiID ID;
+    ImPlot3DFlags Flags;
+    ImGuiTextBuffer TextBuffer;
 };
+
+struct ImPlot3DContext {
+    ImPool<ImPlot3DPlot> Plots;
+    ImPlot3DPlot* CurrentPlot;
+};
+
+#endif // #ifndef IMGUI_DISABLE

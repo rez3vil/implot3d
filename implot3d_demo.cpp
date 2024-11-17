@@ -4,6 +4,11 @@
 // Date: 2024-11-17
 // By brenocq
 //--------------------------------------------------
+
+// Table of Contents:
+// [SECTION] Plots
+// [SECTION] Demo Window
+
 #include "implot3d.h"
 
 namespace ImPlot3D {
@@ -19,6 +24,27 @@ void DemoHelp() {
 
     ImGui::SeparatorText("USER GUIDE:");
     ImGui::BulletText("TODO");
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] Plots
+//-----------------------------------------------------------------------------
+
+void DemoLinePlots() {
+    if (ImPlot3D::BeginPlot("Line Plot", ImVec2(400, 400), ImPlot3DFlags_None)) {
+        ImPlot3D::EndPlot();
+    }
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] Demo Window
+//-----------------------------------------------------------------------------
+
+void DemoHeader(const char* label, void (*demo)()) {
+    if (ImGui::TreeNodeEx(label)) {
+        demo();
+        ImGui::TreePop();
+    }
 }
 
 void ShowDemoWindow(bool* p_open) {
@@ -53,6 +79,7 @@ void ShowDemoWindow(bool* p_open) {
 
     if (ImGui::BeginTabBar("ImPlot3DDemoTabs")) {
         if (ImGui::BeginTabItem("Plots")) {
+            DemoHeader("Line Plots", DemoLinePlots);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Help")) {
