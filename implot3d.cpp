@@ -1,8 +1,8 @@
 //--------------------------------------------------
-// ImPlot3D
+// ImPlot3D v0.1
 // implot3d.cpp
 // Date: 2024-11-16
-// By Breno Cunha Queiroz
+// By brenocq
 //--------------------------------------------------
 
 // Table of Contents:

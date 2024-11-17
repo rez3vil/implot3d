@@ -1,8 +1,8 @@
 //--------------------------------------------------
-// ImPlot3D
+// ImPlot3D v0.1
 // implot3d.h
 // Date: 2024-11-16
-// By Breno Cunha Queiroz
+// By brenocq
 //--------------------------------------------------
 
 // Table of Contents:
@@ -21,9 +21,7 @@
 #define IMPLOT3D_API
 #endif
 
-#define IMPLOT3D_VERSION "v0.1"
-#define IMPLOT3D_AUTO -1
-#define IMPLOT3D_AUTO_COL ImVec4(0, 0, 0, -1)
+#define IMPLOT3D_VERSION "0.1"
 #define IMPLOT3D_TMP template <typename T> IMPLOT3D_API
 
 //-----------------------------------------------------------------------------
@@ -42,6 +40,13 @@ IMPLOT3D_API ImPlot3DContext* CreateContext();
 IMPLOT3D_API void DestroyContext(ImPlot3DContext* ctx = nullptr);
 IMPLOT3D_API ImPlot3DContext* GetCurrentContext();
 IMPLOT3D_API void SetCurrentContext(ImPlot3DContext* ctx);
+
+//-----------------------------------------------------------------------------
+// [SECTION] Demo
+//-----------------------------------------------------------------------------
+
+// Shows the ImPlot demo window (add implot_demo.cpp to your sources!)
+IMPLOT3D_API void ShowDemoWindow(bool* p_open = nullptr);
 
 } // namespace ImPlot3D
 

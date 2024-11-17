@@ -2,7 +2,7 @@
 // ImPlot3D Example
 // main.cpp
 // Date: 2024-11-17
-// By Breno Cunha Queiroz
+// By brenocq
 //--------------------------------------------------
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
@@ -27,8 +27,6 @@ int main() {
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return -1;
     }
-
-    // Configure GLFW
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -65,19 +63,19 @@ int main() {
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
-        // Poll and handle events
         glfwPollEvents();
 
-        // Start the ImGui frame
+        // Start frame
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // Example ImGui window
+        // Demo windows
         ImGui::ShowDemoWindow();
         ImPlot::ShowDemoWindow();
+        ImPlot3D::ShowDemoWindow();
 
-        // Rendering
+        // Render
         ImGui::Render();
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
