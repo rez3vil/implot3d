@@ -136,15 +136,30 @@ bool ShowStyleSelector(const char* label) {
 }
 
 void ShowStyleEditor(ImPlot3DStyle* ref) {
+    // Handle style internal storage
     ImPlot3DStyle& style = GetStyle();
     static ImPlot3DStyle ref_saved_style;
-    // Default to using internal storage as reference
     static bool init = true;
     if (init && ref == nullptr)
         ref_saved_style = style;
     init = false;
     if (ref == nullptr)
         ref = &ref_saved_style;
+
+    // Handle flash style color
+    static float flash_color_time = 0.5f;
+    static ImPlot3DCol flash_color_idx = ImPlot3DCol_COUNT;
+    static ImVec4 flash_color_backup = ImVec4(0, 0, 0, 0);
+    if (flash_color_idx != ImPlot3DCol_COUNT) {
+        ImVec4& color = style.Colors[flash_color_idx];
+        ImGui::ColorConvertHSVtoRGB(std::cos(flash_color_time * 6.0f) * 0.5f + 0.5f, 0.5f, 0.5f, color.x, color.y, color.z);
+        color.w = 1.0f;
+    }
+    if ((flash_color_time -= ImGui::GetIO().DeltaTime) <= 0.0f) {
+        style.Colors[flash_color_idx] = flash_color_backup;
+        flash_color_idx = ImPlot3DCol_COUNT;
+        flash_color_time = 0.5f;
+    }
 
     // Style selector
     if (ImPlot3D::ShowStyleSelector("Colors##Selector"))
@@ -219,11 +234,17 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
                 if (!filter.PassFilter(name))
                     continue;
                 ImGui::PushID(i);
-                // TODO
-                // if (ImGui::Button("?"))
-                //    ImGui::DebugFlashStyleColor((ImGuiCol)i);
-                // ImGui::SetItemTooltip("Flash given color to identify places where it is used.");
-                // ImGui::SameLine();
+
+                // Flash color
+                if (ImGui::Button("?")) {
+                    if (flash_color_idx != ImPlot3DCol_COUNT)
+                        style.Colors[flash_color_idx] = flash_color_backup;
+                    flash_color_time = 0.5f;
+                    flash_color_idx = (ImPlot3DCol)i;
+                    flash_color_backup = style.Colors[i];
+                }
+                ImGui::SetItemTooltip("Flash given color to identify places where it is used.");
+                ImGui::SameLine();
 
                 // Handle auto color selection
                 const bool is_auto = IsColorAuto(style.Colors[i]);
