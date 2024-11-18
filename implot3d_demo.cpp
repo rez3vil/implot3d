@@ -122,20 +122,21 @@ void ShowDemoWindow(bool* p_open) {
 //-----------------------------------------------------------------------------
 
 void ShowStyleEditor(ImPlot3DStyle* ref) {
-    static ImPlot3DStyle style;
-    static bool initialized = false; // Default to using internal storage as reference
-
-    if (!initialized)
-        style = ref == nullptr ? ImPlot3D::GetStyle() : *ref;
-    initialized = true;
+    ImPlot3DStyle& style = GetStyle();
+    static ImPlot3DStyle ref_saved_style;
+    // Default to using internal storage as reference
+    static bool init = true;
+    if (init && ref == nullptr)
+        ref_saved_style = style;
+    init = false;
     if (ref == nullptr)
-        ref = &ImPlot3D::GetStyle();
+        ref = &ref_saved_style;
 
     // TODO Style combo
 
     // Save/Revert button
     if (ImGui::Button("Save Ref"))
-        *ref = style;
+        *ref = ref_saved_style = style;
     ImGui::SameLine();
     if (ImGui::Button("Revert Ref"))
         style = *ref;
@@ -180,7 +181,7 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
             static ImGuiTextFilter filter;
             filter.Draw("Filter colors", ImGui::GetFontSize() * 16);
 
-            static ImGuiColorEditFlags alpha_flags = 0;
+            static ImGuiColorEditFlags alpha_flags = ImGuiColorEditFlags_AlphaPreviewHalf;
             if (ImGui::RadioButton("Opaque", alpha_flags == ImGuiColorEditFlags_None))
                 alpha_flags = ImGuiColorEditFlags_None;
             ImGui::SameLine();
@@ -227,13 +228,11 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
                 // Save/Revert buttons if color changed
                 if (memcmp(&style.Colors[i], &ref->Colors[i], sizeof(ImVec4)) != 0) {
                     ImGui::SameLine();
-                    if (ImGui::Button("Save")) {
+                    if (ImGui::Button("Save"))
                         ref->Colors[i] = style.Colors[i];
-                    }
                     ImGui::SameLine();
-                    if (ImGui::Button("Revert")) {
+                    if (ImGui::Button("Revert"))
                         style.Colors[i] = ref->Colors[i];
-                    }
                 }
                 ImGui::SameLine();
                 ImGui::TextUnformatted(name);
