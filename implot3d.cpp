@@ -110,19 +110,10 @@ bool ImPlot3D::BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags
     return true;
 }
 
-void AddTextCentered(ImDrawList* DrawList, ImVec2 top_center, ImU32 col, const char* text_begin, const char* text_end) {
-    float txt_ht = ImGui::GetTextLineHeight();
-    const char* title_end = ImGui::FindRenderedTextEnd(text_begin, text_end);
-    ImVec2 text_size;
-    float y = 0;
-    while (const char* tmp = (const char*)memchr(text_begin, '\n', title_end - text_begin)) {
-        text_size = ImGui::CalcTextSize(text_begin, tmp, true);
-        DrawList->AddText(ImVec2(top_center.x - text_size.x * 0.5f, top_center.y + y), col, text_begin, tmp);
-        text_begin = tmp + 1;
-        y += txt_ht;
-    }
-    text_size = ImGui::CalcTextSize(text_begin, title_end, true);
-    DrawList->AddText(ImVec2(top_center.x - text_size.x * 0.5f, top_center.y + y), col, text_begin, title_end);
+void AddTextCentered(ImDrawList* draw_list, ImVec2 top_center, ImU32 col, const char* text_begin) {
+    const char* text_end = ImGui::FindRenderedTextEnd(text_begin);
+    ImVec2 text_size = ImGui::CalcTextSize(text_begin, text_end, true);
+    draw_list->AddText(ImVec2(top_center.x - text_size.x * 0.5f, top_center.y), col, text_begin, text_end);
 }
 
 void ImPlot3D::EndPlot() {
@@ -133,19 +124,17 @@ void ImPlot3D::EndPlot() {
     ImGuiContext& g = *GImGui;
     ImPlot3DPlot& plot = *gp.CurrentPlot;
     ImGuiWindow* window = g.CurrentWindow;
-    ImDrawList& draw_list = *window->DrawList;
+    ImDrawList* draw_list = window->DrawList;
 
-    // ImGui::PushClipRect(plot.FrameRect.Min, plot.FrameRect.Max, true);
+    ImGui::PushClipRect(plot.FrameRect.Min, plot.FrameRect.Max, true);
 
     // Plot title
     if (!plot.TextBuffer.empty()) {
-        ImU32 col = ImGui::GetColorU32(ImVec4(0.9, 0.9, 0.9, 1.0)); // GetStyleColorU32(ImPlotCol_TitleText);
-        AddTextCentered(&draw_list, ImVec2(plot.PlotRect.GetCenter().x, plot.PlotRect.Min.y), col, plot.TextBuffer.c_str());
+        ImU32 col = ImGui::GetColorU32(ImVec4(0.9, 0.9, 0.9, 1.0));
+        AddTextCentered(draw_list, ImVec2(plot.FrameRect.GetCenter().x, plot.FrameRect.Min.y), col, plot.TextBuffer.c_str());
     }
-    ImGui::TextUnformatted(plot.TextBuffer.c_str());
-    ImGui::Text("Hello");
 
-    // ImGui::PopClipRect();
+    ImGui::PopClipRect();
 
     // Reset current plot
     gp.CurrentPlot = nullptr;
