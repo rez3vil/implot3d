@@ -4,9 +4,29 @@ project(ImPlot3DExample LANGUAGES CXX C)
 # Set the C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+include(FetchContent)
+
+# Setup glad
+FetchContent_Declare(
+    glad
+    GIT_REPOSITORY "https://github.com/Dav1dde/glad"
+    GIT_TAG "v0.1.36"
+    GIT_PROGRESS TRUE
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(glad)
+
+# Setup GLFW
+FetchContent_Declare(
+    glfw
+    GIT_REPOSITORY "https://github.com/glfw/glfw"
+    GIT_TAG "3.3.8"
+    GIT_PROGRESS TRUE
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(glfw)
 
 # Setup ImGui
-include(FetchContent)
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY "https://github.com/ocornut/imgui"
@@ -26,6 +46,7 @@ set(IMGUI_SOURCE
 )
 add_library(imgui STATIC ${IMGUI_SOURCE})
 target_include_directories(imgui PUBLIC "${CMAKE_BINARY_DIR}/_deps/imgui-src/;${CMAKE_BINARY_DIR}/_deps/imgui-src/backends/")
+target_link_libraries(imgui PUBLIC glfw glad)
 
 # Setup ImPlot
 FetchContent_Declare(
@@ -53,26 +74,6 @@ set(IMPLOT3D_SOURCE
 add_library(implot3d STATIC ${IMPLOT3D_SOURCE})
 target_include_directories(implot3d PUBLIC "..")
 target_link_libraries(implot3d PRIVATE imgui)
-
-# Setup glad
-FetchContent_Declare(
-    glad
-    GIT_REPOSITORY "https://github.com/Dav1dde/glad"
-    GIT_TAG "v0.1.36"
-    GIT_PROGRESS TRUE
-    GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(glad)
-
-# Setup GLFW
-FetchContent_Declare(
-    glfw
-    GIT_REPOSITORY "https://github.com/glfw/glfw"
-    GIT_TAG "3.3.8"
-    GIT_PROGRESS TRUE
-    GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(glfw)
 
 # Add the executable
 set(EXAMPLE_SOURCE
