@@ -99,7 +99,7 @@ void ShowDemoWindow(bool* p_open) {
         ImGui::EndMenuBar();
     }
 
-    ImGui::Text("ImPlot3D says hello! (%s)", IMPLOT3D_VERSION);
+    ImGui::Text("ImPlot3D says olá! (%s)", IMPLOT3D_VERSION);
 
     ImGui::Spacing();
 
