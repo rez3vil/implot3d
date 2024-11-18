@@ -11,6 +11,7 @@
 // [SECTION] Context
 // [SECTION] Begin/End Plot
 // [SECTION] Styles
+// [SECTION] Debugging
 // [SECTION] Context Utils
 // [SECTION] Style Utils
 

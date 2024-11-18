@@ -12,6 +12,7 @@
 // [SECTION] Begin/End Plot
 // [SECTION] Styles
 // [SECTION] Demo
+// [SECTION] Debugging
 // [SECTION] Flags & Enumerations
 // [SECTION] ImPlot3DStyle
 
@@ -95,9 +96,13 @@ IMPLOT3D_API ImU32 GetStyleColorU32(ImPlot3DCol idx);
 //-----------------------------------------------------------------------------
 // [SECTION] Demo
 //-----------------------------------------------------------------------------
+// Add implot3d_demo.cpp to your sources to use methods in this section
 
-// Shows the ImPlot3D demo window (add implot3d_demo.cpp to your sources!)
+// Shows the ImPlot3D demo window
 IMPLOT3D_API void ShowDemoWindow(bool* p_open = nullptr);
+
+// Shows ImPlot3D style editor block (not a window)
+IMPLOT3D_API void ShowStyleEditor(ImPlot3DStyle* ref = nullptr);
 
 } // namespace ImPlot3D
 
