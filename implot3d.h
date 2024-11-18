@@ -12,6 +12,7 @@
 // [SECTION] Begin/End Plot
 // [SECTION] Demo
 // [SECTION] Flags & Enumerations
+// [SECTION] ImPlot3DStyle
 
 #pragma once
 #include "imgui.h"
@@ -20,6 +21,7 @@
 //-----------------------------------------------------------------------------
 // [SECTION] Macros and Defines
 //-----------------------------------------------------------------------------
+
 #ifndef IMPLOT3D_API
 #define IMPLOT3D_API
 #endif
@@ -33,6 +35,7 @@
 
 // Forward declarations
 struct ImPlot3DContext;
+struct ImPlot3DStyle;
 
 // Enums/Flags
 typedef int ImPlot3DFlags; // -> enum ImPlot3DFlags_             // Flags: for BeginPlot()
@@ -86,6 +89,16 @@ enum ImPlot3DFlags_ {
     ImPlot3DFlags_None = 0,         // default
     ImPlot3DFlags_NoTitle = 1 << 0, // hide plot title
 
+};
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImPlot3DStyle
+//-----------------------------------------------------------------------------
+
+struct ImPlot3DStyle {
+    ImVec2 PlotDefaultSize;
+    ImVec2 PlotMinSize;
+    IMPLOT3D_API ImPlot3DStyle();
 };
 
 #endif // #ifndef IMGUI_DISABLE

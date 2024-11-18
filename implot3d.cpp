@@ -10,11 +10,16 @@
 // [SECTION] Macros
 // [SECTION] Context
 // [SECTION] Begin/End Plot
+// [SECTION] ImPlot3DStyle
 // [SECTION] Context Utils
 
 //-----------------------------------------------------------------------------
 // [SECTION] Includes
 //-----------------------------------------------------------------------------
+
+#ifndef IMGUI_DEFINE_MATH_OPERATORS
+#define IMGUI_DEFINE_MATH_OPERATORS
+#endif
 
 #include "implot3d.h"
 #include "implot3d_internal.h"
@@ -88,7 +93,36 @@ bool ImPlot3D::BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags
     else
         plot.TextBuffer.clear();
 
+    // Calculate frame size
+    ImVec2 frame_size = ImGui::CalcItemSize(size, gp.Style.PlotDefaultSize.x, gp.Style.PlotDefaultSize.y);
+    if (frame_size.x < gp.Style.PlotMinSize.x && size.x < 0.0f)
+        frame_size.x = gp.Style.PlotMinSize.x;
+    if (frame_size.y < gp.Style.PlotMinSize.y && size.y < 0.0f)
+        frame_size.y = gp.Style.PlotMinSize.y;
+
+    plot.FrameRect = ImRect(window->DC.CursorPos, window->DC.CursorPos + frame_size);
+    ImGui::ItemSize(plot.FrameRect);
+    if (!ImGui::ItemAdd(plot.FrameRect, plot.ID, &plot.FrameRect)) {
+        gp.CurrentPlot = nullptr;
+        return false;
+    }
+
     return true;
+}
+
+void AddTextCentered(ImDrawList* DrawList, ImVec2 top_center, ImU32 col, const char* text_begin, const char* text_end) {
+    float txt_ht = ImGui::GetTextLineHeight();
+    const char* title_end = ImGui::FindRenderedTextEnd(text_begin, text_end);
+    ImVec2 text_size;
+    float y = 0;
+    while (const char* tmp = (const char*)memchr(text_begin, '\n', title_end - text_begin)) {
+        text_size = ImGui::CalcTextSize(text_begin, tmp, true);
+        DrawList->AddText(ImVec2(top_center.x - text_size.x * 0.5f, top_center.y + y), col, text_begin, tmp);
+        text_begin = tmp + 1;
+        y += txt_ht;
+    }
+    text_size = ImGui::CalcTextSize(text_begin, title_end, true);
+    DrawList->AddText(ImVec2(top_center.x - text_size.x * 0.5f, top_center.y + y), col, text_begin, title_end);
 }
 
 void ImPlot3D::EndPlot() {
@@ -99,14 +133,32 @@ void ImPlot3D::EndPlot() {
     ImGuiContext& g = *GImGui;
     ImPlot3DPlot& plot = *gp.CurrentPlot;
     ImGuiWindow* window = g.CurrentWindow;
+    ImDrawList& draw_list = *window->DrawList;
+
+    // ImGui::PushClipRect(plot.FrameRect.Min, plot.FrameRect.Max, true);
 
     // Plot title
-    if (!plot.TextBuffer.empty())
-        ImGui::TextUnformatted(plot.TextBuffer.c_str());
+    if (!plot.TextBuffer.empty()) {
+        ImU32 col = ImGui::GetColorU32(ImVec4(0.9, 0.9, 0.9, 1.0)); // GetStyleColorU32(ImPlotCol_TitleText);
+        AddTextCentered(&draw_list, ImVec2(plot.PlotRect.GetCenter().x, plot.PlotRect.Min.y), col, plot.TextBuffer.c_str());
+    }
+    ImGui::TextUnformatted(plot.TextBuffer.c_str());
+    ImGui::Text("Hello");
+
+    // ImGui::PopClipRect();
 
     // Reset current plot
     gp.CurrentPlot = nullptr;
 }
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImPlot3DStyle
+//-----------------------------------------------------------------------------
+
+ImPlot3DStyle::ImPlot3DStyle() {
+    PlotDefaultSize = ImVec2(400, 400);
+    PlotMinSize = ImVec2(200, 200);
+};
 
 //-----------------------------------------------------------------------------
 // [SECTION] Context Utils
