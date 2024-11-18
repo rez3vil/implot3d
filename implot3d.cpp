@@ -11,7 +11,6 @@
 // [SECTION] Context
 // [SECTION] Begin/End Plot
 // [SECTION] Styles
-// [SECTION] Debugging
 // [SECTION] Context Utils
 // [SECTION] Style Utils
 
@@ -251,6 +250,19 @@ ImVec4 ImPlot3D::GetAutoColor(ImPlot3DCol idx) {
         case ImPlot3DCol_TitleText: return ImGui::GetStyleColorVec4(ImGuiCol_Text);
         default: return col;
     }
+}
+
+const char* ImPlot3D::GetStyleColorName(ImPlot3DCol idx) {
+    static const char* color_names[ImPlot3DCol_COUNT] = {
+        "TitleText",
+        "FrameBg",
+        "PlotBg",
+        "PlotBorder",
+        "LegendBg",
+        "LegendBorder",
+        "LegendText",
+    };
+    return color_names[idx];
 }
 
 #endif // #ifndef IMGUI_DISABLE

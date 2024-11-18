@@ -35,6 +35,7 @@ IMPLOT3D_API void ResetContext(ImPlot3DContext* ctx);      // Reset ImPlot3DCont
 IMPLOT3D_API bool IsColorAuto(const ImVec4& col);
 IMPLOT3D_API bool IsColorAuto(ImPlot3DCol idx);
 IMPLOT3D_API ImVec4 GetAutoColor(ImPlot3DCol idx);
+IMPLOT3D_API const char* GetStyleColorName(ImPlot3DCol idx);
 
 } // namespace ImPlot3D
 

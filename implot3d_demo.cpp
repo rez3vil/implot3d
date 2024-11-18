@@ -12,6 +12,7 @@
 // [SECTION] Style Editor
 
 #include "implot3d.h"
+#include "implot3d_internal.h"
 
 namespace ImPlot3D {
 
@@ -130,6 +131,8 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
     if (ref == nullptr)
         ref = &ImPlot3D::GetStyle();
 
+    // TODO Style combo
+
     // Save/Revert button
     if (ImGui::Button("Save Ref"))
         *ref = style;
@@ -145,12 +148,97 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
 
     if (ImGui::BeginTabBar("##Tabs", ImGuiTabBarFlags_None)) {
         if (ImGui::BeginTabItem("Sizes")) {
+            // TODO
             ImGui::Text("Sizes");
             ImGui::EndTabItem();
         }
 
         if (ImGui::BeginTabItem("Colors")) {
-            ImGui::Text("Colors");
+            static int output_dest = 0;
+            static bool output_only_modified = true;
+            if (ImGui::Button("Export")) {
+                if (output_dest == 0)
+                    ImGui::LogToClipboard();
+                else
+                    ImGui::LogToTTY();
+                ImGui::LogText("ImVec4* colors = ImPlot3D::GetStyle().Colors;\n");
+                for (int i = 0; i < ImPlot3DCol_COUNT; i++) {
+                    const ImVec4& col = style.Colors[i];
+                    const char* name = ImPlot3D::GetStyleColorName(i);
+                    if (!output_only_modified || memcmp(&col, &ref->Colors[i], sizeof(ImVec4)) != 0)
+                        ImGui::LogText("colors[ImPlot3DCol_%s]%*s= ImVec4(%.2ff, %.2ff, %.2ff, %.2ff);\n",
+                                       name, 15 - (int)strlen(name), "", col.x, col.y, col.z, col.w);
+                }
+                ImGui::LogFinish();
+            }
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(120);
+            ImGui::Combo("##output_type", &output_dest, "To Clipboard\0To TTY\0");
+            ImGui::SameLine();
+            ImGui::Checkbox("Only Modified Colors", &output_only_modified);
+
+            static ImGuiTextFilter filter;
+            filter.Draw("Filter colors", ImGui::GetFontSize() * 16);
+
+            static ImGuiColorEditFlags alpha_flags = 0;
+            if (ImGui::RadioButton("Opaque", alpha_flags == ImGuiColorEditFlags_None))
+                alpha_flags = ImGuiColorEditFlags_None;
+            ImGui::SameLine();
+            if (ImGui::RadioButton("Alpha", alpha_flags == ImGuiColorEditFlags_AlphaPreview))
+                alpha_flags = ImGuiColorEditFlags_AlphaPreview;
+            ImGui::SameLine();
+            if (ImGui::RadioButton("Both", alpha_flags == ImGuiColorEditFlags_AlphaPreviewHalf))
+                alpha_flags = ImGuiColorEditFlags_AlphaPreviewHalf;
+            ImGui::SameLine();
+            HelpMarker(
+                "In the color list:\n"
+                "Left-click on color square to open color picker,\n"
+                "Right-click to open edit options menu.");
+
+            ImGui::Separator();
+
+            for (int i = 0; i < ImPlot3DCol_COUNT; i++) {
+                const char* name = ImPlot3D::GetStyleColorName(i);
+                if (!filter.PassFilter(name))
+                    continue;
+                ImGui::PushID(i);
+                // TODO
+                // if (ImGui::Button("?"))
+                //    ImGui::DebugFlashStyleColor((ImGuiCol)i);
+                // ImGui::SetItemTooltip("Flash given color to identify places where it is used.");
+                // ImGui::SameLine();
+
+                // Handle auto color selection
+                const bool is_auto = IsColorAuto(style.Colors[i]);
+                if (is_auto)
+                    ImGui::BeginDisabled();
+                if (ImGui::Button("Auto"))
+                    style.Colors[i] = IMPLOT3D_AUTO_COL;
+                if (is_auto)
+                    ImGui::EndDisabled();
+
+                // Color selection
+                ImGui::SameLine();
+                if (ImGui::ColorEdit4("##Color", (float*)&style.Colors[i], ImGuiColorEditFlags_NoInputs | alpha_flags)) {
+                    if (style.Colors[i].w == -1)
+                        style.Colors[i].w = 1;
+                }
+
+                // Save/Revert buttons if color changed
+                if (memcmp(&style.Colors[i], &ref->Colors[i], sizeof(ImVec4)) != 0) {
+                    ImGui::SameLine();
+                    if (ImGui::Button("Save")) {
+                        ref->Colors[i] = style.Colors[i];
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button("Revert")) {
+                        style.Colors[i] = ref->Colors[i];
+                    }
+                }
+                ImGui::SameLine();
+                ImGui::TextUnformatted(name);
+                ImGui::PopID();
+            }
             ImGui::EndTabItem();
         }
         ImGui::EndTabBar();
