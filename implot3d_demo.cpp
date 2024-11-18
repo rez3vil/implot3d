@@ -121,6 +121,20 @@ void ShowDemoWindow(bool* p_open) {
 // [SECTION] Style Editor
 //-----------------------------------------------------------------------------
 
+bool ShowStyleSelector(const char* label) {
+    static int style_idx = -1;
+    if (ImGui::Combo(label, &style_idx, "Auto\0Classic\0Dark\0Light\0")) {
+        switch (style_idx) {
+            case 0: StyleColorsAuto(); break;
+            case 1: StyleColorsClassic(); break;
+            case 2: StyleColorsDark(); break;
+            case 3: StyleColorsLight(); break;
+        }
+        return true;
+    }
+    return false;
+}
+
 void ShowStyleEditor(ImPlot3DStyle* ref) {
     ImPlot3DStyle& style = GetStyle();
     static ImPlot3DStyle ref_saved_style;
@@ -132,7 +146,9 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
     if (ref == nullptr)
         ref = &ref_saved_style;
 
-    // TODO Style combo
+    // Style selector
+    if (ImPlot3D::ShowStyleSelector("Colors##Selector"))
+        ref_saved_style = style;
 
     // Save/Revert button
     if (ImGui::Button("Save Ref"))
