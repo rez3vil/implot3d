@@ -7,6 +7,7 @@
 
 // Table of Contents:
 // [SECTION] Context Utils
+// [SECTION] Style Utils
 // [SECTION] Structs
 
 #pragma once
@@ -26,6 +27,14 @@ namespace ImPlot3D {
 
 IMPLOT3D_API void InitializeContext(ImPlot3DContext* ctx); // Initialize ImPlot3DContext
 IMPLOT3D_API void ResetContext(ImPlot3DContext* ctx);      // Reset ImPlot3DContext
+
+//-----------------------------------------------------------------------------
+// [SECTION] Style Utils
+//-----------------------------------------------------------------------------
+
+IMPLOT3D_API bool IsColorAuto(const ImVec4& col);
+IMPLOT3D_API bool IsColorAuto(ImPlot3DCol idx);
+IMPLOT3D_API ImVec4 GetAutoColor(ImPlot3DCol idx);
 
 } // namespace ImPlot3D
 

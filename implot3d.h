@@ -10,6 +10,7 @@
 // [SECTION] Forward declarations and basic types
 // [SECTION] Context
 // [SECTION] Begin/End Plot
+// [SECTION] Styles
 // [SECTION] Demo
 // [SECTION] Flags & Enumerations
 // [SECTION] ImPlot3DStyle
@@ -26,7 +27,9 @@
 #define IMPLOT3D_API
 #endif
 
-#define IMPLOT3D_VERSION "0.1"
+#define IMPLOT3D_VERSION "0.1"                // ImPlot3D version
+#define IMPLOT3D_AUTO -1                      // Deduce variable automatically
+#define IMPLOT3D_AUTO_COL ImVec4(0, 0, 0, -1) // Deduce color automatically
 #define IMPLOT3D_TMP template <typename T> IMPLOT3D_API
 
 //-----------------------------------------------------------------------------
@@ -38,7 +41,8 @@ struct ImPlot3DContext;
 struct ImPlot3DStyle;
 
 // Enums/Flags
-typedef int ImPlot3DFlags; // -> enum ImPlot3DFlags_             // Flags: for BeginPlot()
+typedef int ImPlot3DFlags; // -> enum ImPlot3DFlags_           // Flags: for BeginPlot()
+typedef int ImPlot3DCol;   // -> enum ImPlot3DCol_             // Enum: Styling colors
 
 namespace ImPlot3D {
 
@@ -72,6 +76,23 @@ IMPLOT3D_API bool BeginPlot(const char* title_id, const ImVec2& size = ImVec2(-1
 IMPLOT3D_API void EndPlot(); // Only call if BeginPlot() returns true!
 
 //-----------------------------------------------------------------------------
+// [SECTION] Styles
+//-----------------------------------------------------------------------------
+
+// Get current style
+IMPLOT3D_API ImPlot3DStyle& GetStyle();
+
+// Set color styles
+IMPLOT3D_API void StyleColorsAuto(ImPlot3DStyle* dst = nullptr);    // Set colors with ImGui style
+IMPLOT3D_API void StyleColorsDark(ImPlot3DStyle* dst = nullptr);    // Set colors with dark style
+IMPLOT3D_API void StyleColorsLight(ImPlot3DStyle* dst = nullptr);   // Set colors with light style
+IMPLOT3D_API void StyleColorsClassic(ImPlot3DStyle* dst = nullptr); // Set colors with classic style
+
+// Get color
+IMPLOT3D_API ImVec4 GetStyleColorVec4(ImPlot3DCol idx);
+IMPLOT3D_API ImU32 GetStyleColorU32(ImPlot3DCol idx);
+
+//-----------------------------------------------------------------------------
 // [SECTION] Demo
 //-----------------------------------------------------------------------------
 
@@ -88,7 +109,17 @@ IMPLOT3D_API void ShowDemoWindow(bool* p_open = nullptr);
 enum ImPlot3DFlags_ {
     ImPlot3DFlags_None = 0,         // default
     ImPlot3DFlags_NoTitle = 1 << 0, // hide plot title
+};
 
+enum ImPlot3DCol_ {
+    ImPlot3DCol_TitleText,    // Title color
+    ImPlot3DCol_FrameBg,      // Frame background color
+    ImPlot3DCol_PlotBg,       // Plot area background color
+    ImPlot3DCol_PlotBorder,   // Plot area border color
+    ImPlot3DCol_LegendBg,     // Legend background color
+    ImPlot3DCol_LegendBorder, // Legend border color
+    ImPlot3DCol_LegendText,   // Legend text color
+    ImPlot3DCol_COUNT,
 };
 
 //-----------------------------------------------------------------------------
@@ -96,8 +127,12 @@ enum ImPlot3DFlags_ {
 //-----------------------------------------------------------------------------
 
 struct ImPlot3DStyle {
+    // Plot style
     ImVec2 PlotDefaultSize;
     ImVec2 PlotMinSize;
+    // Colors
+    ImVec4 Colors[ImPlot3DCol_COUNT];
+    // Constructor
     IMPLOT3D_API ImPlot3DStyle();
 };
 

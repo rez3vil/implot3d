@@ -10,8 +10,9 @@
 // [SECTION] Macros
 // [SECTION] Context
 // [SECTION] Begin/End Plot
-// [SECTION] ImPlot3DStyle
+// [SECTION] Styles
 // [SECTION] Context Utils
+// [SECTION] Style Utils
 
 //-----------------------------------------------------------------------------
 // [SECTION] Includes
@@ -130,8 +131,9 @@ void ImPlot3D::EndPlot() {
 
     // Plot title
     if (!plot.TextBuffer.empty()) {
-        ImU32 col = ImGui::GetColorU32(ImVec4(0.9, 0.9, 0.9, 1.0));
-        AddTextCentered(draw_list, ImVec2(plot.FrameRect.GetCenter().x, plot.FrameRect.Min.y), col, plot.TextBuffer.c_str());
+        ImU32 col = GetStyleColorU32(ImPlot3DCol_TitleText);
+        ImVec2 top_center = ImVec2(plot.FrameRect.GetCenter().x, plot.FrameRect.Min.y);
+        AddTextCentered(draw_list, top_center, col, plot.TextBuffer.c_str());
     }
 
     ImGui::PopClipRect();
@@ -141,24 +143,113 @@ void ImPlot3D::EndPlot() {
 }
 
 //-----------------------------------------------------------------------------
-// [SECTION] ImPlot3DStyle
+// [SECTION] Styles
 //-----------------------------------------------------------------------------
+
+ImPlot3DStyle& ImPlot3D::GetStyle() { return GImPlot3D->Style; }
+
+void ImPlot3D::StyleColorsAuto(ImPlot3DStyle* dst) {
+    ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
+    ImVec4* colors = style->Colors;
+
+    colors[ImPlot3DCol_FrameBg] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_PlotBg] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_PlotBorder] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_LegendBg] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_LegendBorder] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_LegendText] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_TitleText] = IMPLOT3D_AUTO_COL;
+}
+
+void ImPlot3D::StyleColorsClassic(ImPlot3DStyle* dst) {
+    ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
+    ImVec4* colors = style->Colors;
+
+    colors[ImPlot3DCol_FrameBg] = ImVec4(0.43f, 0.43f, 0.43f, 0.39f);
+    colors[ImPlot3DCol_PlotBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.35f);
+    colors[ImPlot3DCol_PlotBorder] = ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
+    colors[ImPlot3DCol_LegendBg] = ImVec4(0.11f, 0.11f, 0.14f, 0.92f);
+    colors[ImPlot3DCol_LegendBorder] = ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
+    colors[ImPlot3DCol_LegendText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+    colors[ImPlot3DCol_TitleText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+}
+
+void ImPlot3D::StyleColorsDark(ImPlot3DStyle* dst) {
+    ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
+    ImVec4* colors = style->Colors;
+
+    colors[ImPlot3DCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 0.07f);
+    colors[ImPlot3DCol_PlotBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.50f);
+    colors[ImPlot3DCol_PlotBorder] = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
+    colors[ImPlot3DCol_LegendBg] = ImVec4(0.08f, 0.08f, 0.08f, 0.94f);
+    colors[ImPlot3DCol_LegendBorder] = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
+    colors[ImPlot3DCol_LegendText] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    colors[ImPlot3DCol_TitleText] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+}
+
+void ImPlot3D::StyleColorsLight(ImPlot3DStyle* dst) {
+    ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
+    ImVec4* colors = style->Colors;
+
+    colors[ImPlot3DCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    colors[ImPlot3DCol_PlotBg] = ImVec4(0.42f, 0.57f, 1.00f, 0.13f);
+    colors[ImPlot3DCol_PlotBorder] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    colors[ImPlot3DCol_LegendBg] = ImVec4(1.00f, 1.00f, 1.00f, 0.98f);
+    colors[ImPlot3DCol_LegendBorder] = ImVec4(0.82f, 0.82f, 0.82f, 0.80f);
+    colors[ImPlot3DCol_LegendText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+    colors[ImPlot3DCol_TitleText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+}
+
+ImVec4 ImPlot3D::GetStyleColorVec4(ImPlot3DCol idx) {
+    return IsColorAuto(idx) ? GetAutoColor(idx) : GImPlot3D->Style.Colors[idx];
+}
+
+ImU32 ImPlot3D::GetStyleColorU32(ImPlot3DCol idx) {
+    return ImGui::ColorConvertFloat4ToU32(GetStyleColorVec4(idx));
+}
 
 ImPlot3DStyle::ImPlot3DStyle() {
     PlotDefaultSize = ImVec2(400, 400);
     PlotMinSize = ImVec2(200, 200);
+    ImPlot3D::StyleColorsDark(this);
 };
 
 //-----------------------------------------------------------------------------
 // [SECTION] Context Utils
 //-----------------------------------------------------------------------------
 
-void ImPlot3D::InitializeContext(ImPlot3DContext* ctx) {
-    ResetContext(ctx);
+void ImPlot3D::InitializeContext(ImPlot3DContext* ctx) { ResetContext(ctx); }
+
+void ImPlot3D::ResetContext(ImPlot3DContext* ctx) { ctx->CurrentPlot = nullptr; }
+
+//-----------------------------------------------------------------------------
+// [SECTION] Style Utils
+//-----------------------------------------------------------------------------
+
+bool ImPlot3D::IsColorAuto(const ImVec4& col) {
+    return col.w == -1.0f;
 }
 
-void ImPlot3D::ResetContext(ImPlot3DContext* ctx) {
-    ctx->CurrentPlot = nullptr;
+bool ImPlot3D::IsColorAuto(ImPlot3DCol idx) {
+    return IsColorAuto(GImPlot3D->Style.Colors[idx]);
+}
+
+ImVec4 ImPlot3D::GetAutoColor(ImPlot3DCol idx) {
+    ImVec4 col(0, 0, 0, 1);
+    switch (idx) {
+        // case ImPlot3DCol_Line:          return col; // Plot dependent
+        // case ImPlot3DCol_Fill:          return col; // Plot dependent
+        // case ImPlot3DCol_MarkerOutline: return col; // Plot dependent
+        // case ImPlot3DCol_MarkerFill:    return col; // Plot dependent
+        case ImPlot3DCol_FrameBg: return ImGui::GetStyleColorVec4(ImGuiCol_FrameBg);
+        case ImPlot3DCol_PlotBg: return ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
+        case ImPlot3DCol_PlotBorder: return ImGui::GetStyleColorVec4(ImGuiCol_Border);
+        case ImPlot3DCol_LegendBg: return ImGui::GetStyleColorVec4(ImGuiCol_PopupBg);
+        case ImPlot3DCol_LegendBorder: return GetStyleColorVec4(ImPlot3DCol_PlotBorder);
+        case ImPlot3DCol_LegendText: return GetStyleColorVec4(ImPlot3DCol_TitleText); // TODO Change to inlay text
+        case ImPlot3DCol_TitleText: return ImGui::GetStyleColorVec4(ImGuiCol_Text);
+        default: return col;
+    }
 }
 
 #endif // #ifndef IMGUI_DISABLE

@@ -3,6 +3,7 @@ Language: Cpp
 BasedOnStyle: LLVM
 PointerAlignment: Left
 AlwaysBreakTemplateDeclarations: No
+AllowShortCaseLabelsOnASingleLine: true
 ColumnLimit: 0
 IndentWidth: 4
 IndentCaseLabels: true
