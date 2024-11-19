@@ -38,7 +38,7 @@
 // [SECTION] Context
 //-----------------------------------------------------------------------------
 
-// Global plot context
+// Global ImPlot3D context
 #ifndef GImPlot3D
 ImPlot3DContext* GImPlot3D = nullptr;
 #endif
@@ -71,7 +71,7 @@ bool ImPlot3D::BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot == nullptr, "Mismatched BeginPlot()/EndPlot()!");
 
-    // Get globals
+    // Get window
     ImGuiContext& g = *GImGui;
     ImGuiWindow* window = g.CurrentWindow;
 
@@ -129,12 +129,27 @@ void ImPlot3D::EndPlot() {
 
     ImGui::PushClipRect(plot.FrameRect.Min, plot.FrameRect.Max, true);
 
+    // Draw frame background
+    ImU32 f_bg_color = GetStyleColorU32(ImPlot3DCol_FrameBg);
+    draw_list->AddRectFilled(plot.FrameRect.Min, plot.FrameRect.Max, f_bg_color);
+
+    // Compute canvas/canvas rectangle
+    plot.CanvasRect = ImRect(plot.FrameRect.Min + gp.Style.PlotPadding, plot.FrameRect.Max - gp.Style.PlotPadding);
+    plot.PlotRect = plot.CanvasRect;
+
     // Plot title
     if (!plot.TextBuffer.empty()) {
         ImU32 col = GetStyleColorU32(ImPlot3DCol_TitleText);
-        ImVec2 top_center = ImVec2(plot.FrameRect.GetCenter().x, plot.FrameRect.Min.y);
+        ImVec2 top_center = ImVec2(plot.FrameRect.GetCenter().x, plot.CanvasRect.Min.y);
         AddTextCentered(draw_list, top_center, col, plot.TextBuffer.c_str());
+        plot.PlotRect.Min.y += ImGui::GetTextLineHeight() + gp.Style.LabelPadding.y;
     }
+
+    // Draw plot background
+    ImU32 p_bg_color = GetStyleColorU32(ImPlot3DCol_PlotBg);
+    ImU32 p_b_color = GetStyleColorU32(ImPlot3DCol_PlotBorder);
+    draw_list->AddRectFilled(plot.PlotRect.Min, plot.PlotRect.Max, p_bg_color);
+    draw_list->AddRect(plot.PlotRect.Min, plot.PlotRect.Max, p_b_color);
 
     ImGui::PopClipRect();
 
@@ -211,7 +226,9 @@ ImU32 ImPlot3D::GetStyleColorU32(ImPlot3DCol idx) {
 ImPlot3DStyle::ImPlot3DStyle() {
     PlotDefaultSize = ImVec2(400, 400);
     PlotMinSize = ImVec2(200, 200);
-    ImPlot3D::StyleColorsDark(this);
+    PlotPadding = ImVec2(10, 10);
+    LabelPadding = ImVec2(5, 5);
+    ImPlot3D::StyleColorsAuto(this);
 };
 
 //-----------------------------------------------------------------------------

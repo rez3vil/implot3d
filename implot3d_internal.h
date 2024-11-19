@@ -48,8 +48,9 @@ struct ImPlot3DPlot {
     ImGuiID ID;
     ImPlot3DFlags Flags;
     ImGuiTextBuffer TextBuffer;
-    ImRect FrameRect; // Outermost bounding rectangle that encapsulates whole the plot/title/padding/etc
-    ImRect PlotRect;  // Bounding rectangle for the actual plot area
+    ImRect FrameRect;  // Outermost bounding rectangle that encapsulates whole the plot/title/padding/etc
+    ImRect CanvasRect; // Frame rectangle reduced by padding
+    ImRect PlotRect;   // Bounding rectangle for the actual plot area
 };
 
 struct ImPlot3DContext {

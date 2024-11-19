@@ -35,7 +35,7 @@ static void HelpMarker(const char* desc) {
 //-----------------------------------------------------------------------------
 
 void DemoLinePlots() {
-    if (ImPlot3D::BeginPlot("Line Plot", ImVec2(-1, 300), ImPlot3DFlags_None)) {
+    if (ImPlot3D::BeginPlot("Line Plots", ImVec2(-1, 300), ImPlot3DFlags_None)) {
         ImPlot3D::EndPlot();
     }
 }
@@ -180,9 +180,10 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
 
     if (ImGui::BeginTabBar("##Tabs", ImGuiTabBarFlags_None)) {
         if (ImGui::BeginTabItem("Sizes")) {
-            ImGui::Text("Plot Styling");
             ImGui::SliderFloat2("PlotDefaultSize", (float*)&style.PlotDefaultSize, 0.0f, 1000, "%.0f");
             ImGui::SliderFloat2("PlotMinSize", (float*)&style.PlotMinSize, 0.0f, 300, "%.0f");
+            ImGui::SliderFloat2("PlotPadding", (float*)&style.PlotPadding, 0.0f, 20.0f, "%.0f");
+            ImGui::SliderFloat2("LabelPadding", (float*)&style.LabelPadding, 0.0f, 20.0f, "%.0f");
             ImGui::EndTabItem();
         }
 

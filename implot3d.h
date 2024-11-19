@@ -135,6 +135,8 @@ struct ImPlot3DStyle {
     // Plot style
     ImVec2 PlotDefaultSize;
     ImVec2 PlotMinSize;
+    ImVec2 PlotPadding;
+    ImVec2 LabelPadding;
     // Colors
     ImVec4 Colors[ImPlot3DCol_COUNT];
     // Constructor
