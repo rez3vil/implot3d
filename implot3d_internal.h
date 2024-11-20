@@ -9,6 +9,7 @@
 // [SECTION] Context Utils
 // [SECTION] Style Utils
 // [SECTION] ImVec3
+// [SECTION] ImQuat
 // [SECTION] Structs
 
 #pragma once
@@ -38,8 +39,6 @@ IMPLOT3D_API bool IsColorAuto(ImPlot3DCol idx);
 IMPLOT3D_API ImVec4 GetAutoColor(ImPlot3DCol idx);
 IMPLOT3D_API const char* GetStyleColorName(ImPlot3DCol idx);
 
-} // namespace ImPlot3D
-
 //-----------------------------------------------------------------------------
 // [SECTION] ImVec3
 //-----------------------------------------------------------------------------
@@ -50,64 +49,94 @@ struct ImVec3 {
     constexpr ImVec3() : x(0.0f), y(0.0f), z(0.0f) {}
     constexpr ImVec3(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
 
+    // Accessors
+    float& operator[](size_t idx) {
+        IM_ASSERT(idx == 0 || idx == 1 || idx == 2);
+        return ((float*)(void*)(char*)this)[idx];
+    }
+    float operator[](size_t idx) const {
+        IM_ASSERT(idx == 0 || idx == 1 || idx == 3);
+        return ((const float*)(const void*)(const char*)this)[idx];
+    }
+
     // Binary operators
-    ImVec3 operator*(float rhs) const { return ImVec3(x * rhs, y * rhs, z * rhs); }
-    ImVec3 operator/(float rhs) const { return ImVec3(x / rhs, y / rhs, z / rhs); }
-    ImVec3 operator+(const ImVec3& rhs) const { return ImVec3(x + rhs.x, y + rhs.y, z + rhs.z); }
-    ImVec3 operator-(const ImVec3& rhs) const { return ImVec3(x - rhs.x, y - rhs.y, z - rhs.z); }
-    ImVec3 operator*(const ImVec3& rhs) const { return ImVec3(x * rhs.x, y * rhs.y, z * rhs.z); }
-    ImVec3 operator/(const ImVec3& rhs) const { return ImVec3(x / rhs.x, y / rhs.y, z / rhs.z); }
+    ImVec3 operator*(float rhs) const;
+    ImVec3 operator/(float rhs) const;
+    ImVec3 operator+(const ImVec3& rhs) const;
+    ImVec3 operator-(const ImVec3& rhs) const;
+    ImVec3 operator*(const ImVec3& rhs) const;
+    ImVec3 operator/(const ImVec3& rhs) const;
 
     // Unary operator
-    ImVec3 operator-() const { return ImVec3(-x, -y, -z); }
+    ImVec3 operator-() const;
 
     // Compound assignment operators
-    ImVec3& operator*=(float rhs) {
-        x *= rhs;
-        y *= rhs;
-        z *= rhs;
-        return *this;
-    }
-    ImVec3& operator/=(float rhs) {
-        x /= rhs;
-        y /= rhs;
-        z /= rhs;
-        return *this;
-    }
-    ImVec3& operator+=(const ImVec3& rhs) {
-        x += rhs.x;
-        y += rhs.y;
-        z += rhs.z;
-        return *this;
-    }
-    ImVec3& operator-=(const ImVec3& rhs) {
-        x -= rhs.x;
-        y -= rhs.y;
-        z -= rhs.z;
-        return *this;
-    }
-    ImVec3& operator*=(const ImVec3& rhs) {
-        x *= rhs.x;
-        y *= rhs.y;
-        z *= rhs.z;
-        return *this;
-    }
-    ImVec3& operator/=(const ImVec3& rhs) {
-        x /= rhs.x;
-        y /= rhs.y;
-        z /= rhs.z;
-        return *this;
-    }
+    ImVec3& operator*=(float rhs);
+    ImVec3& operator/=(float rhs);
+    ImVec3& operator+=(const ImVec3& rhs);
+    ImVec3& operator-=(const ImVec3& rhs);
+    ImVec3& operator*=(const ImVec3& rhs);
+    ImVec3& operator/=(const ImVec3& rhs);
 
     // Comparison operators
-    bool operator==(const ImVec3& rhs) const { return x == rhs.x && y == rhs.y && z == rhs.z; }
-    bool operator!=(const ImVec3& rhs) const { return !(*this == rhs); }
+    bool operator==(const ImVec3& rhs) const;
+    bool operator!=(const ImVec3& rhs) const;
+
+    // Dot product
+    float Dot(const ImVec3& rhs) const;
+
+    // Cross product
+    ImVec3 Cross(const ImVec3& rhs) const;
+
+    // Get vector magnitude
+    float Magnitude() const;
 
     // Friend binary operators to allow commutative behavior
-    friend ImVec3 operator*(float lhs, const ImVec3& rhs) {
-        return ImVec3(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z);
-    }
+    friend ImVec3 operator*(float lhs, const ImVec3& rhs);
 };
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImQuat
+//-----------------------------------------------------------------------------
+
+struct ImQuat {
+    float x, y, z, w;
+
+    // Constructors
+    constexpr ImQuat();
+    constexpr ImQuat(float _x, float _y, float _z, float _w);
+    ImQuat(float _angle, const ImVec3& _axis);
+
+    // Get quaternion magnitude
+    float Magnitude() const;
+
+    // Get normalized quaternion
+    ImQuat Normalized() const;
+
+    // Conjugate of the quaternion
+    ImQuat Conjugate() const;
+
+    // Inverse of the quaternion
+    ImQuat Inverse() const;
+
+    // Binary operators
+    ImQuat operator*(const ImQuat& rhs) const;
+
+    // Normalize the quaternion in place
+    ImQuat& Normalize();
+
+    // Rotate a 3D point using the quaternion
+    ImVec3 operator*(const ImVec3& point) const;
+
+    // Comparison operators
+    bool operator==(const ImQuat& rhs) const;
+    bool operator!=(const ImQuat& rhs) const;
+
+    // Friend binary operators to allow commutative behavior
+    friend ImQuat operator*(float lhs, const ImQuat& rhs);
+};
+
+} // namespace ImPlot3D
 
 //-----------------------------------------------------------------------------
 // [SECTION] Structs

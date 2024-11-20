@@ -13,6 +13,8 @@
 // [SECTION] Styles
 // [SECTION] Context Utils
 // [SECTION] Style Utils
+// [SECTION] ImVec3
+// [SECTION] ImQuat
 
 //-----------------------------------------------------------------------------
 // [SECTION] Includes
@@ -115,6 +117,12 @@ void AddTextCentered(ImDrawList* draw_list, ImVec2 top_center, ImU32 col, const 
     const char* text_end = ImGui::FindRenderedTextEnd(text_begin);
     ImVec2 text_size = ImGui::CalcTextSize(text_begin, text_end, true);
     draw_list->AddText(ImVec2(top_center.x - text_size.x * 0.5f, top_center.y), col, text_begin, text_end);
+}
+
+void DrawAxes(ImDrawList* draw_list, ImRect plot_area) {
+    float zoom = std::min(plot_area.GetWidth(), plot_area.GetHeight());
+    ImVec2 center = plot_area.GetCenter();
+    // AddQuad(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, ImU32 col, float thickness = 1.0f)
 }
 
 void ImPlot3D::EndPlot() {
@@ -281,5 +289,148 @@ const char* ImPlot3D::GetStyleColorName(ImPlot3DCol idx) {
     };
     return color_names[idx];
 }
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImVec3
+//-----------------------------------------------------------------------------
+
+namespace ImPlot3D {
+
+ImVec3 ImVec3::operator*(float rhs) const { return ImVec3(x * rhs, y * rhs, z * rhs); }
+ImVec3 ImVec3::operator/(float rhs) const { return ImVec3(x / rhs, y / rhs, z / rhs); }
+ImVec3 ImVec3::operator+(const ImVec3& rhs) const { return ImVec3(x + rhs.x, y + rhs.y, z + rhs.z); }
+ImVec3 ImVec3::operator-(const ImVec3& rhs) const { return ImVec3(x - rhs.x, y - rhs.y, z - rhs.z); }
+ImVec3 ImVec3::operator*(const ImVec3& rhs) const { return ImVec3(x * rhs.x, y * rhs.y, z * rhs.z); }
+ImVec3 ImVec3::operator/(const ImVec3& rhs) const { return ImVec3(x / rhs.x, y / rhs.y, z / rhs.z); }
+ImVec3 ImVec3::operator-() const { return ImVec3(-x, -y, -z); }
+
+ImVec3& ImVec3::operator*=(float rhs) {
+    x *= rhs;
+    y *= rhs;
+    z *= rhs;
+    return *this;
+}
+ImVec3& ImVec3::operator/=(float rhs) {
+    x /= rhs;
+    y /= rhs;
+    z /= rhs;
+    return *this;
+}
+ImVec3& ImVec3::operator+=(const ImVec3& rhs) {
+    x += rhs.x;
+    y += rhs.y;
+    z += rhs.z;
+    return *this;
+}
+ImVec3& ImVec3::operator-=(const ImVec3& rhs) {
+    x -= rhs.x;
+    y -= rhs.y;
+    z -= rhs.z;
+    return *this;
+}
+ImVec3& ImVec3::operator*=(const ImVec3& rhs) {
+    x *= rhs.x;
+    y *= rhs.y;
+    z *= rhs.z;
+    return *this;
+}
+ImVec3& ImVec3::operator/=(const ImVec3& rhs) {
+    x /= rhs.x;
+    y /= rhs.y;
+    z /= rhs.z;
+    return *this;
+}
+
+bool ImVec3::operator==(const ImVec3& rhs) const { return x == rhs.x && y == rhs.y && z == rhs.z; }
+bool ImVec3::operator!=(const ImVec3& rhs) const { return !(*this == rhs); }
+
+float ImVec3::Dot(const ImVec3& rhs) const { return x * rhs.x + y * rhs.y + z * rhs.z; }
+
+ImVec3 ImVec3::Cross(const ImVec3& rhs) const {
+    return ImVec3(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
+}
+
+float ImVec3::Magnitude() const { return std::sqrt(x * x + y * y + z * z); }
+
+ImVec3 operator*(float lhs, const ImVec3& rhs) {
+    return ImVec3(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z);
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImQuat
+//-----------------------------------------------------------------------------
+
+constexpr ImQuat::ImQuat() : x(0.0f), y(0.0f), z(0.0f), w(1.0f) {}
+constexpr ImQuat::ImQuat(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
+
+ImQuat::ImQuat(float _angle, const ImVec3& _axis) {
+    float half_angle = _angle * 0.5f;
+    float s = std::sin(half_angle);
+    x = s * _axis.x;
+    y = s * _axis.y;
+    z = s * _axis.z;
+    w = std::cos(half_angle);
+}
+
+float ImQuat::Magnitude() const {
+    return std::sqrt(x * x + y * y + z * z + w * w);
+}
+
+ImQuat ImQuat::Normalized() const {
+    float mag = Magnitude();
+    return ImQuat(x / mag, y / mag, z / mag, w / mag);
+}
+
+ImQuat ImQuat::Conjugate() const {
+    return ImQuat(-x, -y, -z, w);
+}
+
+ImQuat ImQuat::Inverse() const {
+    float mag_squared = x * x + y * y + z * z + w * w;
+    return ImQuat(-x / mag_squared, -y / mag_squared, -z / mag_squared, w / mag_squared);
+}
+
+ImQuat ImQuat::operator*(const ImQuat& rhs) const {
+    return ImQuat(
+        w * rhs.x + x * rhs.w + y * rhs.z - z * rhs.y,
+        w * rhs.y - x * rhs.z + y * rhs.w + z * rhs.x,
+        w * rhs.z + x * rhs.y - y * rhs.x + z * rhs.w,
+        w * rhs.w - x * rhs.x - y * rhs.y - z * rhs.z);
+}
+
+ImQuat& ImQuat::Normalize() {
+    float mag = Magnitude();
+    x /= mag;
+    y /= mag;
+    z /= mag;
+    w /= mag;
+    return *this;
+}
+
+ImVec3 ImQuat::operator*(const ImVec3& point) const {
+    // Extract vector part of the quaternion
+    ImVec3 qv(x, y, z);
+
+    // Compute the cross products needed for rotation
+    ImVec3 uv = qv.Cross(point); // uv = qv x point
+    ImVec3 uuv = qv.Cross(uv);   // uuv = qv x uv
+
+    // Compute the rotated vector
+    return point + (uv * w * 2.0f) + (uuv * 2.0f);
+}
+
+bool ImQuat::operator==(const ImQuat& rhs) const {
+    return x == rhs.x && y == rhs.y && z == rhs.z && w == rhs.w;
+}
+
+bool ImQuat::operator!=(const ImQuat& rhs) const {
+    return !(*this == rhs);
+}
+
+ImQuat operator*(float lhs, const ImQuat& rhs) {
+    return ImQuat(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z, lhs * rhs.w);
+}
+
+} // namespace ImPlot3D
 
 #endif // #ifndef IMGUI_DISABLE
