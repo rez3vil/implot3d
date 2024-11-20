@@ -8,6 +8,7 @@
 // Table of Contents:
 // [SECTION] Context Utils
 // [SECTION] Style Utils
+// [SECTION] ImVec3
 // [SECTION] Structs
 
 #pragma once
@@ -38,6 +39,75 @@ IMPLOT3D_API ImVec4 GetAutoColor(ImPlot3DCol idx);
 IMPLOT3D_API const char* GetStyleColorName(ImPlot3DCol idx);
 
 } // namespace ImPlot3D
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImVec3
+//-----------------------------------------------------------------------------
+
+// ImVec3: 3D vector to store points in 3D
+struct ImVec3 {
+    float x, y, z;
+    constexpr ImVec3() : x(0.0f), y(0.0f), z(0.0f) {}
+    constexpr ImVec3(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
+
+    // Binary operators
+    ImVec3 operator*(float rhs) const { return ImVec3(x * rhs, y * rhs, z * rhs); }
+    ImVec3 operator/(float rhs) const { return ImVec3(x / rhs, y / rhs, z / rhs); }
+    ImVec3 operator+(const ImVec3& rhs) const { return ImVec3(x + rhs.x, y + rhs.y, z + rhs.z); }
+    ImVec3 operator-(const ImVec3& rhs) const { return ImVec3(x - rhs.x, y - rhs.y, z - rhs.z); }
+    ImVec3 operator*(const ImVec3& rhs) const { return ImVec3(x * rhs.x, y * rhs.y, z * rhs.z); }
+    ImVec3 operator/(const ImVec3& rhs) const { return ImVec3(x / rhs.x, y / rhs.y, z / rhs.z); }
+
+    // Unary operator
+    ImVec3 operator-() const { return ImVec3(-x, -y, -z); }
+
+    // Compound assignment operators
+    ImVec3& operator*=(float rhs) {
+        x *= rhs;
+        y *= rhs;
+        z *= rhs;
+        return *this;
+    }
+    ImVec3& operator/=(float rhs) {
+        x /= rhs;
+        y /= rhs;
+        z /= rhs;
+        return *this;
+    }
+    ImVec3& operator+=(const ImVec3& rhs) {
+        x += rhs.x;
+        y += rhs.y;
+        z += rhs.z;
+        return *this;
+    }
+    ImVec3& operator-=(const ImVec3& rhs) {
+        x -= rhs.x;
+        y -= rhs.y;
+        z -= rhs.z;
+        return *this;
+    }
+    ImVec3& operator*=(const ImVec3& rhs) {
+        x *= rhs.x;
+        y *= rhs.y;
+        z *= rhs.z;
+        return *this;
+    }
+    ImVec3& operator/=(const ImVec3& rhs) {
+        x /= rhs.x;
+        y /= rhs.y;
+        z /= rhs.z;
+        return *this;
+    }
+
+    // Comparison operators
+    bool operator==(const ImVec3& rhs) const { return x == rhs.x && y == rhs.y && z == rhs.z; }
+    bool operator!=(const ImVec3& rhs) const { return !(*this == rhs); }
+
+    // Friend binary operators to allow commutative behavior
+    friend ImVec3 operator*(float lhs, const ImVec3& rhs) {
+        return ImVec3(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z);
+    }
+};
 
 //-----------------------------------------------------------------------------
 // [SECTION] Structs
