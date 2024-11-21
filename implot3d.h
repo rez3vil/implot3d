@@ -40,6 +40,8 @@
 // Forward declarations
 struct ImPlot3DContext;
 struct ImPlot3DStyle;
+struct ImPlot3DVec3;
+struct ImPlot3DQuat;
 
 // Enums/Flags
 typedef int ImPlot3DFlags; // -> enum ImPlot3DFlags_           // Flags: for BeginPlot()

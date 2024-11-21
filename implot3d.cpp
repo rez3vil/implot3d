@@ -13,8 +13,9 @@
 // [SECTION] Styles
 // [SECTION] Context Utils
 // [SECTION] Style Utils
-// [SECTION] ImVec3
-// [SECTION] ImQuat
+// [SECTION] ImPlot3DVec3
+// [SECTION] ImPlot3DQuat
+// [SECTION] ImPlot3DStyle
 
 //-----------------------------------------------------------------------------
 // [SECTION] Includes
@@ -40,12 +41,14 @@
 // [SECTION] Context
 //-----------------------------------------------------------------------------
 
+namespace ImPlot3D {
+
 // Global ImPlot3D context
 #ifndef GImPlot3D
 ImPlot3DContext* GImPlot3D = nullptr;
 #endif
 
-ImPlot3DContext* ImPlot3D::CreateContext() {
+ImPlot3DContext* CreateContext() {
     ImPlot3DContext* ctx = IM_NEW(ImPlot3DContext)();
     if (GImPlot3D == nullptr)
         SetCurrentContext(ctx);
@@ -53,7 +56,7 @@ ImPlot3DContext* ImPlot3D::CreateContext() {
     return ctx;
 }
 
-void ImPlot3D::DestroyContext(ImPlot3DContext* ctx) {
+void DestroyContext(ImPlot3DContext* ctx) {
     if (ctx == nullptr)
         ctx = GImPlot3D;
     if (GImPlot3D == ctx)
@@ -61,14 +64,14 @@ void ImPlot3D::DestroyContext(ImPlot3DContext* ctx) {
     IM_DELETE(ctx);
 }
 
-ImPlot3DContext* ImPlot3D::GetCurrentContext() { return GImPlot3D; }
+ImPlot3DContext* GetCurrentContext() { return GImPlot3D; }
 
-void ImPlot3D::SetCurrentContext(ImPlot3DContext* ctx) { GImPlot3D = ctx; }
+void SetCurrentContext(ImPlot3DContext* ctx) { GImPlot3D = ctx; }
 
 //-----------------------------------------------------------------------------
 // [SECTION] Begin/End Plot
 //-----------------------------------------------------------------------------
-bool ImPlot3D::BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
+bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     IMPLOT3D_CHECK_CTX();
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot == nullptr, "Mismatched BeginPlot()/EndPlot()!");
@@ -83,12 +86,18 @@ bool ImPlot3D::BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags
 
     // Get or create plot
     const ImGuiID ID = window->GetID(title_id);
+    const bool just_created = gp.Plots.GetByKey(ID) == nullptr;
     gp.CurrentPlot = gp.Plots.GetOrAddByKey(ID);
     ImPlot3DPlot& plot = *gp.CurrentPlot;
 
     // Populate plot ID/flags
     plot.ID = ID;
     plot.Flags = flags;
+    if (just_created) {
+        plot.Rotation = ImPlot3DQuat();
+        plot.RangeMin = ImPlot3DVec3(0.0f, 0.0f, 0.0f);
+        plot.RangeMax = ImPlot3DVec3(1.0f, 1.0f, 1.0f);
+    }
 
     // Populate title
     if (title_id && ImGui::FindRenderedTextEnd(title_id, nullptr) != title_id && !(plot.Flags & ImPlot3DFlags_NoTitle))
@@ -119,13 +128,54 @@ void AddTextCentered(ImDrawList* draw_list, ImVec2 top_center, ImU32 col, const 
     draw_list->AddText(ImVec2(top_center.x - text_size.x * 0.5f, top_center.y), col, text_begin, text_end);
 }
 
-void DrawAxes(ImDrawList* draw_list, ImRect plot_area) {
-    float zoom = std::min(plot_area.GetWidth(), plot_area.GetHeight());
-    ImVec2 center = plot_area.GetCenter();
-    // AddQuad(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, ImU32 col, float thickness = 1.0f)
+void HandleInput(ImPlot3DPlot& plot) {
+    ImGuiIO& IO = ImGui::GetIO();
+
+    // clang-format off
+    const ImGuiButtonFlags plot_button_flags = ImGuiButtonFlags_AllowOverlap
+                                             | ImGuiButtonFlags_PressedOnClick
+                                             | ImGuiButtonFlags_PressedOnDoubleClick
+                                             | ImGuiButtonFlags_MouseButtonLeft
+                                             | ImGuiButtonFlags_MouseButtonRight
+                                             | ImGuiButtonFlags_MouseButtonMiddle;
+    // clang-format on
+    const bool plot_clicked = ImGui::ButtonBehavior(plot.PlotRect, plot.ID, &plot.Hovered, &plot.Held, plot_button_flags);
+#if (IMGUI_VERSION_NUM < 18966)
+    ImGui::SetItemAllowOverlap(); // Handled by ButtonBehavior()
+#endif
+
+    if (plot_clicked && ImGui::IsMouseDoubleClicked(0)) {
+        plot.Rotation = ImPlot3DQuat();
+    }
+    if (plot.Held && ImGui::IsMouseDown(0)) {
+        ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
+
+        // Map delta to rotation angles (in radians)
+        float angle_x = delta.y * (3.1415f / 180.0f);  // Vertical movement -> rotation around X-axis
+        float angle_y = -delta.x * (3.1415f / 180.0f); // Horizontal movement -> rotation around Y-axis
+
+        // Create quaternions for the rotations
+        ImPlot3DQuat quat_x(angle_x, ImPlot3DVec3(1.0f, 0.0f, 0.0f));
+        ImPlot3DQuat quat_y(angle_y, ImPlot3DVec3(0.0f, 1.0f, 0.0f));
+
+        // Combine the new rotations with the current rotation
+        plot.Rotation = quat_x * quat_y * plot.Rotation;
+        plot.Rotation.Normalize();
+    }
 }
 
-void ImPlot3D::EndPlot() {
+void DrawAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat& rotation) {
+    float zoom = std::min(plot_area.GetWidth(), plot_area.GetHeight());
+    ImVec2 center = plot_area.GetCenter();
+    ImPlot3DVec3 plane[4] = {ImPlot3DVec3(-0.5f, -0.5f, 0.0f), ImPlot3DVec3(-0.5f, 0.5f, 0.0f), ImPlot3DVec3(0.5f, 0.5f, 0.0f), ImPlot3DVec3(0.5f, -0.5f, 0.0f)};
+    for (int i = 0; i < 4; i++) {
+        plane[i] = zoom * (rotation * plane[i]) + ImPlot3DVec3(center.x, center.y, 0.0f);
+    }
+    ImU32 col = GetStyleColorU32(ImPlot3DCol_PlotBorder);
+    draw_list->AddQuadFilled(ImVec2(plane[0].x, plane[0].y), ImVec2(plane[1].x, plane[1].y), ImVec2(plane[2].x, plane[2].y), ImVec2(plane[3].x, plane[3].y), col);
+}
+
+void EndPlot() {
     IMPLOT3D_CHECK_CTX();
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "Mismatched BeginPlot()/EndPlot()!");
@@ -153,11 +203,17 @@ void ImPlot3D::EndPlot() {
         plot.PlotRect.Min.y += ImGui::GetTextLineHeight() + gp.Style.LabelPadding.y;
     }
 
+    // Handle user input
+    HandleInput(plot);
+
+    // Plot axes
+    DrawAxes(draw_list, plot.PlotRect, plot.Rotation);
+
     // Draw plot background
     ImU32 p_bg_color = GetStyleColorU32(ImPlot3DCol_PlotBg);
-    ImU32 p_b_color = GetStyleColorU32(ImPlot3DCol_PlotBorder);
-    draw_list->AddRectFilled(plot.PlotRect.Min, plot.PlotRect.Max, p_bg_color);
-    draw_list->AddRect(plot.PlotRect.Min, plot.PlotRect.Max, p_b_color);
+    // ImU32 p_b_color = GetStyleColorU32(ImPlot3DCol_PlotBorder);
+    // draw_list->AddRectFilled(plot.PlotRect.Min, plot.PlotRect.Max, p_bg_color);
+    // draw_list->AddRect(plot.PlotRect.Min, plot.PlotRect.Max, p_b_color);
 
     ImGui::PopClipRect();
 
@@ -169,9 +225,9 @@ void ImPlot3D::EndPlot() {
 // [SECTION] Styles
 //-----------------------------------------------------------------------------
 
-ImPlot3DStyle& ImPlot3D::GetStyle() { return GImPlot3D->Style; }
+ImPlot3DStyle& GetStyle() { return GImPlot3D->Style; }
 
-void ImPlot3D::StyleColorsAuto(ImPlot3DStyle* dst) {
+void StyleColorsAuto(ImPlot3DStyle* dst) {
     ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
     ImVec4* colors = style->Colors;
 
@@ -184,7 +240,7 @@ void ImPlot3D::StyleColorsAuto(ImPlot3DStyle* dst) {
     colors[ImPlot3DCol_TitleText] = IMPLOT3D_AUTO_COL;
 }
 
-void ImPlot3D::StyleColorsClassic(ImPlot3DStyle* dst) {
+void StyleColorsClassic(ImPlot3DStyle* dst) {
     ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
     ImVec4* colors = style->Colors;
 
@@ -197,7 +253,7 @@ void ImPlot3D::StyleColorsClassic(ImPlot3DStyle* dst) {
     colors[ImPlot3DCol_TitleText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
 }
 
-void ImPlot3D::StyleColorsDark(ImPlot3DStyle* dst) {
+void StyleColorsDark(ImPlot3DStyle* dst) {
     ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
     ImVec4* colors = style->Colors;
 
@@ -210,7 +266,7 @@ void ImPlot3D::StyleColorsDark(ImPlot3DStyle* dst) {
     colors[ImPlot3DCol_TitleText] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
 }
 
-void ImPlot3D::StyleColorsLight(ImPlot3DStyle* dst) {
+void StyleColorsLight(ImPlot3DStyle* dst) {
     ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
     ImVec4* colors = style->Colors;
 
@@ -223,43 +279,35 @@ void ImPlot3D::StyleColorsLight(ImPlot3DStyle* dst) {
     colors[ImPlot3DCol_TitleText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
 }
 
-ImVec4 ImPlot3D::GetStyleColorVec4(ImPlot3DCol idx) {
+ImVec4 GetStyleColorVec4(ImPlot3DCol idx) {
     return IsColorAuto(idx) ? GetAutoColor(idx) : GImPlot3D->Style.Colors[idx];
 }
 
-ImU32 ImPlot3D::GetStyleColorU32(ImPlot3DCol idx) {
-    return ImGui::ColorConvertFloat4ToU32(GetStyleColorVec4(idx));
+ImU32 GetStyleColorU32(ImPlot3DCol idx) {
+    return ImGui::ColorConvertFloat4ToU32(ImPlot3D::GetStyleColorVec4(idx));
 }
-
-ImPlot3DStyle::ImPlot3DStyle() {
-    PlotDefaultSize = ImVec2(400, 400);
-    PlotMinSize = ImVec2(200, 200);
-    PlotPadding = ImVec2(10, 10);
-    LabelPadding = ImVec2(5, 5);
-    ImPlot3D::StyleColorsAuto(this);
-};
 
 //-----------------------------------------------------------------------------
 // [SECTION] Context Utils
 //-----------------------------------------------------------------------------
 
-void ImPlot3D::InitializeContext(ImPlot3DContext* ctx) { ResetContext(ctx); }
+void InitializeContext(ImPlot3DContext* ctx) { ResetContext(ctx); }
 
-void ImPlot3D::ResetContext(ImPlot3DContext* ctx) { ctx->CurrentPlot = nullptr; }
+void ResetContext(ImPlot3DContext* ctx) { ctx->CurrentPlot = nullptr; }
 
 //-----------------------------------------------------------------------------
 // [SECTION] Style Utils
 //-----------------------------------------------------------------------------
 
-bool ImPlot3D::IsColorAuto(const ImVec4& col) {
+bool IsColorAuto(const ImVec4& col) {
     return col.w == -1.0f;
 }
 
-bool ImPlot3D::IsColorAuto(ImPlot3DCol idx) {
+bool IsColorAuto(ImPlot3DCol idx) {
     return IsColorAuto(GImPlot3D->Style.Colors[idx]);
 }
 
-ImVec4 ImPlot3D::GetAutoColor(ImPlot3DCol idx) {
+ImVec4 GetAutoColor(ImPlot3DCol idx) {
     ImVec4 col(0, 0, 0, 1);
     switch (idx) {
         // case ImPlot3DCol_Line:          return col; // Plot dependent
@@ -277,7 +325,7 @@ ImVec4 ImPlot3D::GetAutoColor(ImPlot3DCol idx) {
     }
 }
 
-const char* ImPlot3D::GetStyleColorName(ImPlot3DCol idx) {
+const char* GetStyleColorName(ImPlot3DCol idx) {
     static const char* color_names[ImPlot3DCol_COUNT] = {
         "TitleText",
         "FrameBg",
@@ -290,80 +338,80 @@ const char* ImPlot3D::GetStyleColorName(ImPlot3DCol idx) {
     return color_names[idx];
 }
 
+} // namespace ImPlot3D
+
 //-----------------------------------------------------------------------------
-// [SECTION] ImVec3
+// [SECTION] ImPlot3DVec3
 //-----------------------------------------------------------------------------
 
-namespace ImPlot3D {
+ImPlot3DVec3 ImPlot3DVec3::operator*(float rhs) const { return ImPlot3DVec3(x * rhs, y * rhs, z * rhs); }
+ImPlot3DVec3 ImPlot3DVec3::operator/(float rhs) const { return ImPlot3DVec3(x / rhs, y / rhs, z / rhs); }
+ImPlot3DVec3 ImPlot3DVec3::operator+(const ImPlot3DVec3& rhs) const { return ImPlot3DVec3(x + rhs.x, y + rhs.y, z + rhs.z); }
+ImPlot3DVec3 ImPlot3DVec3::operator-(const ImPlot3DVec3& rhs) const { return ImPlot3DVec3(x - rhs.x, y - rhs.y, z - rhs.z); }
+ImPlot3DVec3 ImPlot3DVec3::operator*(const ImPlot3DVec3& rhs) const { return ImPlot3DVec3(x * rhs.x, y * rhs.y, z * rhs.z); }
+ImPlot3DVec3 ImPlot3DVec3::operator/(const ImPlot3DVec3& rhs) const { return ImPlot3DVec3(x / rhs.x, y / rhs.y, z / rhs.z); }
+ImPlot3DVec3 ImPlot3DVec3::operator-() const { return ImPlot3DVec3(-x, -y, -z); }
 
-ImVec3 ImVec3::operator*(float rhs) const { return ImVec3(x * rhs, y * rhs, z * rhs); }
-ImVec3 ImVec3::operator/(float rhs) const { return ImVec3(x / rhs, y / rhs, z / rhs); }
-ImVec3 ImVec3::operator+(const ImVec3& rhs) const { return ImVec3(x + rhs.x, y + rhs.y, z + rhs.z); }
-ImVec3 ImVec3::operator-(const ImVec3& rhs) const { return ImVec3(x - rhs.x, y - rhs.y, z - rhs.z); }
-ImVec3 ImVec3::operator*(const ImVec3& rhs) const { return ImVec3(x * rhs.x, y * rhs.y, z * rhs.z); }
-ImVec3 ImVec3::operator/(const ImVec3& rhs) const { return ImVec3(x / rhs.x, y / rhs.y, z / rhs.z); }
-ImVec3 ImVec3::operator-() const { return ImVec3(-x, -y, -z); }
-
-ImVec3& ImVec3::operator*=(float rhs) {
+ImPlot3DVec3& ImPlot3DVec3::operator*=(float rhs) {
     x *= rhs;
     y *= rhs;
     z *= rhs;
     return *this;
 }
-ImVec3& ImVec3::operator/=(float rhs) {
+ImPlot3DVec3& ImPlot3DVec3::operator/=(float rhs) {
     x /= rhs;
     y /= rhs;
     z /= rhs;
     return *this;
 }
-ImVec3& ImVec3::operator+=(const ImVec3& rhs) {
+ImPlot3DVec3& ImPlot3DVec3::operator+=(const ImPlot3DVec3& rhs) {
     x += rhs.x;
     y += rhs.y;
     z += rhs.z;
     return *this;
 }
-ImVec3& ImVec3::operator-=(const ImVec3& rhs) {
+ImPlot3DVec3& ImPlot3DVec3::operator-=(const ImPlot3DVec3& rhs) {
     x -= rhs.x;
     y -= rhs.y;
     z -= rhs.z;
     return *this;
 }
-ImVec3& ImVec3::operator*=(const ImVec3& rhs) {
+ImPlot3DVec3& ImPlot3DVec3::operator*=(const ImPlot3DVec3& rhs) {
     x *= rhs.x;
     y *= rhs.y;
     z *= rhs.z;
     return *this;
 }
-ImVec3& ImVec3::operator/=(const ImVec3& rhs) {
+ImPlot3DVec3& ImPlot3DVec3::operator/=(const ImPlot3DVec3& rhs) {
     x /= rhs.x;
     y /= rhs.y;
     z /= rhs.z;
     return *this;
 }
 
-bool ImVec3::operator==(const ImVec3& rhs) const { return x == rhs.x && y == rhs.y && z == rhs.z; }
-bool ImVec3::operator!=(const ImVec3& rhs) const { return !(*this == rhs); }
+bool ImPlot3DVec3::operator==(const ImPlot3DVec3& rhs) const { return x == rhs.x && y == rhs.y && z == rhs.z; }
+bool ImPlot3DVec3::operator!=(const ImPlot3DVec3& rhs) const { return !(*this == rhs); }
 
-float ImVec3::Dot(const ImVec3& rhs) const { return x * rhs.x + y * rhs.y + z * rhs.z; }
+float ImPlot3DVec3::Dot(const ImPlot3DVec3& rhs) const { return x * rhs.x + y * rhs.y + z * rhs.z; }
 
-ImVec3 ImVec3::Cross(const ImVec3& rhs) const {
-    return ImVec3(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
+ImPlot3DVec3 ImPlot3DVec3::Cross(const ImPlot3DVec3& rhs) const {
+    return ImPlot3DVec3(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
 }
 
-float ImVec3::Magnitude() const { return std::sqrt(x * x + y * y + z * z); }
+float ImPlot3DVec3::Magnitude() const { return std::sqrt(x * x + y * y + z * z); }
 
-ImVec3 operator*(float lhs, const ImVec3& rhs) {
-    return ImVec3(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z);
+ImPlot3DVec3 operator*(float lhs, const ImPlot3DVec3& rhs) {
+    return ImPlot3DVec3(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z);
 }
 
 //-----------------------------------------------------------------------------
-// [SECTION] ImQuat
+// [SECTION] ImPlot3DQuat
 //-----------------------------------------------------------------------------
 
-constexpr ImQuat::ImQuat() : x(0.0f), y(0.0f), z(0.0f), w(1.0f) {}
-constexpr ImQuat::ImQuat(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
+constexpr ImPlot3DQuat::ImPlot3DQuat() : x(0.0f), y(0.0f), z(0.0f), w(1.0f) {}
+constexpr ImPlot3DQuat::ImPlot3DQuat(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
 
-ImQuat::ImQuat(float _angle, const ImVec3& _axis) {
+ImPlot3DQuat::ImPlot3DQuat(float _angle, const ImPlot3DVec3& _axis) {
     float half_angle = _angle * 0.5f;
     float s = std::sin(half_angle);
     x = s * _axis.x;
@@ -372,33 +420,33 @@ ImQuat::ImQuat(float _angle, const ImVec3& _axis) {
     w = std::cos(half_angle);
 }
 
-float ImQuat::Magnitude() const {
+float ImPlot3DQuat::Magnitude() const {
     return std::sqrt(x * x + y * y + z * z + w * w);
 }
 
-ImQuat ImQuat::Normalized() const {
+ImPlot3DQuat ImPlot3DQuat::Normalized() const {
     float mag = Magnitude();
-    return ImQuat(x / mag, y / mag, z / mag, w / mag);
+    return ImPlot3DQuat(x / mag, y / mag, z / mag, w / mag);
 }
 
-ImQuat ImQuat::Conjugate() const {
-    return ImQuat(-x, -y, -z, w);
+ImPlot3DQuat ImPlot3DQuat::Conjugate() const {
+    return ImPlot3DQuat(-x, -y, -z, w);
 }
 
-ImQuat ImQuat::Inverse() const {
+ImPlot3DQuat ImPlot3DQuat::Inverse() const {
     float mag_squared = x * x + y * y + z * z + w * w;
-    return ImQuat(-x / mag_squared, -y / mag_squared, -z / mag_squared, w / mag_squared);
+    return ImPlot3DQuat(-x / mag_squared, -y / mag_squared, -z / mag_squared, w / mag_squared);
 }
 
-ImQuat ImQuat::operator*(const ImQuat& rhs) const {
-    return ImQuat(
+ImPlot3DQuat ImPlot3DQuat::operator*(const ImPlot3DQuat& rhs) const {
+    return ImPlot3DQuat(
         w * rhs.x + x * rhs.w + y * rhs.z - z * rhs.y,
         w * rhs.y - x * rhs.z + y * rhs.w + z * rhs.x,
         w * rhs.z + x * rhs.y - y * rhs.x + z * rhs.w,
         w * rhs.w - x * rhs.x - y * rhs.y - z * rhs.z);
 }
 
-ImQuat& ImQuat::Normalize() {
+ImPlot3DQuat& ImPlot3DQuat::Normalize() {
     float mag = Magnitude();
     x /= mag;
     y /= mag;
@@ -407,30 +455,36 @@ ImQuat& ImQuat::Normalize() {
     return *this;
 }
 
-ImVec3 ImQuat::operator*(const ImVec3& point) const {
+ImPlot3DVec3 ImPlot3DQuat::operator*(const ImPlot3DVec3& point) const {
     // Extract vector part of the quaternion
-    ImVec3 qv(x, y, z);
+    ImPlot3DVec3 qv(x, y, z);
 
     // Compute the cross products needed for rotation
-    ImVec3 uv = qv.Cross(point); // uv = qv x point
-    ImVec3 uuv = qv.Cross(uv);   // uuv = qv x uv
+    ImPlot3DVec3 uv = qv.Cross(point); // uv = qv x point
+    ImPlot3DVec3 uuv = qv.Cross(uv);   // uuv = qv x uv
 
     // Compute the rotated vector
     return point + (uv * w * 2.0f) + (uuv * 2.0f);
 }
 
-bool ImQuat::operator==(const ImQuat& rhs) const {
+bool ImPlot3DQuat::operator==(const ImPlot3DQuat& rhs) const {
     return x == rhs.x && y == rhs.y && z == rhs.z && w == rhs.w;
 }
 
-bool ImQuat::operator!=(const ImQuat& rhs) const {
+bool ImPlot3DQuat::operator!=(const ImPlot3DQuat& rhs) const {
     return !(*this == rhs);
 }
 
-ImQuat operator*(float lhs, const ImQuat& rhs) {
-    return ImQuat(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z, lhs * rhs.w);
-}
+//-----------------------------------------------------------------------------
+// [SECTION] ImPlot3DStyle
+//-----------------------------------------------------------------------------
 
-} // namespace ImPlot3D
+ImPlot3DStyle::ImPlot3DStyle() {
+    PlotDefaultSize = ImVec2(400, 400);
+    PlotMinSize = ImVec2(200, 200);
+    PlotPadding = ImVec2(10, 10);
+    LabelPadding = ImVec2(5, 5);
+    ImPlot3D::StyleColorsAuto(this);
+};
 
 #endif // #ifndef IMGUI_DISABLE

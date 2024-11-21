@@ -8,8 +8,8 @@
 // Table of Contents:
 // [SECTION] Context Utils
 // [SECTION] Style Utils
-// [SECTION] ImVec3
-// [SECTION] ImQuat
+// [SECTION] ImPlot3DVec3
+// [SECTION] ImPlot3DQuat
 // [SECTION] Structs
 
 #pragma once
@@ -39,15 +39,17 @@ IMPLOT3D_API bool IsColorAuto(ImPlot3DCol idx);
 IMPLOT3D_API ImVec4 GetAutoColor(ImPlot3DCol idx);
 IMPLOT3D_API const char* GetStyleColorName(ImPlot3DCol idx);
 
+} // namespace ImPlot3D
+
 //-----------------------------------------------------------------------------
-// [SECTION] ImVec3
+// [SECTION] ImPlot3DVec3
 //-----------------------------------------------------------------------------
 
-// ImVec3: 3D vector to store points in 3D
-struct ImVec3 {
+// ImPlot3DVec3: 3D vector to store points in 3D
+struct ImPlot3DVec3 {
     float x, y, z;
-    constexpr ImVec3() : x(0.0f), y(0.0f), z(0.0f) {}
-    constexpr ImVec3(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
+    constexpr ImPlot3DVec3() : x(0.0f), y(0.0f), z(0.0f) {}
+    constexpr ImPlot3DVec3(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
 
     // Accessors
     float& operator[](size_t idx) {
@@ -60,83 +62,78 @@ struct ImVec3 {
     }
 
     // Binary operators
-    ImVec3 operator*(float rhs) const;
-    ImVec3 operator/(float rhs) const;
-    ImVec3 operator+(const ImVec3& rhs) const;
-    ImVec3 operator-(const ImVec3& rhs) const;
-    ImVec3 operator*(const ImVec3& rhs) const;
-    ImVec3 operator/(const ImVec3& rhs) const;
+    ImPlot3DVec3 operator*(float rhs) const;
+    ImPlot3DVec3 operator/(float rhs) const;
+    ImPlot3DVec3 operator+(const ImPlot3DVec3& rhs) const;
+    ImPlot3DVec3 operator-(const ImPlot3DVec3& rhs) const;
+    ImPlot3DVec3 operator*(const ImPlot3DVec3& rhs) const;
+    ImPlot3DVec3 operator/(const ImPlot3DVec3& rhs) const;
 
     // Unary operator
-    ImVec3 operator-() const;
+    ImPlot3DVec3 operator-() const;
 
     // Compound assignment operators
-    ImVec3& operator*=(float rhs);
-    ImVec3& operator/=(float rhs);
-    ImVec3& operator+=(const ImVec3& rhs);
-    ImVec3& operator-=(const ImVec3& rhs);
-    ImVec3& operator*=(const ImVec3& rhs);
-    ImVec3& operator/=(const ImVec3& rhs);
+    ImPlot3DVec3& operator*=(float rhs);
+    ImPlot3DVec3& operator/=(float rhs);
+    ImPlot3DVec3& operator+=(const ImPlot3DVec3& rhs);
+    ImPlot3DVec3& operator-=(const ImPlot3DVec3& rhs);
+    ImPlot3DVec3& operator*=(const ImPlot3DVec3& rhs);
+    ImPlot3DVec3& operator/=(const ImPlot3DVec3& rhs);
 
     // Comparison operators
-    bool operator==(const ImVec3& rhs) const;
-    bool operator!=(const ImVec3& rhs) const;
+    bool operator==(const ImPlot3DVec3& rhs) const;
+    bool operator!=(const ImPlot3DVec3& rhs) const;
 
     // Dot product
-    float Dot(const ImVec3& rhs) const;
+    float Dot(const ImPlot3DVec3& rhs) const;
 
     // Cross product
-    ImVec3 Cross(const ImVec3& rhs) const;
+    ImPlot3DVec3 Cross(const ImPlot3DVec3& rhs) const;
 
     // Get vector magnitude
     float Magnitude() const;
 
     // Friend binary operators to allow commutative behavior
-    friend ImVec3 operator*(float lhs, const ImVec3& rhs);
+    friend ImPlot3DVec3 operator*(float lhs, const ImPlot3DVec3& rhs);
 };
 
 //-----------------------------------------------------------------------------
-// [SECTION] ImQuat
+// [SECTION] ImPlot3DQuat
 //-----------------------------------------------------------------------------
 
-struct ImQuat {
+struct ImPlot3DQuat {
     float x, y, z, w;
 
     // Constructors
-    constexpr ImQuat();
-    constexpr ImQuat(float _x, float _y, float _z, float _w);
-    ImQuat(float _angle, const ImVec3& _axis);
+    constexpr ImPlot3DQuat();
+    constexpr ImPlot3DQuat(float _x, float _y, float _z, float _w);
+    ImPlot3DQuat(float _angle, const ImPlot3DVec3& _axis);
 
     // Get quaternion magnitude
     float Magnitude() const;
 
     // Get normalized quaternion
-    ImQuat Normalized() const;
+    ImPlot3DQuat Normalized() const;
 
     // Conjugate of the quaternion
-    ImQuat Conjugate() const;
+    ImPlot3DQuat Conjugate() const;
 
     // Inverse of the quaternion
-    ImQuat Inverse() const;
+    ImPlot3DQuat Inverse() const;
 
     // Binary operators
-    ImQuat operator*(const ImQuat& rhs) const;
+    ImPlot3DQuat operator*(const ImPlot3DQuat& rhs) const;
 
     // Normalize the quaternion in place
-    ImQuat& Normalize();
+    ImPlot3DQuat& Normalize();
 
     // Rotate a 3D point using the quaternion
-    ImVec3 operator*(const ImVec3& point) const;
+    ImPlot3DVec3 operator*(const ImPlot3DVec3& point) const;
 
     // Comparison operators
-    bool operator==(const ImQuat& rhs) const;
-    bool operator!=(const ImQuat& rhs) const;
-
-    // Friend binary operators to allow commutative behavior
-    friend ImQuat operator*(float lhs, const ImQuat& rhs);
+    bool operator==(const ImPlot3DQuat& rhs) const;
+    bool operator!=(const ImPlot3DQuat& rhs) const;
 };
-
-} // namespace ImPlot3D
 
 //-----------------------------------------------------------------------------
 // [SECTION] Structs
@@ -150,6 +147,11 @@ struct ImPlot3DPlot {
     ImRect FrameRect;  // Outermost bounding rectangle that encapsulates whole the plot/title/padding/etc
     ImRect CanvasRect; // Frame rectangle reduced by padding
     ImRect PlotRect;   // Bounding rectangle for the actual plot area
+    ImPlot3DQuat Rotation;
+    ImPlot3DVec3 RangeMin;
+    ImPlot3DVec3 RangeMax;
+    bool Hovered;
+    bool Held;
 };
 
 struct ImPlot3DContext {
