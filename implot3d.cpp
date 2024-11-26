@@ -164,15 +164,69 @@ void HandleInput(ImPlot3DPlot& plot) {
     }
 }
 
-void DrawAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat& rotation) {
-    float zoom = std::min(plot_area.GetWidth(), plot_area.GetHeight());
+void DrawAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat& rotation, const ImPlot3DVec3& range_min, const ImPlot3DVec3& range_max) {
+    float zoom = std::min(plot_area.GetWidth(), -plot_area.GetHeight()) / 1.5f;
     ImVec2 center = plot_area.GetCenter();
-    ImPlot3DVec3 plane[4] = {ImPlot3DVec3(-0.5f, -0.5f, 0.0f), ImPlot3DVec3(-0.5f, 0.5f, 0.0f), ImPlot3DVec3(0.5f, 0.5f, 0.0f), ImPlot3DVec3(0.5f, -0.5f, 0.0f)};
-    for (int i = 0; i < 4; i++) {
-        plane[i] = zoom * (rotation * plane[i]) + ImPlot3DVec3(center.x, center.y, 0.0f);
+    ImPlot3DVec3 plane_normal[3] = {
+        rotation * ImPlot3DVec3(1.0f, 0.0f, 0.0f),
+        rotation * ImPlot3DVec3(0.0f, 1.0f, 0.0f),
+        rotation * ImPlot3DVec3(0.0f, 0.0f, 1.0f)};
+    ImPlot3DVec3 plane[3][4] = {
+        {ImPlot3DVec3(0.5f, -0.5f, -0.5f), ImPlot3DVec3(0.5f, -0.5f, 0.5f), ImPlot3DVec3(0.5f, 0.5f, 0.5f), ImPlot3DVec3(0.5f, 0.5f, -0.5f)},
+        {ImPlot3DVec3(-0.5f, 0.5f, -0.5f), ImPlot3DVec3(-0.5f, 0.5f, 0.5f), ImPlot3DVec3(0.5f, 0.5f, 0.5f), ImPlot3DVec3(0.5f, 0.5f, -0.5f)},
+        {ImPlot3DVec3(-0.5f, -0.5f, 0.5f), ImPlot3DVec3(-0.5f, 0.5f, 0.5f), ImPlot3DVec3(0.5f, 0.5f, 0.5f), ImPlot3DVec3(0.5f, -0.5f, 0.5f)}};
+
+    // Transform planes
+    for (int c = 0; c < 3; c++) {
+        const float sign = -plane_normal[c][2] > 0.0f ? 1.0f : -1.0f; // Dot product between plane normal and view vector
+        for (int i = 0; i < 4; i++)
+            plane[c][i] = zoom * (rotation * (sign * plane[c][i])) + ImPlot3DVec3(center.x, center.y, 0.0f);
     }
-    ImU32 col = GetStyleColorU32(ImPlot3DCol_PlotBorder);
-    draw_list->AddQuadFilled(ImVec2(plane[0].x, plane[0].y), ImVec2(plane[1].x, plane[1].y), ImVec2(plane[2].x, plane[2].y), ImVec2(plane[3].x, plane[3].y), col);
+
+    // Draw background
+    const ImU32 colBg = GetStyleColorU32(ImPlot3DCol_PlotBg);
+    for (int c = 0; c < 3; c++) {
+        // const ImU32 colBg = ImGui::ColorConvertFloat4ToU32(ImVec4(c == 0, c == 1, c == 2, 0.5f)); // XXX
+        draw_list->AddQuadFilled(ImVec2(plane[c][0].x, plane[c][0].y), ImVec2(plane[c][1].x, plane[c][1].y), ImVec2(plane[c][2].x, plane[c][2].y), ImVec2(plane[c][3].x, plane[c][3].y), colBg);
+    }
+    // Draw border
+    const ImU32 colBorder = GetStyleColorU32(ImPlot3DCol_PlotBorder);
+    for (int c = 0; c < 3; c++)
+        for (int i = 0; i < 4; i++)
+            draw_list->AddLine(ImVec2(plane[c][i].x, plane[c][i].y), ImVec2(plane[c][(i + 1) % 4].x, plane[c][(i + 1) % 4].y), colBorder);
+
+    // Draw ticks
+    const float target_lines = 10.0f; // Target number of tick lines
+    const ImU32 colTicks = GetStyleColorU32(ImPlot3DCol_PlotBorder);
+    for (int c = 0; c < 3; c++) {
+        float range = range_max[c] - range_min[c];
+
+        // Estimate initial spacing (powers of 10 for zoom-level adaptation)
+        float spacing = std::pow(10.0f, std::floor(std::log10(range / target_lines)));
+        size_t num_lines = std::ceil(range / spacing);
+
+        float start = std::floor(range_min[c] / spacing) * spacing;
+        float end = std::ceil(range_max[c] / spacing) * spacing;
+        for (float t = start; t <= end; t += spacing) {
+            if (t < range_min[c] || t > range_max[c])
+                continue;
+            float tNorm = (t - range_min[c]) / range;
+            // Draw ticks for the 2 planes
+            for (size_t i = 0; i < 2; i++) {
+                size_t planeIdx = (c + i + 1) % 3;
+                ImPlot3DVec3 p0, p1;
+                if (c == 0 || (c == 1 && i == 1)) {
+                    p0 = plane[planeIdx][0] + (plane[planeIdx][3] - plane[planeIdx][0]) * tNorm;
+                    p1 = plane[planeIdx][1] + (plane[planeIdx][2] - plane[planeIdx][1]) * tNorm;
+                } else if (c == 2 || (c == 1 && i == 0)) {
+                    p0 = plane[planeIdx][0] + (plane[planeIdx][1] - plane[planeIdx][0]) * tNorm;
+                    p1 = plane[planeIdx][3] + (plane[planeIdx][2] - plane[planeIdx][3]) * tNorm;
+                }
+                // const ImU32 colTicks = ImGui::ColorConvertFloat4ToU32(ImVec4(c == 0, c == 1, c == 2, 1.0f)); // XXX
+                draw_list->AddLine(ImVec2(p0.x, p0.y), ImVec2(p1.x, p1.y), colTicks);
+            }
+        }
+    }
 }
 
 void EndPlot() {
@@ -195,6 +249,12 @@ void EndPlot() {
     plot.CanvasRect = ImRect(plot.FrameRect.Min + gp.Style.PlotPadding, plot.FrameRect.Max - gp.Style.PlotPadding);
     plot.PlotRect = plot.CanvasRect;
 
+    // Handle user input
+    HandleInput(plot);
+
+    // Plot axes
+    DrawAxes(draw_list, plot.PlotRect, plot.Rotation, plot.RangeMin, plot.RangeMax);
+
     // Plot title
     if (!plot.TextBuffer.empty()) {
         ImU32 col = GetStyleColorU32(ImPlot3DCol_TitleText);
@@ -202,18 +262,6 @@ void EndPlot() {
         AddTextCentered(draw_list, top_center, col, plot.TextBuffer.c_str());
         plot.PlotRect.Min.y += ImGui::GetTextLineHeight() + gp.Style.LabelPadding.y;
     }
-
-    // Handle user input
-    HandleInput(plot);
-
-    // Plot axes
-    DrawAxes(draw_list, plot.PlotRect, plot.Rotation);
-
-    // Draw plot background
-    ImU32 p_bg_color = GetStyleColorU32(ImPlot3DCol_PlotBg);
-    // ImU32 p_b_color = GetStyleColorU32(ImPlot3DCol_PlotBorder);
-    // draw_list->AddRectFilled(plot.PlotRect.Min, plot.PlotRect.Max, p_bg_color);
-    // draw_list->AddRect(plot.PlotRect.Min, plot.PlotRect.Max, p_b_color);
 
     ImGui::PopClipRect();
 

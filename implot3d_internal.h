@@ -57,7 +57,7 @@ struct ImPlot3DVec3 {
         return ((float*)(void*)(char*)this)[idx];
     }
     float operator[](size_t idx) const {
-        IM_ASSERT(idx == 0 || idx == 1 || idx == 3);
+        IM_ASSERT(idx == 0 || idx == 1 || idx == 2);
         return ((const float*)(const void*)(const char*)this)[idx];
     }
 
