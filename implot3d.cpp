@@ -48,6 +48,8 @@ namespace ImPlot3D {
 ImPlot3DContext* GImPlot3D = nullptr;
 #endif
 
+static ImPlot3DQuat init_rotation = ImPlot3DQuat(-0.513269, -0.212596, -0.318184, 0.76819);
+
 ImPlot3DContext* CreateContext() {
     ImPlot3DContext* ctx = IM_NEW(ImPlot3DContext)();
     if (GImPlot3D == nullptr)
@@ -94,7 +96,7 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     plot.ID = ID;
     plot.Flags = flags;
     if (just_created) {
-        plot.Rotation = ImPlot3DQuat();
+        plot.Rotation = init_rotation;
         plot.RangeMin = ImPlot3DVec3(0.0f, 0.0f, 0.0f);
         plot.RangeMax = ImPlot3DVec3(1.0f, 1.0f, 1.0f);
     }
@@ -144,9 +146,8 @@ void HandleInput(ImPlot3DPlot& plot) {
     ImGui::SetItemAllowOverlap(); // Handled by ButtonBehavior()
 #endif
 
-    if (plot_clicked && ImGui::IsMouseDoubleClicked(0)) {
-        plot.Rotation = ImPlot3DQuat();
-    }
+    if (plot_clicked && ImGui::IsMouseDoubleClicked(0))
+        plot.Rotation = init_rotation;
     if (plot.Held && ImGui::IsMouseDown(0)) {
         ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
 
@@ -165,7 +166,7 @@ void HandleInput(ImPlot3DPlot& plot) {
 }
 
 void DrawAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat& rotation, const ImPlot3DVec3& range_min, const ImPlot3DVec3& range_max) {
-    float zoom = std::min(plot_area.GetWidth(), -plot_area.GetHeight()) / 1.5f;
+    float zoom = std::min(plot_area.GetWidth(), -plot_area.GetHeight()) / 1.8f;
     ImVec2 center = plot_area.GetCenter();
     ImPlot3DVec3 plane_normal[3] = {
         rotation * ImPlot3DVec3(1.0f, 0.0f, 0.0f),
@@ -203,7 +204,6 @@ void DrawAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat
 
         // Estimate initial spacing (powers of 10 for zoom-level adaptation)
         float spacing = std::pow(10.0f, std::floor(std::log10(range / target_lines)));
-        size_t num_lines = std::ceil(range / spacing);
 
         float start = std::floor(range_min[c] / spacing) * spacing;
         float end = std::ceil(range_max[c] / spacing) * spacing;
@@ -211,7 +211,7 @@ void DrawAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat
             if (t < range_min[c] || t > range_max[c])
                 continue;
             float tNorm = (t - range_min[c]) / range;
-            // Draw ticks for the 2 planes
+            // Draw ticks for the other 2 planes
             for (size_t i = 0; i < 2; i++) {
                 size_t planeIdx = (c + i + 1) % 3;
                 ImPlot3DVec3 p0, p1;
