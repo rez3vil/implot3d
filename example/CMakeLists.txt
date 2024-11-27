@@ -70,6 +70,7 @@ target_include_directories(imgui PUBLIC "${CMAKE_BINARY_DIR}/_deps/implot-src/")
 set(IMPLOT3D_SOURCE
     ../implot3d.cpp
     ../implot3d_demo.cpp
+    ../implot3d_items.cpp
 )
 add_library(implot3d STATIC ${IMPLOT3D_SOURCE})
 target_include_directories(implot3d PUBLIC "..")

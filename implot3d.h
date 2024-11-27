@@ -3,6 +3,12 @@
 // implot3d.h
 // Date: 2024-11-16
 // By brenocq
+//
+// Acknowledgments:
+//  This library is heavily inspired by ImPlot
+//  (https://github.com/epezent/implot) by Evan Pezent,
+//  and follows a similar code style and structure to
+//  maintain consistency with ImPlot's API.
 //--------------------------------------------------
 
 // Table of Contents:
@@ -10,6 +16,7 @@
 // [SECTION] Forward declarations and basic types
 // [SECTION] Context
 // [SECTION] Begin/End Plot
+// [SECTION] Plot Items
 // [SECTION] Styles
 // [SECTION] Demo
 // [SECTION] Debugging
@@ -43,9 +50,14 @@ struct ImPlot3DStyle;
 struct ImPlot3DVec3;
 struct ImPlot3DQuat;
 
-// Enums/Flags
-typedef int ImPlot3DFlags; // -> enum ImPlot3DFlags_           // Flags: for BeginPlot()
-typedef int ImPlot3DCol;   // -> enum ImPlot3DCol_             // Enum: Styling colors
+// Enums
+typedef int ImPlot3DCol;    // -> ImPlot3DCol_                 // Enum: Styling colors
+typedef int ImPlot3DMarker; // -> ImPlot3DMarker_              // Enum: Marker styles
+
+// Flags
+typedef int ImPlot3DFlags;        // -> ImPlot3DFlags_         // Flags: for BeginPlot()
+typedef int ImPlot3DScatterFlags; // -> ImPlot3DScatterFlags_  // Flags: Scatter plot flags
+typedef int ImPlot3DItemFlags;    // -> ImPlot3DItemFlags_     // Flags: Item flags
 
 namespace ImPlot3D {
 
@@ -77,6 +89,12 @@ IMPLOT3D_API void SetCurrentContext(ImPlot3DContext* ctx);
 // - #size is the **frame** size of the plot widget, not the plot area.
 IMPLOT3D_API bool BeginPlot(const char* title_id, const ImVec2& size = ImVec2(-1, 0), ImPlot3DFlags flags = 0);
 IMPLOT3D_API void EndPlot(); // Only call if BeginPlot() returns true!
+
+//-----------------------------------------------------------------------------
+// [SECTION] Plot Items
+//-----------------------------------------------------------------------------
+
+IMPLOT3D_TMP void PlotScatter(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DScatterFlags flags = 0, int offset = 0, int stride = sizeof(T));
 
 //-----------------------------------------------------------------------------
 // [SECTION] Styles
@@ -119,6 +137,11 @@ enum ImPlot3DFlags_ {
 };
 
 enum ImPlot3DCol_ {
+    // Item colors
+    ImPlot3DCol_Line,          // Line color
+    ImPlot3DCol_MarkerOutline, // Marker outline color
+    ImPlot3DCol_MarkerFill,    // Marker fill color
+    // Plot colors
     ImPlot3DCol_TitleText,    // Title color
     ImPlot3DCol_FrameBg,      // Frame background color
     ImPlot3DCol_PlotBg,       // Plot area background color
@@ -127,6 +150,33 @@ enum ImPlot3DCol_ {
     ImPlot3DCol_LegendBorder, // Legend border color
     ImPlot3DCol_LegendText,   // Legend text color
     ImPlot3DCol_COUNT,
+};
+
+enum ImPlot3DMarker_ {
+    ImPlot3DMarker_None = -1, // No marker
+    ImPlot3DMarker_Circle,    // Circle marker (default)
+    ImPlot3DMarker_Square,    // Square maker
+    ImPlot3DMarker_Diamond,   // Diamond marker
+    ImPlot3DMarker_Up,        // Upward-pointing triangle marker
+    ImPlot3DMarker_Down,      // Downward-pointing triangle marker
+    ImPlot3DMarker_Left,      // Leftward-pointing triangle marker
+    ImPlot3DMarker_Right,     // Rightward-pointing triangle marker
+    ImPlot3DMarker_Cross,     // Cross marker (not fillable)
+    ImPlot3DMarker_Plus,      // Plus marker (not fillable)
+    ImPlot3DMarker_Asterisk,  // Asterisk marker (not fillable)
+    ImPlot3DMarker_COUNT
+};
+
+// Flags for PlotScatter
+enum ImPlot3DScatterFlags_ {
+    ImPlot3DScatterFlags_None = 0,        // Default
+    ImPlot3DScatterFlags_NoClip = 1 << 0, // Markers on the edge of a plot will not be clipped
+};
+
+enum ImPlot3DItemFlags_ {
+    ImPlot3DItemFlags_None = 0,          // Default
+    ImPlot3DItemFlags_NoLegend = 1 << 0, // The item won't have a legend entry displayed
+    ImPlot3DItemFlags_NoFit = 1 << 1,    // The item won't be considered for plot fits
 };
 
 //-----------------------------------------------------------------------------

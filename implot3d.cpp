@@ -3,6 +3,12 @@
 // implot3d.cpp
 // Date: 2024-11-16
 // By brenocq
+//
+// Acknowledgments:
+//  This library is heavily inspired by ImPlot
+//  (https://github.com/epezent/implot) by Evan Pezent,
+//  and follows a similar code style and structure to
+//  maintain consistency with ImPlot's API.
 //--------------------------------------------------
 
 // Table of Contents:
@@ -90,6 +96,7 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     const ImGuiID ID = window->GetID(title_id);
     const bool just_created = gp.Plots.GetByKey(ID) == nullptr;
     gp.CurrentPlot = gp.Plots.GetOrAddByKey(ID);
+    gp.CurrentItems = &gp.CurrentPlot->Items;
     ImPlot3DPlot& plot = *gp.CurrentPlot;
 
     // Populate plot ID/flags
@@ -118,6 +125,7 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     ImGui::ItemSize(plot.FrameRect);
     if (!ImGui::ItemAdd(plot.FrameRect, plot.ID, &plot.FrameRect)) {
         gp.CurrentPlot = nullptr;
+        gp.CurrentItems = nullptr;
         return false;
     }
 
@@ -267,6 +275,7 @@ void EndPlot() {
 
     // Reset current plot
     gp.CurrentPlot = nullptr;
+    gp.CurrentItems = nullptr;
 }
 
 //-----------------------------------------------------------------------------
@@ -358,10 +367,9 @@ bool IsColorAuto(ImPlot3DCol idx) {
 ImVec4 GetAutoColor(ImPlot3DCol idx) {
     ImVec4 col(0, 0, 0, 1);
     switch (idx) {
-        // case ImPlot3DCol_Line:          return col; // Plot dependent
-        // case ImPlot3DCol_Fill:          return col; // Plot dependent
-        // case ImPlot3DCol_MarkerOutline: return col; // Plot dependent
-        // case ImPlot3DCol_MarkerFill:    return col; // Plot dependent
+        case ImPlot3DCol_Line: return col;          // Plot dependent
+        case ImPlot3DCol_MarkerOutline: return col; // Plot dependent
+        case ImPlot3DCol_MarkerFill: return col;    // Plot dependent
         case ImPlot3DCol_FrameBg: return ImGui::GetStyleColorVec4(ImGuiCol_FrameBg);
         case ImPlot3DCol_PlotBg: return ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
         case ImPlot3DCol_PlotBorder: return ImGui::GetStyleColorVec4(ImGuiCol_Border);
@@ -375,6 +383,9 @@ ImVec4 GetAutoColor(ImPlot3DCol idx) {
 
 const char* GetStyleColorName(ImPlot3DCol idx) {
     static const char* color_names[ImPlot3DCol_COUNT] = {
+        "Line",
+        "MarkerOutline",
+        "MarkerFill",
         "TitleText",
         "FrameBg",
         "PlotBg",
@@ -385,6 +396,8 @@ const char* GetStyleColorName(ImPlot3DCol idx) {
     };
     return color_names[idx];
 }
+
+const ImPlot3DNextItemData& GetItemData() { return GImPlot3D->NextItemData; }
 
 } // namespace ImPlot3D
 

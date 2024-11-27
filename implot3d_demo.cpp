@@ -3,6 +3,12 @@
 // implot3d_demo.cpp
 // Date: 2024-11-17
 // By brenocq
+//
+// Acknowledgments:
+//  This library is heavily inspired by ImPlot
+//  (https://github.com/epezent/implot) by Evan Pezent,
+//  and follows a similar code style and structure to
+//  maintain consistency with ImPlot's API.
 //--------------------------------------------------
 
 // Table of Contents:
@@ -36,6 +42,16 @@ static void HelpMarker(const char* desc) {
 
 void DemoLinePlots() {
     if (ImPlot3D::BeginPlot("Line Plots", ImVec2(-1, 300), ImPlot3DFlags_None)) {
+        ImPlot3D::EndPlot();
+    }
+}
+
+void DemoScatterPlots() {
+    static float x[] = {0, 0.1, 0.5};
+    static float y[] = {0, 0.1, 0.5};
+    static float z[] = {0, 0.1, 0.5};
+    if (ImPlot3D::BeginPlot("Scatter Plots", ImVec2(-1, 300), ImPlot3DFlags_None)) {
+        ImPlot3D::PlotScatter("Points", x, y, z, 3);
         ImPlot3D::EndPlot();
     }
 }
@@ -106,6 +122,7 @@ void ShowDemoWindow(bool* p_open) {
     if (ImGui::BeginTabBar("ImPlot3DDemoTabs")) {
         if (ImGui::BeginTabItem("Plots")) {
             DemoHeader("Line Plots", DemoLinePlots);
+            DemoHeader("Scatter Plots", DemoScatterPlots);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Help")) {
