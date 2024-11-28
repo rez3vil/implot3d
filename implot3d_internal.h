@@ -20,6 +20,7 @@
 // [SECTION] Style Utils
 // [SECTION] Item Utils
 // [SECTION] Plot Utils
+// [SECTION] Setup Utils
 
 #pragma once
 
@@ -101,6 +102,7 @@ struct ImPlot3DPlot {
     ImPlot3DQuat Rotation;
     ImPlot3DPoint RangeMin;
     ImPlot3DPoint RangeMax;
+    bool SetupLocked;
     bool Hovered;
     bool Held;
     ImPlot3DItemGroup Items;
@@ -167,6 +169,12 @@ IMPLOT3D_API ImPlot3DItem* GetCurrentItem();
 IMPLOT3D_API ImPlot3DPoint PlotToNDC(const ImPlot3DPoint& point);
 // Convert a position in the current plot's NDC coordinate system to pixels
 IMPLOT3D_API ImVec2 NDCToPixels(const ImPlot3DPoint& point);
+
+//-----------------------------------------------------------------------------
+// [SECTION] Setup Utils
+//-----------------------------------------------------------------------------
+
+IMPLOT3D_API void SetupLock();
 
 } // namespace ImPlot3D
 

@@ -329,7 +329,7 @@ struct RendererMarkersLine : RendererBase {
     }
 
     IMPLOT3D_INLINE void Render(ImDrawList& draw_list, int prim) const {
-        ImVec2 p = this->Transformer(Getter(prim));
+        ImVec2 p = PlotToPixels(Getter(prim));
         for (int i = 0; i < Count; i = i + 2) {
             ImVec2 p1(p.x + Marker[i].x * Size, p.y + Marker[i].y * Size);
             ImVec2 p2(p.x + Marker[i + 1].x * Size, p.y + Marker[i + 1].y * Size);
@@ -421,6 +421,7 @@ void RenderMarkers(const _Getter& getter, ImPlot3DMarker marker, float size, boo
 
 template <typename Getter>
 void PlotScatterEx(const char* label_id, const Getter& getter, ImPlot3DScatterFlags flags) {
+    SetupLock();
     if (BeginItem(label_id, flags, ImPlot3DCol_MarkerOutline)) {
         const ImPlot3DNextItemData& n = GetItemData();
         ImPlot3DMarker marker = n.Marker;

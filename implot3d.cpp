@@ -17,6 +17,7 @@
 // [SECTION] Context
 // [SECTION] Begin/End Plot
 // [SECTION] Plot Utils
+// [SECTION] Setup Utils
 // [SECTION] Miscellaneous
 // [SECTION] Styles
 // [SECTION] Context Utils
@@ -109,6 +110,7 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
         plot.RangeMin = ImPlot3DPoint(0.0f, 0.0f, 0.0f);
         plot.RangeMax = ImPlot3DPoint(1.0f, 1.0f, 1.0f);
     }
+    plot.SetupLocked = false;
 
     // Populate title
     if (title_id && ImGui::FindRenderedTextEnd(title_id, nullptr) != title_id && !(plot.Flags & ImPlot3DFlags_NoTitle))
@@ -133,6 +135,74 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
 
     return true;
 }
+
+void EndPlot() {
+    IMPLOT3D_CHECK_CTX();
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "Mismatched BeginPlot()/EndPlot()!");
+
+    // Lock setup if not already done
+    SetupLock();
+
+    // Reset current plot
+    gp.CurrentPlot = nullptr;
+    gp.CurrentItems = nullptr;
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] Plot Utils
+//-----------------------------------------------------------------------------
+
+ImVec2 PlotToPixels(const ImPlot3DPoint& point) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PlotToPixels() needs to be called between BeginPlot() and EndPlot()!");
+    return NDCToPixels(PlotToNDC(point));
+}
+
+ImVec2 PlotToPixels(double x, double y, double z) {
+    return PlotToPixels(ImPlot3DPoint(x, y, z));
+}
+
+ImVec2 GetPlotPos() {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "GetPlotPos() needs to be called between BeginPlot() and EndPlot()!");
+    return gp.CurrentPlot->PlotRect.Min;
+}
+
+ImVec2 GetPlotSize() {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "GetPlotSize() needs to be called between BeginPlot() and EndPlot()!");
+    return gp.CurrentPlot->PlotRect.GetSize();
+}
+
+ImPlot3DPoint PlotToNDC(const ImPlot3DPoint& point) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PlotToNDC() needs to be called between BeginPlot() and EndPlot()!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+
+    // TODO using range and cube aspect ratio
+
+    return point;
+}
+
+ImVec2 NDCToPixels(const ImPlot3DPoint& point) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "NDCToPixels() needs to be called between BeginPlot() and EndPlot()!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+
+    float zoom = std::min(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
+    ImVec2 center = plot.PlotRect.GetCenter();
+    ImPlot3DPoint point_pix = zoom * (plot.Rotation * point);
+    point_pix.y *= -1.0f; // Flip y-axis
+    point_pix.x += center.x;
+    point_pix.y += center.y;
+
+    return {point_pix.x, point_pix.y};
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] Setup Utils
+//-----------------------------------------------------------------------------
 
 void AddTextCentered(ImDrawList* draw_list, ImVec2 top_center, ImU32 col, const char* text_begin) {
     const char* text_end = ImGui::FindRenderedTextEnd(text_begin);
@@ -193,11 +263,6 @@ void DrawAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat
         const float sign = -plane_normal[c][2] > 0.0f ? 1.0f : -1.0f; // Dot product between plane normal and view vector
         for (int i = 0; i < 4; i++)
             plane_pix[c][i] = NDCToPixels(sign * plane[c][i]);
-        // for (int i = 0; i < 4; i++) {
-        //     plane[c][i] = zoom * (rotation * (sign * plane[c][i]));
-        //     plane[c][i].y *= -1.0f; // Flip y-axis
-        //     plane[c][i] += ImPlot3DPoint(center.x, center.y, 0.0f);
-        // }
     }
 
     // Draw background
@@ -245,13 +310,16 @@ void DrawAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat
     }
 }
 
-void EndPlot() {
-    IMPLOT3D_CHECK_CTX();
+void SetupLock() {
     ImPlot3DContext& gp = *GImPlot3D;
-    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "Mismatched BeginPlot()/EndPlot()!");
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "SetupLock() needs to be called between BeginPlot() and EndPlot()!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    if (plot.SetupLocked)
+        return;
+    // Lock setup
+    plot.SetupLocked = true;
 
     ImGuiContext& g = *GImGui;
-    ImPlot3DPlot& plot = *gp.CurrentPlot;
     ImGuiWindow* window = g.CurrentWindow;
     ImDrawList* draw_list = window->DrawList;
 
@@ -268,10 +336,10 @@ void EndPlot() {
     // Handle user input
     HandleInput(plot);
 
-    // Plot axes
+    // Render axes
     DrawAxes(draw_list, plot.PlotRect, plot.Rotation, plot.RangeMin, plot.RangeMax);
 
-    // Plot title
+    // Render title
     if (!plot.TextBuffer.empty()) {
         ImU32 col = GetStyleColorU32(ImPlot3DCol_TitleText);
         ImVec2 top_center = ImVec2(plot.FrameRect.GetCenter().x, plot.CanvasRect.Min.y);
@@ -280,61 +348,6 @@ void EndPlot() {
     }
 
     ImGui::PopClipRect();
-
-    // Reset current plot
-    gp.CurrentPlot = nullptr;
-    gp.CurrentItems = nullptr;
-}
-
-//-----------------------------------------------------------------------------
-// [SECTION] Plot Utils
-//-----------------------------------------------------------------------------
-
-ImVec2 PlotToPixels(const ImPlot3DPoint& point) {
-    ImPlot3DContext& gp = *GImPlot3D;
-    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PlotToPixels() needs to be called between BeginPlot() and EndPlot()!");
-    return NDCToPixels(PlotToNDC(point));
-}
-
-ImVec2 PlotToPixels(double x, double y, double z) {
-    return PlotToPixels(ImPlot3DPoint(x, y, z));
-}
-
-ImVec2 GetPlotPos() {
-    ImPlot3DContext& gp = *GImPlot3D;
-    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "GetPlotPos() needs to be called between BeginPlot() and EndPlot()!");
-    return gp.CurrentPlot->PlotRect.Min;
-}
-
-ImVec2 GetPlotSize() {
-    ImPlot3DContext& gp = *GImPlot3D;
-    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "GetPlotSize() needs to be called between BeginPlot() and EndPlot()!");
-    return gp.CurrentPlot->PlotRect.GetSize();
-}
-
-ImPlot3DPoint PlotToNDC(const ImPlot3DPoint& point) {
-    ImPlot3DContext& gp = *GImPlot3D;
-    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PlotToNDC() needs to be called between BeginPlot() and EndPlot()!");
-    ImPlot3DPlot& plot = *gp.CurrentPlot;
-
-    // TODO using range and cube aspect ratio
-
-    return point;
-}
-
-ImVec2 NDCToPixels(const ImPlot3DPoint& point) {
-    ImPlot3DContext& gp = *GImPlot3D;
-    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "NDCToPixels() needs to be called between BeginPlot() and EndPlot()!");
-    ImPlot3DPlot& plot = *gp.CurrentPlot;
-
-    float zoom = std::min(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
-    ImVec2 center = plot.PlotRect.GetCenter();
-    ImPlot3DPoint point_pix = zoom * (plot.Rotation * point);
-    point_pix.y *= -1.0f; // Flip y-axis
-    point_pix.x += center.x;
-    point_pix.y += center.y;
-
-    return {point_pix.x, point_pix.y};
 }
 
 //-----------------------------------------------------------------------------
