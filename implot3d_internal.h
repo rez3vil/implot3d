@@ -19,6 +19,7 @@
 // [SECTION] Context Utils
 // [SECTION] Style Utils
 // [SECTION] Item Utils
+// [SECTION] Plot Utils
 
 #pragma once
 
@@ -156,6 +157,16 @@ IMPLOT3D_API ImPlot3DItem* RegisterOrGetItem(const char* label_id, ImPlot3DItemF
 IMPLOT3D_API ImPlot3DItem* GetItem(const char* label_id);
 // Get the current item
 IMPLOT3D_API ImPlot3DItem* GetCurrentItem();
+
+//-----------------------------------------------------------------------------
+// [SECTION] Plot Utils
+//-----------------------------------------------------------------------------
+
+// Convert a position in the current plot's coordinate system to the current plot's normalized device coordinate system (NDC)
+// When the cube aspect ratio is [1,1,1], the NDC varies from [-0.5, 0.5] in each axis
+IMPLOT3D_API ImPlot3DPoint PlotToNDC(const ImPlot3DPoint& point);
+// Convert a position in the current plot's NDC coordinate system to pixels
+IMPLOT3D_API ImVec2 NDCToPixels(const ImPlot3DPoint& point);
 
 } // namespace ImPlot3D
 

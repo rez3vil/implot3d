@@ -17,6 +17,7 @@
 // [SECTION] Context
 // [SECTION] Begin/End Plot
 // [SECTION] Plot Items
+// [SECTION] Plot Utils
 // [SECTION] Miscellaneous
 // [SECTION] Styles
 // [SECTION] Demo
@@ -96,6 +97,17 @@ IMPLOT3D_API void EndPlot(); // Only call if BeginPlot() returns true!
 //-----------------------------------------------------------------------------
 
 IMPLOT3D_TMP void PlotScatter(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DScatterFlags flags = 0, int offset = 0, int stride = sizeof(T));
+
+//-----------------------------------------------------------------------------
+// [SECTION] Plot Utils
+//-----------------------------------------------------------------------------
+
+// Convert a position in the current plot's coordinate system to pixels
+IMPLOT3D_API ImVec2 PlotToPixels(const ImPlot3DPoint& point);
+IMPLOT3D_API ImVec2 PlotToPixels(double x, double y, double z);
+
+IMPLOT3D_API ImVec2 GetPlotPos();  // Get the current plot position (top-left) in pixels
+IMPLOT3D_API ImVec2 GetPlotSize(); // Get the current plot size in pixels
 
 //-----------------------------------------------------------------------------
 // [SECTION] Miscellaneous

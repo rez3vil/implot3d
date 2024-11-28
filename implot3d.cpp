@@ -16,6 +16,7 @@
 // [SECTION] Macros
 // [SECTION] Context
 // [SECTION] Begin/End Plot
+// [SECTION] Plot Utils
 // [SECTION] Miscellaneous
 // [SECTION] Styles
 // [SECTION] Context Utils
@@ -161,8 +162,8 @@ void HandleInput(ImPlot3DPlot& plot) {
         ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
 
         // Map delta to rotation angles (in radians)
-        float angle_x = delta.y * (3.1415f / 180.0f);  // Vertical movement -> rotation around X-axis
-        float angle_y = -delta.x * (3.1415f / 180.0f); // Horizontal movement -> rotation around Y-axis
+        float angle_x = delta.y * (3.1415f / 180.0f); // Vertical movement -> rotation around X-axis
+        float angle_y = delta.x * (3.1415f / 180.0f); // Horizontal movement -> rotation around Y-axis
 
         // Create quaternions for the rotations
         ImPlot3DQuat quat_x(angle_x, ImPlot3DPoint(1.0f, 0.0f, 0.0f));
@@ -175,7 +176,7 @@ void HandleInput(ImPlot3DPlot& plot) {
 }
 
 void DrawAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat& rotation, const ImPlot3DPoint& range_min, const ImPlot3DPoint& range_max) {
-    float zoom = std::min(plot_area.GetWidth(), -plot_area.GetHeight()) / 1.8f;
+    float zoom = std::min(plot_area.GetWidth(), plot_area.GetHeight()) / 1.8f;
     ImVec2 center = plot_area.GetCenter();
     ImPlot3DPoint plane_normal[3] = {
         rotation * ImPlot3DPoint(1.0f, 0.0f, 0.0f),
@@ -185,25 +186,31 @@ void DrawAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat
         {ImPlot3DPoint(0.5f, -0.5f, -0.5f), ImPlot3DPoint(0.5f, -0.5f, 0.5f), ImPlot3DPoint(0.5f, 0.5f, 0.5f), ImPlot3DPoint(0.5f, 0.5f, -0.5f)},
         {ImPlot3DPoint(-0.5f, 0.5f, -0.5f), ImPlot3DPoint(-0.5f, 0.5f, 0.5f), ImPlot3DPoint(0.5f, 0.5f, 0.5f), ImPlot3DPoint(0.5f, 0.5f, -0.5f)},
         {ImPlot3DPoint(-0.5f, -0.5f, 0.5f), ImPlot3DPoint(-0.5f, 0.5f, 0.5f), ImPlot3DPoint(0.5f, 0.5f, 0.5f), ImPlot3DPoint(0.5f, -0.5f, 0.5f)}};
+    ImVec2 plane_pix[3][4];
 
     // Transform planes
     for (int c = 0; c < 3; c++) {
         const float sign = -plane_normal[c][2] > 0.0f ? 1.0f : -1.0f; // Dot product between plane normal and view vector
         for (int i = 0; i < 4; i++)
-            plane[c][i] = zoom * (rotation * (sign * plane[c][i])) + ImPlot3DPoint(center.x, center.y, 0.0f);
+            plane_pix[c][i] = NDCToPixels(sign * plane[c][i]);
+        // for (int i = 0; i < 4; i++) {
+        //     plane[c][i] = zoom * (rotation * (sign * plane[c][i]));
+        //     plane[c][i].y *= -1.0f; // Flip y-axis
+        //     plane[c][i] += ImPlot3DPoint(center.x, center.y, 0.0f);
+        // }
     }
 
     // Draw background
     const ImU32 colBg = GetStyleColorU32(ImPlot3DCol_PlotBg);
     for (int c = 0; c < 3; c++) {
         // const ImU32 colBg = ImGui::ColorConvertFloat4ToU32(ImVec4(c == 0, c == 1, c == 2, 0.5f)); // XXX
-        draw_list->AddQuadFilled(ImVec2(plane[c][0].x, plane[c][0].y), ImVec2(plane[c][1].x, plane[c][1].y), ImVec2(plane[c][2].x, plane[c][2].y), ImVec2(plane[c][3].x, plane[c][3].y), colBg);
+        draw_list->AddQuadFilled(plane_pix[c][0], plane_pix[c][1], plane_pix[c][2], plane_pix[c][3], colBg);
     }
     // Draw border
     const ImU32 colBorder = GetStyleColorU32(ImPlot3DCol_PlotBorder);
     for (int c = 0; c < 3; c++)
         for (int i = 0; i < 4; i++)
-            draw_list->AddLine(ImVec2(plane[c][i].x, plane[c][i].y), ImVec2(plane[c][(i + 1) % 4].x, plane[c][(i + 1) % 4].y), colBorder);
+            draw_list->AddLine(plane_pix[c][i], plane_pix[c][(i + 1) % 4], colBorder);
 
     // Draw ticks
     const float target_lines = 10.0f; // Target number of tick lines
@@ -223,16 +230,16 @@ void DrawAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat
             // Draw ticks for the other 2 planes
             for (size_t i = 0; i < 2; i++) {
                 size_t planeIdx = (c + i + 1) % 3;
-                ImPlot3DPoint p0, p1;
+                ImVec2 p0, p1;
                 if (c == 0 || (c == 1 && i == 1)) {
-                    p0 = plane[planeIdx][0] + (plane[planeIdx][3] - plane[planeIdx][0]) * tNorm;
-                    p1 = plane[planeIdx][1] + (plane[planeIdx][2] - plane[planeIdx][1]) * tNorm;
+                    p0 = plane_pix[planeIdx][0] + (plane_pix[planeIdx][3] - plane_pix[planeIdx][0]) * tNorm;
+                    p1 = plane_pix[planeIdx][1] + (plane_pix[planeIdx][2] - plane_pix[planeIdx][1]) * tNorm;
                 } else if (c == 2 || (c == 1 && i == 0)) {
-                    p0 = plane[planeIdx][0] + (plane[planeIdx][1] - plane[planeIdx][0]) * tNorm;
-                    p1 = plane[planeIdx][3] + (plane[planeIdx][2] - plane[planeIdx][3]) * tNorm;
+                    p0 = plane_pix[planeIdx][0] + (plane_pix[planeIdx][1] - plane_pix[planeIdx][0]) * tNorm;
+                    p1 = plane_pix[planeIdx][3] + (plane_pix[planeIdx][2] - plane_pix[planeIdx][3]) * tNorm;
                 }
                 // const ImU32 colTicks = ImGui::ColorConvertFloat4ToU32(ImVec4(c == 0, c == 1, c == 2, 1.0f)); // XXX
-                draw_list->AddLine(ImVec2(p0.x, p0.y), ImVec2(p1.x, p1.y), colTicks);
+                draw_list->AddLine(p0, p1, colTicks);
             }
         }
     }
@@ -277,6 +284,57 @@ void EndPlot() {
     // Reset current plot
     gp.CurrentPlot = nullptr;
     gp.CurrentItems = nullptr;
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] Plot Utils
+//-----------------------------------------------------------------------------
+
+ImVec2 PlotToPixels(const ImPlot3DPoint& point) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PlotToPixels() needs to be called between BeginPlot() and EndPlot()!");
+    return NDCToPixels(PlotToNDC(point));
+}
+
+ImVec2 PlotToPixels(double x, double y, double z) {
+    return PlotToPixels(ImPlot3DPoint(x, y, z));
+}
+
+ImVec2 GetPlotPos() {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "GetPlotPos() needs to be called between BeginPlot() and EndPlot()!");
+    return gp.CurrentPlot->PlotRect.Min;
+}
+
+ImVec2 GetPlotSize() {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "GetPlotSize() needs to be called between BeginPlot() and EndPlot()!");
+    return gp.CurrentPlot->PlotRect.GetSize();
+}
+
+ImPlot3DPoint PlotToNDC(const ImPlot3DPoint& point) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PlotToNDC() needs to be called between BeginPlot() and EndPlot()!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+
+    // TODO using range and cube aspect ratio
+
+    return point;
+}
+
+ImVec2 NDCToPixels(const ImPlot3DPoint& point) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "NDCToPixels() needs to be called between BeginPlot() and EndPlot()!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+
+    float zoom = std::min(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
+    ImVec2 center = plot.PlotRect.GetCenter();
+    ImPlot3DPoint point_pix = zoom * (plot.Rotation * point);
+    point_pix.y *= -1.0f; // Flip y-axis
+    point_pix.x += center.x;
+    point_pix.y += center.y;
+
+    return {point_pix.x, point_pix.y};
 }
 
 //-----------------------------------------------------------------------------
