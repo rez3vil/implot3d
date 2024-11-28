@@ -169,7 +169,7 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
     static ImVec4 flash_color_backup = ImVec4(0, 0, 0, 0);
     if (flash_color_idx != ImPlot3DCol_COUNT) {
         ImVec4& color = style.Colors[flash_color_idx];
-        ImGui::ColorConvertHSVtoRGB(std::cos(flash_color_time * 6.0f) * 0.5f + 0.5f, 0.5f, 0.5f, color.x, color.y, color.z);
+        ImGui::ColorConvertHSVtoRGB(ImCos(flash_color_time * 6.0f) * 0.5f + 0.5f, 0.5f, 0.5f, color.x, color.y, color.z);
         color.w = 1.0f;
     }
     if ((flash_color_time -= ImGui::GetIO().DeltaTime) <= 0.0f) {

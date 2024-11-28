@@ -190,7 +190,7 @@ ImVec2 NDCToPixels(const ImPlot3DPoint& point) {
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "NDCToPixels() needs to be called between BeginPlot() and EndPlot()!");
     ImPlot3DPlot& plot = *gp.CurrentPlot;
 
-    float zoom = std::min(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
+    float zoom = ImMin(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
     ImVec2 center = plot.PlotRect.GetCenter();
     ImPlot3DPoint point_pix = zoom * (plot.Rotation * point);
     point_pix.y *= -1.0f; // Flip y-axis
@@ -246,7 +246,7 @@ void HandleInput(ImPlot3DPlot& plot) {
 }
 
 void DrawAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat& rotation, const ImPlot3DPoint& range_min, const ImPlot3DPoint& range_max) {
-    float zoom = std::min(plot_area.GetWidth(), plot_area.GetHeight()) / 1.8f;
+    float zoom = ImMin(plot_area.GetWidth(), plot_area.GetHeight()) / 1.8f;
     ImVec2 center = plot_area.GetCenter();
     ImPlot3DPoint plane_normal[3] = {
         rotation * ImPlot3DPoint(1.0f, 0.0f, 0.0f),
@@ -368,6 +368,9 @@ void StyleColorsAuto(ImPlot3DStyle* dst) {
     ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
     ImVec4* colors = style->Colors;
 
+    colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_FrameBg] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_PlotBg] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_PlotBorder] = IMPLOT3D_AUTO_COL;
@@ -381,6 +384,9 @@ void StyleColorsClassic(ImPlot3DStyle* dst) {
     ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
     ImVec4* colors = style->Colors;
 
+    colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_FrameBg] = ImVec4(0.43f, 0.43f, 0.43f, 0.39f);
     colors[ImPlot3DCol_PlotBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.35f);
     colors[ImPlot3DCol_PlotBorder] = ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
@@ -394,6 +400,9 @@ void StyleColorsDark(ImPlot3DStyle* dst) {
     ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
     ImVec4* colors = style->Colors;
 
+    colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 0.07f);
     colors[ImPlot3DCol_PlotBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.50f);
     colors[ImPlot3DCol_PlotBorder] = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
@@ -407,6 +416,9 @@ void StyleColorsLight(ImPlot3DStyle* dst) {
     ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
     ImVec4* colors = style->Colors;
 
+    colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     colors[ImPlot3DCol_PlotBg] = ImVec4(0.42f, 0.57f, 1.00f, 0.13f);
     colors[ImPlot3DCol_PlotBorder] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
@@ -451,7 +463,7 @@ bool IsColorAuto(ImPlot3DCol idx) {
 }
 
 ImVec4 GetAutoColor(ImPlot3DCol idx) {
-    ImVec4 col(0, 0, 0, 1);
+    ImVec4 col(1.0f, 1.0f, 1.0f, 1.0f);
     switch (idx) {
         case ImPlot3DCol_Line: return col;          // Plot dependent
         case ImPlot3DCol_MarkerOutline: return col; // Plot dependent

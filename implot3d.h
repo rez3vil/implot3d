@@ -157,7 +157,7 @@ enum ImPlot3DFlags_ {
 
 enum ImPlot3DCol_ {
     // Item colors
-    ImPlot3DCol_Line,          // Line color
+    ImPlot3DCol_Line = 0,      // Line color
     ImPlot3DCol_MarkerOutline, // Marker outline color
     ImPlot3DCol_MarkerFill,    // Marker fill color
     // Plot colors
