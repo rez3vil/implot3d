@@ -217,15 +217,15 @@ IMPLOT3D_INLINE void PrimLine(ImDrawList& draw_list, const ImVec2& P1, const ImV
 //-----------------------------------------------------------------------------
 
 struct Transformer3 {
-    Transformer3(ImPlot3DQuat rotation, ImPlot3DVec3 rangeMin, ImPlot3DVec3 rangeMax) : Rotation(rotation),
-                                                                                        RangeMin(rangeMin),
-                                                                                        RangeMax(rangeMax) {}
+    Transformer3(ImPlot3DQuat rotation, ImPlot3DPoint rangeMin, ImPlot3DPoint rangeMax) : Rotation(rotation),
+                                                                                          RangeMin(rangeMin),
+                                                                                          RangeMax(rangeMax) {}
     template <typename T> IMPLOT3D_INLINE ImVec2 operator()(T p) const {
         return ImVec2(0, 0);
     }
     ImPlot3DQuat Rotation;
-    ImPlot3DVec3 RangeMin;
-    ImPlot3DVec3 RangeMax;
+    ImPlot3DPoint RangeMin;
+    ImPlot3DPoint RangeMax;
 };
 
 //-----------------------------------------------------------------------------
@@ -234,7 +234,7 @@ struct Transformer3 {
 
 struct RendererBase {
     RendererBase(int prims, int idx_consumed, int vtx_consumed) : Prims(prims),
-                                                                  Transformer(ImPlot3DQuat{}, ImPlot3DVec3{}, ImPlot3DVec3{}),
+                                                                  Transformer(ImPlot3DQuat{}, ImPlot3DPoint{}, ImPlot3DPoint{}),
                                                                   IdxConsumed(idx_consumed),
                                                                   VtxConsumed(vtx_consumed) {}
     const unsigned int Prims;       // Number of primitives to render
@@ -281,8 +281,8 @@ struct IndexerIdx {
 template <typename _IndexerX, typename _IndexerY, typename _IndexerZ>
 struct GetterXYZ {
     GetterXYZ(_IndexerX x, _IndexerY y, _IndexerZ z, int count) : IndexerX(x), IndexerY(y), IndexerZ(z), Count(count) {}
-    template <typename I> IMPLOT3D_INLINE ImPlot3DVec3 operator()(I idx) const {
-        return ImPlot3DVec3(IndexerX(idx), IndexerY(idx), IndexerZ(idx));
+    template <typename I> IMPLOT3D_INLINE ImPlot3DPoint operator()(I idx) const {
+        return ImPlot3DPoint(IndexerX(idx), IndexerY(idx), IndexerZ(idx));
     }
     const _IndexerX IndexerX;
     const _IndexerY IndexerY;

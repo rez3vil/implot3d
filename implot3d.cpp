@@ -20,7 +20,7 @@
 // [SECTION] Styles
 // [SECTION] Context Utils
 // [SECTION] Style Utils
-// [SECTION] ImPlot3DVec3
+// [SECTION] ImPlot3DPoint
 // [SECTION] ImPlot3DQuat
 // [SECTION] ImPlot3DStyle
 
@@ -105,8 +105,8 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     plot.Flags = flags;
     if (just_created) {
         plot.Rotation = init_rotation;
-        plot.RangeMin = ImPlot3DVec3(0.0f, 0.0f, 0.0f);
-        plot.RangeMax = ImPlot3DVec3(1.0f, 1.0f, 1.0f);
+        plot.RangeMin = ImPlot3DPoint(0.0f, 0.0f, 0.0f);
+        plot.RangeMax = ImPlot3DPoint(1.0f, 1.0f, 1.0f);
     }
 
     // Populate title
@@ -165,8 +165,8 @@ void HandleInput(ImPlot3DPlot& plot) {
         float angle_y = -delta.x * (3.1415f / 180.0f); // Horizontal movement -> rotation around Y-axis
 
         // Create quaternions for the rotations
-        ImPlot3DQuat quat_x(angle_x, ImPlot3DVec3(1.0f, 0.0f, 0.0f));
-        ImPlot3DQuat quat_y(angle_y, ImPlot3DVec3(0.0f, 1.0f, 0.0f));
+        ImPlot3DQuat quat_x(angle_x, ImPlot3DPoint(1.0f, 0.0f, 0.0f));
+        ImPlot3DQuat quat_y(angle_y, ImPlot3DPoint(0.0f, 1.0f, 0.0f));
 
         // Combine the new rotations with the current rotation
         plot.Rotation = quat_x * quat_y * plot.Rotation;
@@ -174,23 +174,23 @@ void HandleInput(ImPlot3DPlot& plot) {
     }
 }
 
-void DrawAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat& rotation, const ImPlot3DVec3& range_min, const ImPlot3DVec3& range_max) {
+void DrawAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat& rotation, const ImPlot3DPoint& range_min, const ImPlot3DPoint& range_max) {
     float zoom = std::min(plot_area.GetWidth(), -plot_area.GetHeight()) / 1.8f;
     ImVec2 center = plot_area.GetCenter();
-    ImPlot3DVec3 plane_normal[3] = {
-        rotation * ImPlot3DVec3(1.0f, 0.0f, 0.0f),
-        rotation * ImPlot3DVec3(0.0f, 1.0f, 0.0f),
-        rotation * ImPlot3DVec3(0.0f, 0.0f, 1.0f)};
-    ImPlot3DVec3 plane[3][4] = {
-        {ImPlot3DVec3(0.5f, -0.5f, -0.5f), ImPlot3DVec3(0.5f, -0.5f, 0.5f), ImPlot3DVec3(0.5f, 0.5f, 0.5f), ImPlot3DVec3(0.5f, 0.5f, -0.5f)},
-        {ImPlot3DVec3(-0.5f, 0.5f, -0.5f), ImPlot3DVec3(-0.5f, 0.5f, 0.5f), ImPlot3DVec3(0.5f, 0.5f, 0.5f), ImPlot3DVec3(0.5f, 0.5f, -0.5f)},
-        {ImPlot3DVec3(-0.5f, -0.5f, 0.5f), ImPlot3DVec3(-0.5f, 0.5f, 0.5f), ImPlot3DVec3(0.5f, 0.5f, 0.5f), ImPlot3DVec3(0.5f, -0.5f, 0.5f)}};
+    ImPlot3DPoint plane_normal[3] = {
+        rotation * ImPlot3DPoint(1.0f, 0.0f, 0.0f),
+        rotation * ImPlot3DPoint(0.0f, 1.0f, 0.0f),
+        rotation * ImPlot3DPoint(0.0f, 0.0f, 1.0f)};
+    ImPlot3DPoint plane[3][4] = {
+        {ImPlot3DPoint(0.5f, -0.5f, -0.5f), ImPlot3DPoint(0.5f, -0.5f, 0.5f), ImPlot3DPoint(0.5f, 0.5f, 0.5f), ImPlot3DPoint(0.5f, 0.5f, -0.5f)},
+        {ImPlot3DPoint(-0.5f, 0.5f, -0.5f), ImPlot3DPoint(-0.5f, 0.5f, 0.5f), ImPlot3DPoint(0.5f, 0.5f, 0.5f), ImPlot3DPoint(0.5f, 0.5f, -0.5f)},
+        {ImPlot3DPoint(-0.5f, -0.5f, 0.5f), ImPlot3DPoint(-0.5f, 0.5f, 0.5f), ImPlot3DPoint(0.5f, 0.5f, 0.5f), ImPlot3DPoint(0.5f, -0.5f, 0.5f)}};
 
     // Transform planes
     for (int c = 0; c < 3; c++) {
         const float sign = -plane_normal[c][2] > 0.0f ? 1.0f : -1.0f; // Dot product between plane normal and view vector
         for (int i = 0; i < 4; i++)
-            plane[c][i] = zoom * (rotation * (sign * plane[c][i])) + ImPlot3DVec3(center.x, center.y, 0.0f);
+            plane[c][i] = zoom * (rotation * (sign * plane[c][i])) + ImPlot3DPoint(center.x, center.y, 0.0f);
     }
 
     // Draw background
@@ -223,7 +223,7 @@ void DrawAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat
             // Draw ticks for the other 2 planes
             for (size_t i = 0; i < 2; i++) {
                 size_t planeIdx = (c + i + 1) % 3;
-                ImPlot3DVec3 p0, p1;
+                ImPlot3DPoint p0, p1;
                 if (c == 0 || (c == 1 && i == 1)) {
                     p0 = plane[planeIdx][0] + (plane[planeIdx][3] - plane[planeIdx][0]) * tNorm;
                     p1 = plane[planeIdx][1] + (plane[planeIdx][2] - plane[planeIdx][1]) * tNorm;
@@ -417,67 +417,67 @@ const ImPlot3DNextItemData& GetItemData() { return GImPlot3D->NextItemData; }
 } // namespace ImPlot3D
 
 //-----------------------------------------------------------------------------
-// [SECTION] ImPlot3DVec3
+// [SECTION] ImPlot3DPoint
 //-----------------------------------------------------------------------------
 
-ImPlot3DVec3 ImPlot3DVec3::operator*(float rhs) const { return ImPlot3DVec3(x * rhs, y * rhs, z * rhs); }
-ImPlot3DVec3 ImPlot3DVec3::operator/(float rhs) const { return ImPlot3DVec3(x / rhs, y / rhs, z / rhs); }
-ImPlot3DVec3 ImPlot3DVec3::operator+(const ImPlot3DVec3& rhs) const { return ImPlot3DVec3(x + rhs.x, y + rhs.y, z + rhs.z); }
-ImPlot3DVec3 ImPlot3DVec3::operator-(const ImPlot3DVec3& rhs) const { return ImPlot3DVec3(x - rhs.x, y - rhs.y, z - rhs.z); }
-ImPlot3DVec3 ImPlot3DVec3::operator*(const ImPlot3DVec3& rhs) const { return ImPlot3DVec3(x * rhs.x, y * rhs.y, z * rhs.z); }
-ImPlot3DVec3 ImPlot3DVec3::operator/(const ImPlot3DVec3& rhs) const { return ImPlot3DVec3(x / rhs.x, y / rhs.y, z / rhs.z); }
-ImPlot3DVec3 ImPlot3DVec3::operator-() const { return ImPlot3DVec3(-x, -y, -z); }
+ImPlot3DPoint ImPlot3DPoint::operator*(float rhs) const { return ImPlot3DPoint(x * rhs, y * rhs, z * rhs); }
+ImPlot3DPoint ImPlot3DPoint::operator/(float rhs) const { return ImPlot3DPoint(x / rhs, y / rhs, z / rhs); }
+ImPlot3DPoint ImPlot3DPoint::operator+(const ImPlot3DPoint& rhs) const { return ImPlot3DPoint(x + rhs.x, y + rhs.y, z + rhs.z); }
+ImPlot3DPoint ImPlot3DPoint::operator-(const ImPlot3DPoint& rhs) const { return ImPlot3DPoint(x - rhs.x, y - rhs.y, z - rhs.z); }
+ImPlot3DPoint ImPlot3DPoint::operator*(const ImPlot3DPoint& rhs) const { return ImPlot3DPoint(x * rhs.x, y * rhs.y, z * rhs.z); }
+ImPlot3DPoint ImPlot3DPoint::operator/(const ImPlot3DPoint& rhs) const { return ImPlot3DPoint(x / rhs.x, y / rhs.y, z / rhs.z); }
+ImPlot3DPoint ImPlot3DPoint::operator-() const { return ImPlot3DPoint(-x, -y, -z); }
 
-ImPlot3DVec3& ImPlot3DVec3::operator*=(float rhs) {
+ImPlot3DPoint& ImPlot3DPoint::operator*=(float rhs) {
     x *= rhs;
     y *= rhs;
     z *= rhs;
     return *this;
 }
-ImPlot3DVec3& ImPlot3DVec3::operator/=(float rhs) {
+ImPlot3DPoint& ImPlot3DPoint::operator/=(float rhs) {
     x /= rhs;
     y /= rhs;
     z /= rhs;
     return *this;
 }
-ImPlot3DVec3& ImPlot3DVec3::operator+=(const ImPlot3DVec3& rhs) {
+ImPlot3DPoint& ImPlot3DPoint::operator+=(const ImPlot3DPoint& rhs) {
     x += rhs.x;
     y += rhs.y;
     z += rhs.z;
     return *this;
 }
-ImPlot3DVec3& ImPlot3DVec3::operator-=(const ImPlot3DVec3& rhs) {
+ImPlot3DPoint& ImPlot3DPoint::operator-=(const ImPlot3DPoint& rhs) {
     x -= rhs.x;
     y -= rhs.y;
     z -= rhs.z;
     return *this;
 }
-ImPlot3DVec3& ImPlot3DVec3::operator*=(const ImPlot3DVec3& rhs) {
+ImPlot3DPoint& ImPlot3DPoint::operator*=(const ImPlot3DPoint& rhs) {
     x *= rhs.x;
     y *= rhs.y;
     z *= rhs.z;
     return *this;
 }
-ImPlot3DVec3& ImPlot3DVec3::operator/=(const ImPlot3DVec3& rhs) {
+ImPlot3DPoint& ImPlot3DPoint::operator/=(const ImPlot3DPoint& rhs) {
     x /= rhs.x;
     y /= rhs.y;
     z /= rhs.z;
     return *this;
 }
 
-bool ImPlot3DVec3::operator==(const ImPlot3DVec3& rhs) const { return x == rhs.x && y == rhs.y && z == rhs.z; }
-bool ImPlot3DVec3::operator!=(const ImPlot3DVec3& rhs) const { return !(*this == rhs); }
+bool ImPlot3DPoint::operator==(const ImPlot3DPoint& rhs) const { return x == rhs.x && y == rhs.y && z == rhs.z; }
+bool ImPlot3DPoint::operator!=(const ImPlot3DPoint& rhs) const { return !(*this == rhs); }
 
-float ImPlot3DVec3::Dot(const ImPlot3DVec3& rhs) const { return x * rhs.x + y * rhs.y + z * rhs.z; }
+float ImPlot3DPoint::Dot(const ImPlot3DPoint& rhs) const { return x * rhs.x + y * rhs.y + z * rhs.z; }
 
-ImPlot3DVec3 ImPlot3DVec3::Cross(const ImPlot3DVec3& rhs) const {
-    return ImPlot3DVec3(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
+ImPlot3DPoint ImPlot3DPoint::Cross(const ImPlot3DPoint& rhs) const {
+    return ImPlot3DPoint(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
 }
 
-float ImPlot3DVec3::Magnitude() const { return std::sqrt(x * x + y * y + z * z); }
+float ImPlot3DPoint::Magnitude() const { return std::sqrt(x * x + y * y + z * z); }
 
-ImPlot3DVec3 operator*(float lhs, const ImPlot3DVec3& rhs) {
-    return ImPlot3DVec3(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z);
+ImPlot3DPoint operator*(float lhs, const ImPlot3DPoint& rhs) {
+    return ImPlot3DPoint(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z);
 }
 
 //-----------------------------------------------------------------------------
@@ -487,7 +487,7 @@ ImPlot3DVec3 operator*(float lhs, const ImPlot3DVec3& rhs) {
 constexpr ImPlot3DQuat::ImPlot3DQuat() : x(0.0f), y(0.0f), z(0.0f), w(1.0f) {}
 constexpr ImPlot3DQuat::ImPlot3DQuat(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
 
-ImPlot3DQuat::ImPlot3DQuat(float _angle, const ImPlot3DVec3& _axis) {
+ImPlot3DQuat::ImPlot3DQuat(float _angle, const ImPlot3DPoint& _axis) {
     float half_angle = _angle * 0.5f;
     float s = std::sin(half_angle);
     x = s * _axis.x;
@@ -531,13 +531,13 @@ ImPlot3DQuat& ImPlot3DQuat::Normalize() {
     return *this;
 }
 
-ImPlot3DVec3 ImPlot3DQuat::operator*(const ImPlot3DVec3& point) const {
+ImPlot3DPoint ImPlot3DQuat::operator*(const ImPlot3DPoint& point) const {
     // Extract vector part of the quaternion
-    ImPlot3DVec3 qv(x, y, z);
+    ImPlot3DPoint qv(x, y, z);
 
     // Compute the cross products needed for rotation
-    ImPlot3DVec3 uv = qv.Cross(point); // uv = qv x point
-    ImPlot3DVec3 uuv = qv.Cross(uv);   // uuv = qv x uv
+    ImPlot3DPoint uv = qv.Cross(point); // uv = qv x point
+    ImPlot3DPoint uuv = qv.Cross(uv);   // uuv = qv x uv
 
     // Compute the rotated vector
     return point + (uv * w * 2.0f) + (uuv * 2.0f);

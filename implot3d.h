@@ -48,7 +48,7 @@
 // Forward declarations
 struct ImPlot3DContext;
 struct ImPlot3DStyle;
-struct ImPlot3DVec3;
+struct ImPlot3DPoint;
 struct ImPlot3DQuat;
 
 // Enums
@@ -184,6 +184,108 @@ enum ImPlot3DItemFlags_ {
     ImPlot3DItemFlags_None = 0,          // Default
     ImPlot3DItemFlags_NoLegend = 1 << 0, // The item won't have a legend entry displayed
     ImPlot3DItemFlags_NoFit = 1 << 1,    // The item won't be considered for plot fits
+};
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImPlot3DPoint
+//-----------------------------------------------------------------------------
+
+// ImPlot3DPoint: 3D vector to store points in 3D
+struct ImPlot3DPoint {
+    float x, y, z;
+    constexpr ImPlot3DPoint() : x(0.0f), y(0.0f), z(0.0f) {}
+    constexpr ImPlot3DPoint(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
+
+    // Accessors
+    float& operator[](size_t idx) {
+        IM_ASSERT(idx == 0 || idx == 1 || idx == 2);
+        return ((float*)(void*)(char*)this)[idx];
+    }
+    float operator[](size_t idx) const {
+        IM_ASSERT(idx == 0 || idx == 1 || idx == 2);
+        return ((const float*)(const void*)(const char*)this)[idx];
+    }
+
+    // Binary operators
+    ImPlot3DPoint operator*(float rhs) const;
+    ImPlot3DPoint operator/(float rhs) const;
+    ImPlot3DPoint operator+(const ImPlot3DPoint& rhs) const;
+    ImPlot3DPoint operator-(const ImPlot3DPoint& rhs) const;
+    ImPlot3DPoint operator*(const ImPlot3DPoint& rhs) const;
+    ImPlot3DPoint operator/(const ImPlot3DPoint& rhs) const;
+
+    // Unary operator
+    ImPlot3DPoint operator-() const;
+
+    // Compound assignment operators
+    ImPlot3DPoint& operator*=(float rhs);
+    ImPlot3DPoint& operator/=(float rhs);
+    ImPlot3DPoint& operator+=(const ImPlot3DPoint& rhs);
+    ImPlot3DPoint& operator-=(const ImPlot3DPoint& rhs);
+    ImPlot3DPoint& operator*=(const ImPlot3DPoint& rhs);
+    ImPlot3DPoint& operator/=(const ImPlot3DPoint& rhs);
+
+    // Comparison operators
+    bool operator==(const ImPlot3DPoint& rhs) const;
+    bool operator!=(const ImPlot3DPoint& rhs) const;
+
+    // Dot product
+    float Dot(const ImPlot3DPoint& rhs) const;
+
+    // Cross product
+    ImPlot3DPoint Cross(const ImPlot3DPoint& rhs) const;
+
+    // Get vector magnitude
+    float Magnitude() const;
+
+    // Friend binary operators to allow commutative behavior
+    friend ImPlot3DPoint operator*(float lhs, const ImPlot3DPoint& rhs);
+
+#ifdef IMPLOT3D_POINT_CLASS_EXTRA
+    IMPLOT3D_POINT_CLASS_EXTRA // Define additional constructors and implicit cast operators in imconfig.h to convert back and forth between your math types and ImPlot3DPoint
+#endif
+};
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImPlot3DQuat
+//-----------------------------------------------------------------------------
+
+struct ImPlot3DQuat {
+    float x, y, z, w;
+
+    // Constructors
+    constexpr ImPlot3DQuat();
+    constexpr ImPlot3DQuat(float _x, float _y, float _z, float _w);
+    ImPlot3DQuat(float _angle, const ImPlot3DPoint& _axis);
+
+    // Get quaternion magnitude
+    float Magnitude() const;
+
+    // Get normalized quaternion
+    ImPlot3DQuat Normalized() const;
+
+    // Conjugate of the quaternion
+    ImPlot3DQuat Conjugate() const;
+
+    // Inverse of the quaternion
+    ImPlot3DQuat Inverse() const;
+
+    // Binary operators
+    ImPlot3DQuat operator*(const ImPlot3DQuat& rhs) const;
+
+    // Normalize the quaternion in place
+    ImPlot3DQuat& Normalize();
+
+    // Rotate a 3D point using the quaternion
+    ImPlot3DPoint operator*(const ImPlot3DPoint& point) const;
+
+    // Comparison operators
+    bool operator==(const ImPlot3DQuat& rhs) const;
+    bool operator!=(const ImPlot3DQuat& rhs) const;
+
+#ifdef IMPLOT3D_QUAT_CLASS_EXTRA
+    IMPLOT3D_QUAT_CLASS_EXTRA // Define additional constructors and implicit cast operators in imconfig.h to convert back and forth between your math types and ImPlot3DQuat
+#endif
 };
 
 //-----------------------------------------------------------------------------
