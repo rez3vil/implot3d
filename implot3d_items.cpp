@@ -274,8 +274,11 @@ struct GetterXYZ {
 //-----------------------------------------------------------------------------
 
 /// Renders primitive shapes
-template <class _Renderer>
-void RenderPrimitivesEx(const _Renderer& renderer, ImDrawList& draw_list) {
+template <template <class> class _Renderer, class _Getter, typename... Args>
+void RenderPrimitives(const _Getter& getter, Args... args) {
+    _Renderer<_Getter> renderer(getter, args...);
+    ImDrawList& draw_list = *GetPlotDrawList();
+
     // Initialize renderer
     renderer.Init(draw_list);
     // Find how many can be reserved up to end of current draw command's limit
@@ -285,12 +288,6 @@ void RenderPrimitivesEx(const _Renderer& renderer, ImDrawList& draw_list) {
     // Render primitives
     for (unsigned int i = 0; i < prims_to_render; ++i)
         renderer.Render(draw_list, i);
-}
-
-template <template <class> class _Renderer, class _Getter, typename... Args>
-void RenderPrimitives1(const _Getter& getter, Args... args) {
-    ImDrawList& draw_list = *GetPlotDrawList();
-    RenderPrimitivesEx(_Renderer<_Getter>(getter, args...), draw_list);
 }
 
 //-----------------------------------------------------------------------------
@@ -407,27 +404,27 @@ template <typename _Getter>
 void RenderMarkers(const _Getter& getter, ImPlot3DMarker marker, float size, bool rend_fill, ImU32 col_fill, bool rend_line, ImU32 col_line, float weight) {
     if (rend_fill) {
         switch (marker) {
-            case ImPlot3DMarker_Circle: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_CIRCLE, 10, size, col_fill); break;
-            case ImPlot3DMarker_Square: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_SQUARE, 4, size, col_fill); break;
-            case ImPlot3DMarker_Diamond: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_DIAMOND, 4, size, col_fill); break;
-            case ImPlot3DMarker_Up: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_UP, 3, size, col_fill); break;
-            case ImPlot3DMarker_Down: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_DOWN, 3, size, col_fill); break;
-            case ImPlot3DMarker_Left: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_LEFT, 3, size, col_fill); break;
-            case ImPlot3DMarker_Right: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_RIGHT, 3, size, col_fill); break;
+            case ImPlot3DMarker_Circle: RenderPrimitives<RendererMarkersFill>(getter, MARKER_FILL_CIRCLE, 10, size, col_fill); break;
+            case ImPlot3DMarker_Square: RenderPrimitives<RendererMarkersFill>(getter, MARKER_FILL_SQUARE, 4, size, col_fill); break;
+            case ImPlot3DMarker_Diamond: RenderPrimitives<RendererMarkersFill>(getter, MARKER_FILL_DIAMOND, 4, size, col_fill); break;
+            case ImPlot3DMarker_Up: RenderPrimitives<RendererMarkersFill>(getter, MARKER_FILL_UP, 3, size, col_fill); break;
+            case ImPlot3DMarker_Down: RenderPrimitives<RendererMarkersFill>(getter, MARKER_FILL_DOWN, 3, size, col_fill); break;
+            case ImPlot3DMarker_Left: RenderPrimitives<RendererMarkersFill>(getter, MARKER_FILL_LEFT, 3, size, col_fill); break;
+            case ImPlot3DMarker_Right: RenderPrimitives<RendererMarkersFill>(getter, MARKER_FILL_RIGHT, 3, size, col_fill); break;
         }
     }
     if (rend_line) {
         switch (marker) {
-            case ImPlot3DMarker_Circle: RenderPrimitives1<RendererMarkersLine>(getter, MARKER_LINE_CIRCLE, 20, size, weight, col_line); break;
-            case ImPlot3DMarker_Square: RenderPrimitives1<RendererMarkersLine>(getter, MARKER_LINE_SQUARE, 8, size, weight, col_line); break;
-            case ImPlot3DMarker_Diamond: RenderPrimitives1<RendererMarkersLine>(getter, MARKER_LINE_DIAMOND, 8, size, weight, col_line); break;
-            case ImPlot3DMarker_Up: RenderPrimitives1<RendererMarkersLine>(getter, MARKER_LINE_UP, 6, size, weight, col_line); break;
-            case ImPlot3DMarker_Down: RenderPrimitives1<RendererMarkersLine>(getter, MARKER_LINE_DOWN, 6, size, weight, col_line); break;
-            case ImPlot3DMarker_Left: RenderPrimitives1<RendererMarkersLine>(getter, MARKER_LINE_LEFT, 6, size, weight, col_line); break;
-            case ImPlot3DMarker_Right: RenderPrimitives1<RendererMarkersLine>(getter, MARKER_LINE_RIGHT, 6, size, weight, col_line); break;
-            case ImPlot3DMarker_Asterisk: RenderPrimitives1<RendererMarkersLine>(getter, MARKER_LINE_ASTERISK, 6, size, weight, col_line); break;
-            case ImPlot3DMarker_Plus: RenderPrimitives1<RendererMarkersLine>(getter, MARKER_LINE_PLUS, 4, size, weight, col_line); break;
-            case ImPlot3DMarker_Cross: RenderPrimitives1<RendererMarkersLine>(getter, MARKER_LINE_CROSS, 4, size, weight, col_line); break;
+            case ImPlot3DMarker_Circle: RenderPrimitives<RendererMarkersLine>(getter, MARKER_LINE_CIRCLE, 20, size, weight, col_line); break;
+            case ImPlot3DMarker_Square: RenderPrimitives<RendererMarkersLine>(getter, MARKER_LINE_SQUARE, 8, size, weight, col_line); break;
+            case ImPlot3DMarker_Diamond: RenderPrimitives<RendererMarkersLine>(getter, MARKER_LINE_DIAMOND, 8, size, weight, col_line); break;
+            case ImPlot3DMarker_Up: RenderPrimitives<RendererMarkersLine>(getter, MARKER_LINE_UP, 6, size, weight, col_line); break;
+            case ImPlot3DMarker_Down: RenderPrimitives<RendererMarkersLine>(getter, MARKER_LINE_DOWN, 6, size, weight, col_line); break;
+            case ImPlot3DMarker_Left: RenderPrimitives<RendererMarkersLine>(getter, MARKER_LINE_LEFT, 6, size, weight, col_line); break;
+            case ImPlot3DMarker_Right: RenderPrimitives<RendererMarkersLine>(getter, MARKER_LINE_RIGHT, 6, size, weight, col_line); break;
+            case ImPlot3DMarker_Asterisk: RenderPrimitives<RendererMarkersLine>(getter, MARKER_LINE_ASTERISK, 6, size, weight, col_line); break;
+            case ImPlot3DMarker_Plus: RenderPrimitives<RendererMarkersLine>(getter, MARKER_LINE_PLUS, 4, size, weight, col_line); break;
+            case ImPlot3DMarker_Cross: RenderPrimitives<RendererMarkersLine>(getter, MARKER_LINE_CROSS, 4, size, weight, col_line); break;
         }
     }
 }
