@@ -17,6 +17,7 @@
 // [SECTION] Context
 // [SECTION] Begin/End Plot
 // [SECTION] Plot Items
+// [SECTION] Miscellaneous
 // [SECTION] Styles
 // [SECTION] Demo
 // [SECTION] Debugging
@@ -95,6 +96,12 @@ IMPLOT3D_API void EndPlot(); // Only call if BeginPlot() returns true!
 //-----------------------------------------------------------------------------
 
 IMPLOT3D_TMP void PlotScatter(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DScatterFlags flags = 0, int offset = 0, int stride = sizeof(T));
+
+//-----------------------------------------------------------------------------
+// [SECTION] Miscellaneous
+//-----------------------------------------------------------------------------
+
+IMPLOT3D_API ImDrawList* GetPlotDrawList();
 
 //-----------------------------------------------------------------------------
 // [SECTION] Styles

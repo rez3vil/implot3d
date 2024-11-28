@@ -16,6 +16,7 @@
 // [SECTION] Macros
 // [SECTION] Context
 // [SECTION] Begin/End Plot
+// [SECTION] Miscellaneous
 // [SECTION] Styles
 // [SECTION] Context Utils
 // [SECTION] Style Utils
@@ -276,6 +277,14 @@ void EndPlot() {
     // Reset current plot
     gp.CurrentPlot = nullptr;
     gp.CurrentItems = nullptr;
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] Miscellaneous
+//-----------------------------------------------------------------------------
+
+ImDrawList* GetPlotDrawList() {
+    return ImGui::GetWindowDrawList();
 }
 
 //-----------------------------------------------------------------------------
