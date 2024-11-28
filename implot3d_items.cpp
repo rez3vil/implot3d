@@ -130,10 +130,33 @@ bool BeginItem(const char* label_id, ImPlot3DItemFlags flags, ImPlot3DCol recolo
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PlotX() needs to be called between BeginPlot() and EndPlot()!");
 
+    ImPlot3DStyle& style = gp.Style;
+    ImPlot3DNextItemData& n = gp.NextItemData;
+
+    // Set color
+    ImVec4 item_color = {0.2, 0.8, 0.2, 1};
+    n.Colors[ImPlot3DCol_Line] = IsColorAuto(n.Colors[ImPlot3DCol_Line]) ? item_color : n.Colors[ImPlot3DCol_Line];
+    n.Colors[ImPlot3DCol_MarkerFill] = IsColorAuto(n.Colors[ImPlot3DCol_MarkerFill]) ? item_color : n.Colors[ImPlot3DCol_MarkerFill];
+    n.Colors[ImPlot3DCol_MarkerOutline] = IsColorAuto(n.Colors[ImPlot3DCol_MarkerOutline]) ? item_color : n.Colors[ImPlot3DCol_MarkerOutline];
+
+    // Set size & weight
+    n.LineWeight = n.LineWeight < 0.0f ? style.LineWeight : n.LineWeight;
+    n.Marker = n.Marker < 0 ? style.Marker : n.Marker;
+    n.MarkerSize = n.MarkerSize < 0.0f ? style.MarkerSize : n.MarkerSize;
+    n.MarkerWeight = n.MarkerWeight < 0.0f ? style.MarkerWeight : n.MarkerWeight;
+
+    // Set render flags
+    n.RenderLine = n.Colors[ImPlot3DCol_Line].w > 0 && n.LineWeight > 0;
+    n.RenderMarkerFill = n.Colors[ImPlot3DCol_MarkerFill].w > 0;
+    n.RenderMarkerLine = n.Colors[ImPlot3DCol_MarkerOutline].w > 0 && n.MarkerWeight > 0;
+
     return true;
 }
 
-void EndItem() {}
+void EndItem() {
+    ImPlot3DContext& gp = *GImPlot3D;
+    gp.NextItemData.Reset();
+}
 
 ImPlot3DItem* RegisterOrGetItem(const char* label_id, ImPlot3DItemFlags flags, bool* just_created) {
     ImPlot3DContext& gp = *GImPlot3D;
@@ -198,7 +221,7 @@ struct Transformer3 {
                                                                                         RangeMin(rangeMin),
                                                                                         RangeMax(rangeMax) {}
     template <typename T> IMPLOT3D_INLINE ImVec2 operator()(T p) const {
-        // TODO
+        return ImVec2(0, 0);
     }
     ImPlot3DQuat Rotation;
     ImPlot3DVec3 RangeMin;
@@ -365,17 +388,17 @@ static const ImVec2 MARKER_LINE_CROSS[4] = {ImVec2(-SQRT_1_2, -SQRT_1_2), ImVec2
 
 template <typename _Getter>
 void RenderMarkers(const _Getter& getter, ImPlot3DMarker marker, float size, bool rend_fill, ImU32 col_fill, bool rend_line, ImU32 col_line, float weight) {
-    // if (rend_fill) {
-    //     switch (marker) {
-    //         case ImPlot3DMarker_Circle: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_CIRCLE, 10, size, col_fill); break;
-    //         case ImPlot3DMarker_Square: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_SQUARE, 4, size, col_fill); break;
-    //         case ImPlot3DMarker_Diamond: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_DIAMOND, 4, size, col_fill); break;
-    //         case ImPlot3DMarker_Up: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_UP, 3, size, col_fill); break;
-    //         case ImPlot3DMarker_Down: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_DOWN, 3, size, col_fill); break;
-    //         case ImPlot3DMarker_Left: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_LEFT, 3, size, col_fill); break;
-    //         case ImPlot3DMarker_Right: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_RIGHT, 3, size, col_fill); break;
-    //     }
-    // }
+    if (rend_fill) {
+        //     switch (marker) {
+        //         case ImPlot3DMarker_Circle: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_CIRCLE, 10, size, col_fill); break;
+        //         case ImPlot3DMarker_Square: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_SQUARE, 4, size, col_fill); break;
+        //         case ImPlot3DMarker_Diamond: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_DIAMOND, 4, size, col_fill); break;
+        //         case ImPlot3DMarker_Up: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_UP, 3, size, col_fill); break;
+        //         case ImPlot3DMarker_Down: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_DOWN, 3, size, col_fill); break;
+        //         case ImPlot3DMarker_Left: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_LEFT, 3, size, col_fill); break;
+        //         case ImPlot3DMarker_Right: RenderPrimitives1<RendererMarkersFill>(getter, MARKER_FILL_RIGHT, 3, size, col_fill); break;
+        //     }
+    }
     if (rend_line) {
         switch (marker) {
             case ImPlot3DMarker_Circle: RenderPrimitives1<RendererMarkersLine>(getter, MARKER_LINE_CIRCLE, 20, size, weight, col_line); break;
@@ -400,12 +423,11 @@ template <typename Getter>
 void PlotScatterEx(const char* label_id, const Getter& getter, ImPlot3DScatterFlags flags) {
     if (BeginItem(label_id, flags, ImPlot3DCol_MarkerOutline)) {
         const ImPlot3DNextItemData& n = GetItemData();
-        ImPlot3DMarker marker = n.Marker == ImPlot3DMarker_None ? ImPlot3DMarker_Circle : n.Marker;
-        if (marker != ImPlot3DMarker_None) {
-            const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerOutline]);
-            const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerFill]);
+        ImPlot3DMarker marker = n.Marker;
+        const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerOutline]);
+        const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerFill]);
+        if (marker != ImPlot3DMarker_None)
             RenderMarkers<Getter>(getter, marker, n.MarkerSize, n.RenderMarkerFill, col_fill, n.RenderMarkerLine, col_line, n.MarkerWeight);
-        }
         EndItem();
     }
 }

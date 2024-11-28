@@ -129,6 +129,7 @@ struct ImPlot3DQuat {
 
 struct ImPlot3DNextItemData {
     ImVec4 Colors[3]; // ImPlot3DCol_Line, ImPlot3DCol_MarkerOutline, ImPlot3DCol_MarkerFill,
+    float LineWeight;
     ImPlot3DMarker Marker;
     float MarkerSize;
     float MarkerWeight;
@@ -141,12 +142,13 @@ struct ImPlot3DNextItemData {
     void Reset() {
         for (int i = 0; i < 3; ++i)
             Colors[i] = IMPLOT3D_AUTO_COL;
+        LineWeight = IMPLOT3D_AUTO;
         Marker = IMPLOT3D_AUTO;
         MarkerSize = IMPLOT3D_AUTO;
         MarkerWeight = IMPLOT3D_AUTO;
         RenderLine = false;
-        RenderMarkerLine = false;
-        RenderMarkerFill = false;
+        RenderMarkerLine = true;
+        RenderMarkerFill = true;
         Hidden = false;
     }
 };

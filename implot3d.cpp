@@ -359,7 +359,13 @@ ImU32 GetStyleColorU32(ImPlot3DCol idx) {
 
 void InitializeContext(ImPlot3DContext* ctx) { ResetContext(ctx); }
 
-void ResetContext(ImPlot3DContext* ctx) { ctx->CurrentPlot = nullptr; }
+void ResetContext(ImPlot3DContext* ctx) {
+    ctx->Plots.Clear();
+    ctx->CurrentPlot = nullptr;
+    ctx->CurrentItems = nullptr;
+    ctx->NextItemData.Reset();
+    ctx->Style = ImPlot3DStyle();
+}
 
 //-----------------------------------------------------------------------------
 // [SECTION] Style Utils
@@ -550,10 +556,17 @@ bool ImPlot3DQuat::operator!=(const ImPlot3DQuat& rhs) const {
 //-----------------------------------------------------------------------------
 
 ImPlot3DStyle::ImPlot3DStyle() {
+    // Item style
+    LineWeight = 1;
+    Marker = ImPlot3DMarker_Circle;
+    MarkerSize = 4;
+    MarkerWeight = 1;
+    // Plot style
     PlotDefaultSize = ImVec2(400, 400);
     PlotMinSize = ImVec2(200, 200);
     PlotPadding = ImVec2(10, 10);
     LabelPadding = ImVec2(5, 5);
+    // Colors
     ImPlot3D::StyleColorsAuto(this);
 };
 

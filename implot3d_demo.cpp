@@ -197,6 +197,11 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
 
     if (ImGui::BeginTabBar("##Tabs", ImGuiTabBarFlags_None)) {
         if (ImGui::BeginTabItem("Sizes")) {
+            ImGui::Text("Item Styling");
+            ImGui::SliderFloat("LineWeight", &style.LineWeight, 0.0f, 5.0f, "%.1f");
+            ImGui::SliderFloat("MarkerSize", &style.MarkerSize, 2.0f, 10.0f, "%.1f");
+            ImGui::SliderFloat("MarkerWeight", &style.MarkerWeight, 0.0f, 5.0f, "%.1f");
+            ImGui::Text("Plot Styling");
             ImGui::SliderFloat2("PlotDefaultSize", (float*)&style.PlotDefaultSize, 0.0f, 1000, "%.0f");
             ImGui::SliderFloat2("PlotMinSize", (float*)&style.PlotMinSize, 0.0f, 300, "%.0f");
             ImGui::SliderFloat2("PlotPadding", (float*)&style.PlotPadding, 0.0f, 20.0f, "%.0f");

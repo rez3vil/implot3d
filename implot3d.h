@@ -191,6 +191,11 @@ enum ImPlot3DItemFlags_ {
 //-----------------------------------------------------------------------------
 
 struct ImPlot3DStyle {
+    // Item style
+    float LineWeight;   // Line weight in pixels
+    int Marker;         // Default marker type (ImPlot3DMarker_Circle)
+    float MarkerSize;   // Marker size in pixels (roughly the marker's "radius")
+    float MarkerWeight; // Marker outline weight in pixels
     // Plot style
     ImVec2 PlotDefaultSize;
     ImVec2 PlotMinSize;
