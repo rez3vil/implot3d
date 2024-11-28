@@ -17,7 +17,6 @@
 // [SECTION] Template instantiation utility
 // [SECTION] Item Utils
 // [SECTION] Draw Utils
-// [SECTION] Transformer
 // [SECTION] Renderers
 // [SECTION] Indexers
 // [SECTION] Getters
@@ -213,32 +212,14 @@ IMPLOT3D_INLINE void PrimLine(ImDrawList& draw_list, const ImVec2& P1, const ImV
 }
 
 //-----------------------------------------------------------------------------
-// [SECTION] Transformer
-//-----------------------------------------------------------------------------
-
-struct Transformer3 {
-    Transformer3(ImPlot3DQuat rotation, ImPlot3DPoint rangeMin, ImPlot3DPoint rangeMax) : Rotation(rotation),
-                                                                                          RangeMin(rangeMin),
-                                                                                          RangeMax(rangeMax) {}
-    template <typename T> IMPLOT3D_INLINE ImVec2 operator()(T p) const {
-        return ImVec2(0, 0);
-    }
-    ImPlot3DQuat Rotation;
-    ImPlot3DPoint RangeMin;
-    ImPlot3DPoint RangeMax;
-};
-
-//-----------------------------------------------------------------------------
 // [SECTION] Renderers
 //-----------------------------------------------------------------------------
 
 struct RendererBase {
     RendererBase(int prims, int idx_consumed, int vtx_consumed) : Prims(prims),
-                                                                  Transformer(ImPlot3DQuat{}, ImPlot3DPoint{}, ImPlot3DPoint{}),
                                                                   IdxConsumed(idx_consumed),
                                                                   VtxConsumed(vtx_consumed) {}
     const unsigned int Prims;       // Number of primitives to render
-    Transformer3 Transformer;       // Transformer from 3D point to screen point
     const unsigned int IdxConsumed; // Number of indices consumed per primitive
     const unsigned int VtxConsumed; // Number of vertices consumed per primitive
 };
