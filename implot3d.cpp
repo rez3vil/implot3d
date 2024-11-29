@@ -282,6 +282,9 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     // Reset legend
     plot.Items.Legend.Reset();
 
+    // Push frame rect clipping
+    ImGui::PushClipRect(plot.FrameRect.Min, plot.FrameRect.Max, false);
+
     return true;
 }
 
@@ -299,6 +302,9 @@ void EndPlot() {
 
     // Render legend
     RenderLegend();
+
+    // Pop frame rect clipping
+    ImGui::PopClipRect();
 
     // Reset current plot
     gp.CurrentPlot = nullptr;
@@ -350,10 +356,7 @@ ImPlot3DPoint PlotToNDC(const ImPlot3DPoint& point) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PlotToNDC() needs to be called between BeginPlot() and EndPlot()!");
     ImPlot3DPlot& plot = *gp.CurrentPlot;
-
-    // TODO using range and cube aspect ratio
-
-    return point;
+    return (point - plot.RangeMin) / (plot.RangeMax - plot.RangeMin) - ImPlot3DPoint(0.5f, 0.5f, 0.5f);
 }
 
 ImVec2 NDCToPixels(const ImPlot3DPoint& point) {
@@ -397,8 +400,14 @@ void HandleInput(ImPlot3DPlot& plot) {
     ImGui::SetItemAllowOverlap(); // Handled by ButtonBehavior()
 #endif
 
-    if (plot_clicked && ImGui::IsMouseDoubleClicked(0))
+    // Handle double click
+    if (plot_clicked && ImGui::IsMouseDoubleClicked(0)) {
         plot.Rotation = init_rotation;
+        plot.RangeMin = ImPlot3DPoint(0.0f, 0.0f, 0.0f);
+        plot.RangeMax = ImPlot3DPoint(1.0f, 1.0f, 1.0f);
+    }
+
+    // Handle mouse drag
     if (plot.Held && ImGui::IsMouseDown(0)) {
         ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
 
@@ -413,6 +422,16 @@ void HandleInput(ImPlot3DPlot& plot) {
         // Combine the new rotations with the current rotation
         plot.Rotation = quat_x * quat_y * plot.Rotation;
         plot.Rotation.Normalize();
+    }
+
+    // Handle mouse wheel
+    if (plot.Hovered && IO.MouseWheel != 0) {
+        float zoom = 1.0f - IO.MouseWheel * 0.1f;
+        ImPlot3DPoint center = (plot.RangeMin + plot.RangeMax) * 0.5f;
+        ImPlot3DPoint size = plot.RangeMax - plot.RangeMin;
+        size *= zoom;
+        plot.RangeMin = center - size * 0.5f;
+        plot.RangeMax = center + size * 0.5f;
     }
 }
 
