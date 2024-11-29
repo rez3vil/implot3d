@@ -64,21 +64,46 @@ struct ImPlot3DNextItemData {
 struct ImPlot3DItem {
     ImGuiID ID;
     ImU32 Color;
+    int NameOffset;
     bool Show;
     bool LegendHovered;
 
     ImPlot3DItem() {
         ID = 0;
         Color = IM_COL32_WHITE;
+        NameOffset = -1;
         Show = true;
         LegendHovered = false;
     }
     ~ImPlot3DItem() { ID = 0; }
 };
 
+// Holds legend state
+struct ImPlot3DLegend {
+    ImPlot3DLegendFlags Flags;
+    ImPlot3DLocation Location;
+    ImVector<int> Indices;
+    ImGuiTextBuffer Labels;
+    ImRect Rect;
+    bool Hovered;
+    bool Held;
+
+    ImPlot3DLegend() {
+        Flags = ImPlot3DLegendFlags_None;
+        Hovered = Held = false;
+        Location = ImPlot3DLocation_NorthWest;
+    }
+
+    void Reset() {
+        Indices.shrink(0);
+        Labels.Buf.shrink(0);
+    }
+};
+
 // Holds items
 struct ImPlot3DItemGroup {
     ImPool<ImPlot3DItem> ItemPool;
+    ImPlot3DLegend Legend;
 
     int GetItemCount() const { return ItemPool.GetBufSize(); }
     ImGuiID GetItemID(const char* label_id) { return ImGui::GetID(label_id); }
@@ -87,7 +112,13 @@ struct ImPlot3DItemGroup {
     ImPlot3DItem* GetOrAddItem(ImGuiID id) { return ItemPool.GetOrAddByKey(id); }
     ImPlot3DItem* GetItemByIndex(int i) { return ItemPool.GetByIndex(i); }
     int GetItemIndex(ImPlot3DItem* item) { return ItemPool.GetIndex(item); }
-    void Reset() { ItemPool.Clear(); }
+    int GetLegendCount() const { return Legend.Indices.size(); }
+    ImPlot3DItem* GetLegendItem(int i) { return ItemPool.GetByIndex(Legend.Indices[i]); }
+    const char* GetLegendLabel(int i) { return Legend.Labels.Buf.Data + GetLegendItem(i)->NameOffset; }
+    void Reset() {
+        ItemPool.Clear();
+        Legend.Reset();
+    }
 };
 
 // Holds plot state information that must persist after EndPlot

@@ -46,7 +46,7 @@ void DemoLinePlots() {
     static float z[] = {0.0f, 0.1f, NAN, -0.5f};
     if (ImPlot3D::BeginPlot("Line Plots", ImVec2(-1, 300), ImPlot3DFlags_None)) {
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Circle, 2, ImVec4(1, 0, 0, 1), 1, ImVec4(0, 1, 0, 1));
-        ImPlot3D::PlotLine("Points", x, y, z, 4, ImPlot3DLineFlags_Loop | ImPlot3DLineFlags_SkipNaN);
+        ImPlot3D::PlotLine("Line loop", x, y, z, 4, ImPlot3DLineFlags_Loop | ImPlot3DLineFlags_SkipNaN);
         ImPlot3D::EndPlot();
     }
 }
@@ -55,7 +55,7 @@ void DemoScatterPlots() {
     static float x[] = {0.0f, 0.1f, 0.5f};
     static float y[] = {0.0f, 0.1f, 0.5f};
     static float z[] = {0.0f, 0.1f, 0.5f};
-    if (ImPlot3D::BeginPlot("Scatter Plots", ImVec2(-1, 300), ImPlot3DFlags_None)) {
+    if (ImPlot3D::BeginPlot("Scatter Plots", ImVec2(-1, 300), ImPlot3DFlags_NoLegend)) {
         ImPlot3D::PlotScatter("Points", x, y, z, 3);
         ImPlot3D::EndPlot();
     }
@@ -173,14 +173,18 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
     static ImPlot3DCol flash_color_idx = ImPlot3DCol_COUNT;
     static ImVec4 flash_color_backup = ImVec4(0, 0, 0, 0);
     if (flash_color_idx != ImPlot3DCol_COUNT) {
+        // Flash color
         ImVec4& color = style.Colors[flash_color_idx];
         ImGui::ColorConvertHSVtoRGB(ImCos(flash_color_time * 6.0f) * 0.5f + 0.5f, 0.5f, 0.5f, color.x, color.y, color.z);
         color.w = 1.0f;
-    }
-    if ((flash_color_time -= ImGui::GetIO().DeltaTime) <= 0.0f) {
-        style.Colors[flash_color_idx] = flash_color_backup;
-        flash_color_idx = ImPlot3DCol_COUNT;
-        flash_color_time = 0.5f;
+
+        // Decrease timer until zero
+        if ((flash_color_time -= ImGui::GetIO().DeltaTime) <= 0.0f) {
+            // When timer reaches zero, restore the backup color
+            style.Colors[flash_color_idx] = flash_color_backup;
+            flash_color_idx = ImPlot3DCol_COUNT;
+            flash_color_time = 0.5f;
+        }
     }
 
     // Style selector
@@ -211,6 +215,10 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
             ImGui::SliderFloat2("PlotMinSize", (float*)&style.PlotMinSize, 0.0f, 300, "%.0f");
             ImGui::SliderFloat2("PlotPadding", (float*)&style.PlotPadding, 0.0f, 20.0f, "%.0f");
             ImGui::SliderFloat2("LabelPadding", (float*)&style.LabelPadding, 0.0f, 20.0f, "%.0f");
+            ImGui::Text("Legend Styling");
+            ImGui::SliderFloat2("LegendPadding", (float*)&style.LegendPadding, 0.0f, 20.0f, "%.0f");
+            ImGui::SliderFloat2("LegendInnerPadding", (float*)&style.LegendInnerPadding, 0.0f, 10.0f, "%.0f");
+            ImGui::SliderFloat2("LegendSpacing", (float*)&style.LegendSpacing, 0.0f, 5.0f, "%.0f");
             ImGui::EndTabItem();
         }
 

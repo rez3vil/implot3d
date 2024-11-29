@@ -15,6 +15,7 @@
 // [SECTION] Includes
 // [SECTION] Macros
 // [SECTION] Context
+// [SECTION] Legend Utils
 // [SECTION] Begin/End Plot
 // [SECTION] Plot Utils
 // [SECTION] Setup Utils
@@ -80,8 +81,81 @@ ImPlot3DContext* GetCurrentContext() { return GImPlot3D; }
 void SetCurrentContext(ImPlot3DContext* ctx) { GImPlot3D = ctx; }
 
 //-----------------------------------------------------------------------------
+// Legend Utils
+//-----------------------------------------------------------------------------
+
+ImVec2 GetLocationPos(const ImRect& outer_rect, const ImVec2& inner_size, ImPlot3DLocation loc, const ImVec2& pad) {
+    ImVec2 pos;
+    // Legend x coordinate
+    if (ImHasFlag(loc, ImPlot3DLocation_West) && !ImHasFlag(loc, ImPlot3DLocation_East))
+        pos.x = outer_rect.Min.x + pad.x;
+    else if (!ImHasFlag(loc, ImPlot3DLocation_West) && ImHasFlag(loc, ImPlot3DLocation_East))
+        pos.x = outer_rect.Max.x - pad.x - inner_size.x;
+    else
+        pos.x = outer_rect.GetCenter().x - inner_size.x * 0.5f;
+    // Legend y coordinate
+    if (ImHasFlag(loc, ImPlot3DLocation_North) && !ImHasFlag(loc, ImPlot3DLocation_South))
+        pos.y = outer_rect.Min.y + pad.y;
+    else if (!ImHasFlag(loc, ImPlot3DLocation_North) && ImHasFlag(loc, ImPlot3DLocation_South))
+        pos.y = outer_rect.Max.y - pad.y - inner_size.y;
+    else
+        pos.y = outer_rect.GetCenter().y - inner_size.y * 0.5f;
+    pos.x = IM_ROUND(pos.x);
+    pos.y = IM_ROUND(pos.y);
+    return pos;
+}
+
+ImVec2 CalcLegendSize(ImPlot3DItemGroup& items, const ImVec2& pad, const ImVec2& spacing, bool vertical) {
+    const int nItems = items.GetLegendCount();
+    const float txt_ht = ImGui::GetTextLineHeight();
+    const float icon_size = txt_ht;
+    // Get label max width
+    float max_label_width = 0;
+    float sum_label_width = 0;
+    for (int i = 0; i < nItems; ++i) {
+        const char* label = items.GetLegendLabel(i);
+        const float label_width = ImGui::CalcTextSize(label, nullptr, true).x;
+        max_label_width = label_width > max_label_width ? label_width : max_label_width;
+        sum_label_width += label_width;
+    }
+    // Compute legend size
+    const ImVec2 legend_size = vertical ? ImVec2(pad.x * 2 + icon_size + max_label_width, pad.y * 2 + nItems * txt_ht + (nItems - 1) * spacing.y) : ImVec2(pad.x * 2 + icon_size * nItems + sum_label_width + (nItems - 1) * spacing.x, pad.y * 2 + txt_ht);
+    return legend_size;
+}
+
+void RenderLegend() {
+    ImPlot3DContext& gp = *GImPlot3D;
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    if (ImHasFlag(plot.Flags, ImPlot3DFlags_NoLegend) || plot.Items.GetLegendCount() == 0)
+        return;
+    ImGuiContext& g = *GImGui;
+    ImGuiWindow* window = g.CurrentWindow;
+    ImDrawList* draw_list = window->DrawList;
+    const ImGuiIO& IO = ImGui::GetIO();
+
+    ImPlot3DLegend& legend = plot.Items.Legend;
+    const bool legend_horz = ImHasFlag(legend.Flags, ImPlot3DLegendFlags_Horizontal);
+    const ImVec2 legend_size = CalcLegendSize(plot.Items, gp.Style.LegendInnerPadding, gp.Style.LegendSpacing, !legend_horz);
+    const ImVec2 legend_pos = GetLocationPos(plot.PlotRect,
+                                             legend_size,
+                                             legend.Location,
+                                             gp.Style.LegendPadding);
+    legend.Rect = ImRect(legend_pos, legend_pos + legend_size);
+
+    // Test hover
+    legend.Hovered = ImGui::IsWindowHovered() && legend.Rect.Contains(IO.MousePos);
+
+    // Render background
+    ImU32 col_bg = GetStyleColorU32(ImPlot3DCol_LegendBg);
+    ImU32 col_bd = GetStyleColorU32(ImPlot3DCol_LegendBorder);
+    draw_list->AddRectFilled(legend.Rect.Min, legend.Rect.Max, col_bg);
+    draw_list->AddRect(legend.Rect.Min, legend.Rect.Max, col_bd);
+}
+
+//-----------------------------------------------------------------------------
 // [SECTION] Begin/End Plot
 //-----------------------------------------------------------------------------
+
 bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     IMPLOT3D_CHECK_CTX();
     ImPlot3DContext& gp = *GImPlot3D;
@@ -133,6 +207,9 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
         return false;
     }
 
+    // Reset legend
+    plot.Items.Legend.Reset();
+
     return true;
 }
 
@@ -140,9 +217,16 @@ void EndPlot() {
     IMPLOT3D_CHECK_CTX();
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "Mismatched BeginPlot()/EndPlot()!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
 
     // Lock setup if not already done
     SetupLock();
+
+    // Reset legend hover
+    plot.Items.Legend.Hovered = false;
+
+    // Render legend
+    RenderLegend();
 
     // Reset current plot
     gp.CurrentPlot = nullptr;
@@ -245,7 +329,7 @@ void HandleInput(ImPlot3DPlot& plot) {
     }
 }
 
-void DrawAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat& rotation, const ImPlot3DPoint& range_min, const ImPlot3DPoint& range_max) {
+void RenderAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat& rotation, const ImPlot3DPoint& range_min, const ImPlot3DPoint& range_max) {
     float zoom = ImMin(plot_area.GetWidth(), plot_area.GetHeight()) / 1.8f;
     ImVec2 center = plot_area.GetCenter();
     ImPlot3DPoint plane_normal[3] = {
@@ -337,7 +421,7 @@ void SetupLock() {
     HandleInput(plot);
 
     // Render axes
-    DrawAxes(draw_list, plot.PlotRect, plot.Rotation, plot.RangeMin, plot.RangeMax);
+    RenderAxes(draw_list, plot.PlotRect, plot.Rotation, plot.RangeMin, plot.RangeMax);
 
     // Render title
     if (!plot.TextBuffer.empty()) {
@@ -468,13 +552,13 @@ ImVec4 GetAutoColor(ImPlot3DCol idx) {
         case ImPlot3DCol_Line: return col;          // Plot dependent
         case ImPlot3DCol_MarkerOutline: return col; // Plot dependent
         case ImPlot3DCol_MarkerFill: return col;    // Plot dependent
+        case ImPlot3DCol_TitleText: return ImGui::GetStyleColorVec4(ImGuiCol_Text);
         case ImPlot3DCol_FrameBg: return ImGui::GetStyleColorVec4(ImGuiCol_FrameBg);
         case ImPlot3DCol_PlotBg: return ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
         case ImPlot3DCol_PlotBorder: return ImGui::GetStyleColorVec4(ImGuiCol_Border);
         case ImPlot3DCol_LegendBg: return ImGui::GetStyleColorVec4(ImGuiCol_PopupBg);
         case ImPlot3DCol_LegendBorder: return GetStyleColorVec4(ImPlot3DCol_PlotBorder);
         case ImPlot3DCol_LegendText: return GetStyleColorVec4(ImPlot3DCol_TitleText); // TODO Change to inlay text
-        case ImPlot3DCol_TitleText: return ImGui::GetStyleColorVec4(ImGuiCol_Text);
         default: return col;
     }
 }
@@ -649,6 +733,10 @@ ImPlot3DStyle::ImPlot3DStyle() {
     PlotMinSize = ImVec2(200, 200);
     PlotPadding = ImVec2(10, 10);
     LabelPadding = ImVec2(5, 5);
+    // Legend style
+    LegendPadding = ImVec2(10, 10);
+    LegendInnerPadding = ImVec2(5, 5);
+    LegendSpacing = ImVec2(5, 0);
     // Colors
     ImPlot3D::StyleColorsAuto(this);
 };

@@ -53,14 +53,16 @@ struct ImPlot3DPoint;
 struct ImPlot3DQuat;
 
 // Enums
-typedef int ImPlot3DCol;    // -> ImPlot3DCol_                 // Enum: Styling colors
-typedef int ImPlot3DMarker; // -> ImPlot3DMarker_              // Enum: Marker styles
+typedef int ImPlot3DCol;      // -> ImPlot3DCol_               // Enum: Styling colors
+typedef int ImPlot3DMarker;   // -> ImPlot3DMarker_            // Enum: Marker styles
+typedef int ImPlot3DLocation; // -> ImPlot3DLocation_          // Enum: Locations
 
 // Flags
 typedef int ImPlot3DFlags;        // -> ImPlot3DFlags_         // Flags: for BeginPlot()
 typedef int ImPlot3DScatterFlags; // -> ImPlot3DScatterFlags_  // Flags: Scatter plot flags
 typedef int ImPlot3DLineFlags;    // -> ImPlot3DLineFlags_     // Flags: Line plot flags
 typedef int ImPlot3DItemFlags;    // -> ImPlot3DItemFlags_     // Flags: Item flags
+typedef int ImPlot3DLegendFlags;  // -> ImPlot3DLegendFlags_   // Flags: Legend flags
 
 namespace ImPlot3D {
 
@@ -159,8 +161,10 @@ IMPLOT3D_API void ShowStyleEditor(ImPlot3DStyle* ref = nullptr);
 
 // Flags for ImPlot3D::BeginPlot()
 enum ImPlot3DFlags_ {
-    ImPlot3DFlags_None = 0,         // default
-    ImPlot3DFlags_NoTitle = 1 << 0, // hide plot title
+    ImPlot3DFlags_None = 0,          // Default
+    ImPlot3DFlags_NoTitle = 1 << 0,  // Hide plot title
+    ImPlot3DFlags_NoLegend = 1 << 1, // Hide plot legend
+    ImPlot3DFlags_CanvasOnly = ImPlot3DFlags_NoTitle | ImPlot3DFlags_NoLegend,
 };
 
 enum ImPlot3DCol_ {
@@ -207,10 +211,33 @@ enum ImPlot3DLineFlags_ {
     ImPlot3DLineFlags_SkipNaN = 1 << 2,  // NaNs values will be skipped instead of rendered as missing data
 };
 
+// Flags for items
 enum ImPlot3DItemFlags_ {
     ImPlot3DItemFlags_None = 0,          // Default
     ImPlot3DItemFlags_NoLegend = 1 << 0, // The item won't have a legend entry displayed
     ImPlot3DItemFlags_NoFit = 1 << 1,    // The item won't be considered for plot fits
+};
+
+// Flags for legends
+enum ImPlot3DLegendFlags_ {
+    ImPlot3DLegendFlags_None = 0,                 // Default
+    ImPlot3DLegendFlags_NoButtons = 1 << 0,       // Legend icons will not function as hide/show buttons
+    ImPlot3DLegendFlags_NoHighlightItem = 1 << 1, // Plot items will not be highlighted when their legend entry is hovered
+    ImPlot3DLegendFlags_Horizontal = 1 << 2,      // Legend entries will be displayed horizontally
+    ImPlot3DLegendFlags_Sort = 1 << 3,            // Legend entries will be displayed in alphabetical order
+};
+
+// Used to position legend on a plot
+enum ImPlot3DLocation_ {
+    ImPlot3DLocation_Center = 0,                                                 // Center-center
+    ImPlot3DLocation_North = 1 << 0,                                             // Top-center
+    ImPlot3DLocation_South = 1 << 1,                                             // Bottom-center
+    ImPlot3DLocation_West = 1 << 2,                                              // Center-left
+    ImPlot3DLocation_East = 1 << 3,                                              // Center-right
+    ImPlot3DLocation_NorthWest = ImPlot3DLocation_North | ImPlot3DLocation_West, // Top-left
+    ImPlot3DLocation_NorthEast = ImPlot3DLocation_North | ImPlot3DLocation_East, // Top-right
+    ImPlot3DLocation_SouthWest = ImPlot3DLocation_South | ImPlot3DLocation_West, // Bottom-left
+    ImPlot3DLocation_SouthEast = ImPlot3DLocation_South | ImPlot3DLocation_East  // Bottom-right
 };
 
 //-----------------------------------------------------------------------------
@@ -322,7 +349,7 @@ struct ImPlot3DQuat {
 struct ImPlot3DStyle {
     // Item style
     float LineWeight;   // Line weight in pixels
-    int Marker;         // Default marker type (ImPlot3DMarker_Circle)
+    int Marker;         // Default marker type (ImPlot3DMarker_None)
     float MarkerSize;   // Marker size in pixels (roughly the marker's "radius")
     float MarkerWeight; // Marker outline weight in pixels
     // Plot style
@@ -330,6 +357,10 @@ struct ImPlot3DStyle {
     ImVec2 PlotMinSize;
     ImVec2 PlotPadding;
     ImVec2 LabelPadding;
+    // Legend style
+    ImVec2 LegendPadding;      // Legend padding from plot edges
+    ImVec2 LegendInnerPadding; // Legend inner padding from legend edges
+    ImVec2 LegendSpacing;      // Spacing between legend entries
     // Colors
     ImVec4 Colors[ImPlot3DCol_COUNT];
     // Constructor

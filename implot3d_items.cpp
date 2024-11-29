@@ -148,6 +148,10 @@ bool BeginItem(const char* label_id, ImPlot3DItemFlags flags, ImPlot3DCol recolo
     ImPlot3DStyle& style = gp.Style;
     ImPlot3DNextItemData& n = gp.NextItemData;
 
+    // Register item
+    bool just_created;
+    ImPlot3DItem* item = RegisterOrGetItem(label_id, flags, &just_created);
+
     // Set color
     n.Colors[ImPlot3DCol_Line] = IsColorAuto(n.Colors[ImPlot3DCol_Line]) ? GetStyleColorVec4(ImPlot3DCol_Line) : n.Colors[ImPlot3DCol_Line];
     n.Colors[ImPlot3DCol_MarkerFill] = IsColorAuto(n.Colors[ImPlot3DCol_MarkerFill]) ? GetStyleColorVec4(ImPlot3DCol_MarkerFill) : n.Colors[ImPlot3DCol_MarkerFill];
@@ -179,12 +183,13 @@ ImPlot3DItem* RegisterOrGetItem(const char* label_id, ImPlot3DItemFlags flags, b
     if (just_created != nullptr)
         *just_created = Items.GetItem(id) == nullptr;
     ImPlot3DItem* item = Items.GetOrAddItem(id);
+    int idx = Items.GetItemIndex(item);
     item->ID = id;
-    if (ImHasFlag(flags, ImPlot3DItemFlags_NoLegend) && ImGui::FindRenderedTextEnd(label_id, nullptr) != label_id) {
-        // TODO
-        item->Show = false;
-    } else {
-        item->Show = true;
+    item->Show = true;
+    if (!ImHasFlag(flags, ImPlot3DItemFlags_NoLegend) && ImGui::FindRenderedTextEnd(label_id, nullptr) != label_id) {
+        Items.Legend.Indices.push_back(idx);
+        item->NameOffset = Items.Legend.Labels.size();
+        Items.Legend.Labels.append(label_id, label_id + strlen(label_id) + 1);
     }
     return item;
 }
