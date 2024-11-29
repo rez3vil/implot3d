@@ -320,6 +320,21 @@ void EndPlot() {
 }
 
 //-----------------------------------------------------------------------------
+// [SECTION] Setup
+//-----------------------------------------------------------------------------
+
+void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
+                         "Setup needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!");
+    IM_ASSERT_USER_ERROR(gp.CurrentItems != nullptr,
+                         "SetupLegend() needs to be called within an itemized context!");
+    ImPlot3DLegend& legend = gp.CurrentItems->Legend;
+    legend.Location = location;
+    legend.Flags = flags;
+}
+
+//-----------------------------------------------------------------------------
 // [SECTION] Plot Utils
 //-----------------------------------------------------------------------------
 

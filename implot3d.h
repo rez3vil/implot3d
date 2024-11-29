@@ -16,6 +16,7 @@
 // [SECTION] Forward declarations and basic types
 // [SECTION] Context
 // [SECTION] Begin/End Plot
+// [SECTION] Setup
 // [SECTION] Plot Items
 // [SECTION] Plot Utils
 // [SECTION] Miscellaneous
@@ -94,6 +95,12 @@ IMPLOT3D_API void SetCurrentContext(ImPlot3DContext* ctx);
 // - #size is the **frame** size of the plot widget, not the plot area.
 IMPLOT3D_API bool BeginPlot(const char* title_id, const ImVec2& size = ImVec2(-1, 0), ImPlot3DFlags flags = 0);
 IMPLOT3D_API void EndPlot(); // Only call if BeginPlot() returns true!
+
+//-----------------------------------------------------------------------------
+// [SECTION] Setup
+//-----------------------------------------------------------------------------
+
+IMPLOT3D_API void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags = 0);
 
 //-----------------------------------------------------------------------------
 // [SECTION] Plot Items
