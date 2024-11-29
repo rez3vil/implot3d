@@ -267,6 +267,9 @@ IMPLOT3D_API ImPlot3DItem* GetCurrentItem();
 // [SECTION] Plot Utils
 //-----------------------------------------------------------------------------
 
+// Gets the current plot from the current ImPlot3DContext
+IMPLOT3D_API ImPlot3DPlot* GetCurrentPlot();
+
 // Convert a position in the current plot's coordinate system to the current plot's normalized device coordinate system (NDC)
 // When the cube aspect ratio is [1,1,1], the NDC varies from [-0.5, 0.5] in each axis
 IMPLOT3D_API ImPlot3DPoint PlotToNDC(const ImPlot3DPoint& point);

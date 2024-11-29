@@ -312,8 +312,11 @@ struct RendererMarkersFill : RendererBase {
         UV = draw_list._Data->TexUvWhitePixel;
     }
 
-    IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, int prim) const {
-        ImVec2 p = PlotToPixels(Getter(prim));
+    IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, const ImPlot3DBox& cull_box, int prim) const {
+        ImPlot3DPoint p_plot = Getter(prim);
+        if (!cull_box.Contains(p_plot))
+            return false;
+        ImVec2 p = PlotToPixels(p_plot);
         for (int i = 0; i < Count; i++) {
             draw_list._VtxWritePtr[0].pos.x = p.x + Marker[i].x * Size;
             draw_list._VtxWritePtr[0].pos.y = p.y + Marker[i].y * Size;
@@ -346,8 +349,11 @@ struct RendererMarkersLine : RendererBase {
         GetLineRenderProps(draw_list, HalfWeight, UV0, UV1);
     }
 
-    IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, int prim) const {
-        ImVec2 p = PlotToPixels(Getter(prim));
+    IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, const ImPlot3DBox& cull_box, int prim) const {
+        ImPlot3DPoint p_plot = Getter(prim);
+        if (!cull_box.Contains(p_plot))
+            return false;
+        ImVec2 p = PlotToPixels(p_plot);
         for (int i = 0; i < Count; i = i + 2) {
             ImVec2 p1(p.x + Marker[i].x * Size, p.y + Marker[i].y * Size);
             ImVec2 p2(p.x + Marker[i + 1].x * Size, p.y + Marker[i + 1].y * Size);
@@ -368,77 +374,136 @@ struct RendererMarkersLine : RendererBase {
 
 template <class _Getter>
 struct RendererLineStrip : RendererBase {
-    RendererLineStrip(const _Getter& getter, ImU32 col, float weight) : RendererBase(getter.Count - 1, 6, 4),
-                                                                        Getter(getter),
-                                                                        Col(col),
-                                                                        HalfWeight(ImMax(1.0f, weight) * 0.5f) {
-        P1 = PlotToPixels(Getter(0));
+    RendererLineStrip(const _Getter& getter, ImU32 col, float weight)
+        : RendererBase(getter.Count - 1, 6, 4),
+          Getter(getter),
+          Col(col),
+          HalfWeight(ImMax(1.0f, weight) * 0.5f) {
+        // Initialize the first point in plot coordinates
+        P1_plot = Getter(0);
     }
 
     void Init(ImDrawList& draw_list) const {
         GetLineRenderProps(draw_list, HalfWeight, UV0, UV1);
     }
 
-    IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, int prim) const {
-        ImVec2 P2 = PlotToPixels(Getter(prim + 1));
-        PrimLine(draw_list, P1, P2, HalfWeight, Col, UV0, UV1);
-        P1 = P2;
-        return true;
+    IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, const ImPlot3DBox& cull_box, int prim) const {
+        ImPlot3DPoint P2_plot = Getter(prim + 1);
+
+        // Clip the line segment to the culling box using Liang-Barsky algorithm
+        ImPlot3DPoint P0_clipped, P1_clipped;
+        bool visible = cull_box.ClipLineSegment(P1_plot, P2_plot, P0_clipped, P1_clipped);
+
+        if (visible) {
+            // Convert clipped points to pixel coordinates
+            ImVec2 P0_screen = PlotToPixels(P0_clipped);
+            ImVec2 P1_screen = PlotToPixels(P1_clipped);
+            // Render the line segment
+            PrimLine(draw_list, P0_screen, P1_screen, HalfWeight, Col, UV0, UV1);
+        }
+
+        // Update for next segment
+        P1_plot = P2_plot;
+
+        return visible;
     }
 
     const _Getter& Getter;
     const ImU32 Col;
     mutable float HalfWeight;
-    mutable ImVec2 P1;
+    mutable ImPlot3DPoint P1_plot;
     mutable ImVec2 UV0;
     mutable ImVec2 UV1;
 };
 
 template <class _Getter>
 struct RendererLineStripSkip : RendererBase {
-    RendererLineStripSkip(const _Getter& getter, ImU32 col, float weight) : RendererBase(getter.Count - 1, 6, 4),
-                                                                            Getter(getter),
-                                                                            Col(col),
-                                                                            HalfWeight(ImMax(1.0f, weight) * 0.5f) {
-        P1 = PlotToPixels(Getter(0));
+    RendererLineStripSkip(const _Getter& getter, ImU32 col, float weight)
+        : RendererBase(getter.Count - 1, 6, 4),
+          Getter(getter),
+          Col(col),
+          HalfWeight(ImMax(1.0f, weight) * 0.5f) {
+        // Initialize the first point in plot coordinates
+        P1_plot = Getter(0);
     }
 
     void Init(ImDrawList& draw_list) const {
         GetLineRenderProps(draw_list, HalfWeight, UV0, UV1);
     }
 
-    IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, int prim) const {
-        ImVec2 P2 = PlotToPixels(Getter(prim + 1));
-        PrimLine(draw_list, P1, P2, HalfWeight, Col, UV0, UV1);
-        if (!ImNan(P2.x) && !ImNan(P2.y))
-            P1 = P2;
-        return true;
+    IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, const ImPlot3DBox& cull_box, int prim) const {
+        // Get the next point in plot coordinates
+        ImPlot3DPoint P2_plot = Getter(prim + 1);
+        bool visible = false;
+
+        // Check for NaNs in P1_plot and P2_plot
+        if (!ImNan(P1_plot.x) && !ImNan(P1_plot.y) && !ImNan(P1_plot.z) &&
+            !ImNan(P2_plot.x) && !ImNan(P2_plot.y) && !ImNan(P2_plot.z)) {
+
+            // Clip the line segment to the culling box
+            ImPlot3DPoint P0_clipped, P1_clipped;
+            visible = cull_box.ClipLineSegment(P1_plot, P2_plot, P0_clipped, P1_clipped);
+
+            if (visible) {
+                // Convert clipped points to pixel coordinates
+                ImVec2 P0_screen = PlotToPixels(P0_clipped);
+                ImVec2 P1_screen = PlotToPixels(P1_clipped);
+                // Render the line segment
+                PrimLine(draw_list, P0_screen, P1_screen, HalfWeight, Col, UV0, UV1);
+            }
+        }
+
+        // Update P1_plot if P2_plot is valid
+        if (!ImNan(P2_plot.x) && !ImNan(P2_plot.y) && !ImNan(P2_plot.z))
+            P1_plot = P2_plot;
+
+        return visible;
     }
 
     const _Getter& Getter;
     const ImU32 Col;
     mutable float HalfWeight;
-    mutable ImVec2 P1;
+    mutable ImPlot3DPoint P1_plot;
     mutable ImVec2 UV0;
     mutable ImVec2 UV1;
 };
 
 template <class _Getter>
 struct RendererLineSegments : RendererBase {
-    RendererLineSegments(const _Getter& getter, ImU32 col, float weight) : RendererBase(getter.Count / 2, 6, 4),
-                                                                           Getter(getter),
-                                                                           Col(col),
-                                                                           HalfWeight(ImMax(1.0f, weight) * 0.5f) {}
+    RendererLineSegments(const _Getter& getter, ImU32 col, float weight)
+        : RendererBase(getter.Count / 2, 6, 4),
+          Getter(getter),
+          Col(col),
+          HalfWeight(ImMax(1.0f, weight) * 0.5f) {}
 
     void Init(ImDrawList& draw_list) const {
         GetLineRenderProps(draw_list, HalfWeight, UV0, UV1);
     }
 
-    IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, int prim) const {
-        ImVec2 P1 = PlotToPixels(Getter(prim * 2 + 0));
-        ImVec2 P2 = PlotToPixels(Getter(prim * 2 + 1));
-        PrimLine(draw_list, P1, P2, HalfWeight, Col, UV0, UV1);
-        return true;
+    IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, const ImPlot3DBox& cull_box, int prim) const {
+        // Get the segment's endpoints in plot coordinates
+        ImPlot3DPoint P1_plot = Getter(prim * 2 + 0);
+        ImPlot3DPoint P2_plot = Getter(prim * 2 + 1);
+
+        // Check for NaNs in P1_plot and P2_plot
+        if (!ImNan(P1_plot.x) && !ImNan(P1_plot.y) && !ImNan(P1_plot.z) &&
+            !ImNan(P2_plot.x) && !ImNan(P2_plot.y) && !ImNan(P2_plot.z)) {
+
+            // Clip the line segment to the culling box
+            ImPlot3DPoint P0_clipped, P1_clipped;
+            bool visible = cull_box.ClipLineSegment(P1_plot, P2_plot, P0_clipped, P1_clipped);
+
+            if (visible) {
+                // Convert clipped points to pixel coordinates
+                ImVec2 P0_screen = PlotToPixels(P0_clipped);
+                ImVec2 P1_screen = PlotToPixels(P1_clipped);
+                // Render the line segment
+                PrimLine(draw_list, P0_screen, P1_screen, HalfWeight, Col, UV0, UV1);
+            }
+            return visible;
+        }
+
+        return false;
     }
 
     const _Getter& Getter;
@@ -515,6 +580,15 @@ template <template <class> class _Renderer, class _Getter, typename... Args>
 void RenderPrimitives(const _Getter& getter, Args... args) {
     _Renderer<_Getter> renderer(getter, args...);
     ImDrawList& draw_list = *GetPlotDrawList();
+    ImPlot3DPlot& plot = *GetCurrentPlot();
+    ImPlot3DBox cull_box;
+    if (ImHasFlag(plot.Flags, ImPlot3DFlags_NoClip)) {
+        cull_box.Min = ImPlot3DPoint(-HUGE_VAL, -HUGE_VAL, -HUGE_VAL);
+        cull_box.Max = ImPlot3DPoint(HUGE_VAL, HUGE_VAL, HUGE_VAL);
+    } else {
+        cull_box.Min = plot.RangeMin;
+        cull_box.Max = plot.RangeMax;
+    }
 
     // Initialize renderer
     renderer.Init(draw_list);
@@ -523,8 +597,11 @@ void RenderPrimitives(const _Getter& getter, Args... args) {
     // Reserve vertices and indices to render the primitives
     draw_list.PrimReserve(prims_to_render * renderer.IdxConsumed, prims_to_render * renderer.VtxConsumed);
     // Render primitives
-    for (unsigned int i = 0; i < prims_to_render; ++i)
-        renderer.Render(draw_list, i);
+    int num_culled = 0;
+    for (unsigned int i = 0; i < prims_to_render; i++)
+        if (!renderer.Render(draw_list, cull_box, i))
+            num_culled++;
+    draw_list.PrimUnreserve(num_culled * renderer.IdxConsumed, num_culled * renderer.VtxConsumed);
 }
 
 //-----------------------------------------------------------------------------

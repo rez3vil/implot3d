@@ -25,6 +25,7 @@
 // [SECTION] Context Utils
 // [SECTION] Style Utils
 // [SECTION] ImPlot3DPoint
+// [SECTION] ImPlot3DBox
 // [SECTION] ImPlot3DQuat
 // [SECTION] ImPlot3DStyle
 
@@ -38,7 +39,6 @@
 
 #include "implot3d.h"
 #include "implot3d_internal.h"
-#include <iostream>
 
 #ifndef IMGUI_DISABLE
 
@@ -284,7 +284,7 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     plot.Items.Legend.Reset();
 
     // Push frame rect clipping
-    ImGui::PushClipRect(plot.FrameRect.Min, plot.FrameRect.Max, false);
+    ImGui::PushClipRect(plot.FrameRect.Min, plot.FrameRect.Max, true);
 
     return true;
 }
@@ -344,6 +344,10 @@ void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags) {
 //-----------------------------------------------------------------------------
 // [SECTION] Plot Utils
 //-----------------------------------------------------------------------------
+
+ImPlot3DPlot* GetCurrentPlot() {
+    return GImPlot3D->CurrentPlot;
+}
 
 ImVec2 PlotToPixels(const ImPlot3DPoint& point) {
     ImPlot3DContext& gp = *GImPlot3D;
@@ -867,6 +871,86 @@ ImPlot3DPoint ImPlot3DPoint::Normalized() const {
 
 ImPlot3DPoint operator*(float lhs, const ImPlot3DPoint& rhs) {
     return ImPlot3DPoint(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z);
+}
+//-----------------------------------------------------------------------------
+// [SECTION] ImPlot3DBox
+//-----------------------------------------------------------------------------
+
+void ImPlot3DBox::Expand(const ImPlot3DPoint& point) {
+    Min.x = ImMin(Min.x, point.x);
+    Min.y = ImMin(Min.y, point.y);
+    Min.z = ImMin(Min.z, point.z);
+    Max.x = ImMax(Max.x, point.x);
+    Max.y = ImMax(Max.y, point.y);
+    Max.z = ImMax(Max.z, point.z);
+}
+
+bool ImPlot3DBox::Contains(const ImPlot3DPoint& point) const {
+    return (point.x >= Min.x && point.x <= Max.x) &&
+           (point.y >= Min.y && point.y <= Max.y) &&
+           (point.z >= Min.z && point.z <= Max.z);
+}
+
+bool ImPlot3DBox::ClipLineSegment(const ImPlot3DPoint& p0, const ImPlot3DPoint& p1, ImPlot3DPoint& p0_clipped, ImPlot3DPoint& p1_clipped) const {
+    // Check if the line segment is completely inside the box
+    if (Contains(p0) && Contains(p1)) {
+        p0_clipped = p0;
+        p1_clipped = p1;
+        return true;
+    }
+
+    // Perform Liang-Barsky 3D clipping
+    double t0 = 0.0;
+    double t1 = 1.0;
+    ImPlot3DPoint d = p1 - p0;
+
+    // Define the clipping boundaries
+    const double xmin = Min.x, xmax = Max.x;
+    const double ymin = Min.y, ymax = Max.y;
+    const double zmin = Min.z, zmax = Max.z;
+
+    // Lambda function to update t0 and t1
+    auto update = [&](double p, double q) -> bool {
+        if (p == 0.0) {
+            if (q < 0.0)
+                return false; // Line is parallel and outside the boundary
+            else
+                return true; // Line is parallel and inside or coincident with boundary
+        }
+        double r = q / p;
+        if (p < 0.0) {
+            if (r > t1)
+                return false; // Line is outside
+            if (r > t0)
+                t0 = r; // Move up t0
+        } else {
+            if (r < t0)
+                return false; // Line is outside
+            if (r < t1)
+                t1 = r; // Move down t1
+        }
+        return true;
+    };
+
+    // Clip against each boundary
+    if (!update(-d.x, p0.x - xmin))
+        return false; // Left
+    if (!update(d.x, xmax - p0.x))
+        return false; // Right
+    if (!update(-d.y, p0.y - ymin))
+        return false; // Bottom
+    if (!update(d.y, ymax - p0.y))
+        return false; // Top
+    if (!update(-d.z, p0.z - zmin))
+        return false; // Near
+    if (!update(d.z, zmax - p0.z))
+        return false; // Far
+
+    // Compute clipped points
+    p0_clipped = p0 + d * t0;
+    p1_clipped = p0 + d * t1;
+
+    return true;
 }
 
 //-----------------------------------------------------------------------------

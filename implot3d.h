@@ -27,11 +27,13 @@
 // [SECTION] ImPlot3DPoint
 // [SECTION] ImPlot3DRay
 // [SECTION] ImPlot3DPlane
+// [SECTION] ImPlot3DBox
 // [SECTION] ImPlot3DQuat
 // [SECTION] ImPlot3DStyle
 
 #pragma once
 #include "imgui.h"
+#include "imgui_internal.h"
 #ifndef IMGUI_DISABLE
 
 //-----------------------------------------------------------------------------
@@ -57,6 +59,7 @@ struct ImPlot3DStyle;
 struct ImPlot3DPoint;
 struct ImPlot3DRay;
 struct ImPlot3DPlane;
+struct ImPlot3DBox;
 struct ImPlot3DQuat;
 
 // Enums
@@ -180,6 +183,7 @@ enum ImPlot3DFlags_ {
     ImPlot3DFlags_None = 0,          // Default
     ImPlot3DFlags_NoTitle = 1 << 0,  // Hide plot title
     ImPlot3DFlags_NoLegend = 1 << 1, // Hide plot legend
+    ImPlot3DFlags_NoClip = 1 << 2,   // Disable 3D box clipping
     ImPlot3DFlags_CanvasOnly = ImPlot3DFlags_NoTitle | ImPlot3DFlags_NoLegend,
 };
 
@@ -341,6 +345,30 @@ struct ImPlot3DRay {
 struct ImPlot3DPlane {
     ImPlot3DPoint Point;
     ImPlot3DPoint Normal;
+};
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImPlot3DBox
+//-----------------------------------------------------------------------------
+
+struct ImPlot3DBox {
+    ImPlot3DPoint Min;
+    ImPlot3DPoint Max;
+
+    // Default constructor
+    constexpr ImPlot3DBox() : Min(ImPlot3DPoint()), Max(ImPlot3DPoint()) {}
+
+    // Constructor with two points
+    constexpr ImPlot3DBox(const ImPlot3DPoint& min, const ImPlot3DPoint& max) : Min(min), Max(max) {}
+
+    // Method to expand the box to include a point
+    void Expand(const ImPlot3DPoint& point);
+
+    // Method to check if a point is inside the box
+    bool Contains(const ImPlot3DPoint& point) const;
+
+    // Method to clip a line segment against the box
+    bool ClipLineSegment(const ImPlot3DPoint& p0, const ImPlot3DPoint& p1, ImPlot3DPoint& p0_clipped, ImPlot3DPoint& p1_clipped) const;
 };
 
 //-----------------------------------------------------------------------------
