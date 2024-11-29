@@ -152,6 +152,12 @@ bool BeginItem(const char* label_id, ImPlot3DItemFlags flags, ImPlot3DCol recolo
     bool just_created;
     ImPlot3DItem* item = RegisterOrGetItem(label_id, flags, &just_created);
 
+    // Don't render if item is hidden
+    if (!item->Show) {
+        EndItem();
+        return false;
+    }
+
     // Set color
     n.Colors[ImPlot3DCol_Line] = IsColorAuto(n.Colors[ImPlot3DCol_Line]) ? GetStyleColorVec4(ImPlot3DCol_Line) : n.Colors[ImPlot3DCol_Line];
     n.Colors[ImPlot3DCol_MarkerFill] = IsColorAuto(n.Colors[ImPlot3DCol_MarkerFill]) ? GetStyleColorVec4(ImPlot3DCol_MarkerFill) : n.Colors[ImPlot3DCol_MarkerFill];
@@ -185,11 +191,12 @@ ImPlot3DItem* RegisterOrGetItem(const char* label_id, ImPlot3DItemFlags flags, b
     ImPlot3DItem* item = Items.GetOrAddItem(id);
     int idx = Items.GetItemIndex(item);
     item->ID = id;
-    item->Show = true;
     if (!ImHasFlag(flags, ImPlot3DItemFlags_NoLegend) && ImGui::FindRenderedTextEnd(label_id, nullptr) != label_id) {
         Items.Legend.Indices.push_back(idx);
         item->NameOffset = Items.Legend.Labels.size();
         Items.Legend.Labels.append(label_id, label_id + strlen(label_id) + 1);
+    } else {
+        item->Show = false;
     }
     return item;
 }

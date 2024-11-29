@@ -157,6 +157,31 @@ template <typename TSet, typename TFlag>
 static inline bool ImHasFlag(TSet set, TFlag flag) { return (set & flag) == flag; }
 // Returns true if val is NAN
 static inline bool ImNan(double val) { return isnan(val); }
+// Set alpha channel of 32-bit color from float in range [0.0 1.0]
+static inline ImU32 ImAlphaU32(ImU32 col, float alpha) {
+    return col & ~((ImU32)((1.0f - alpha) * 255) << IM_COL32_A_SHIFT);
+}
+// Mix color a and b by factor s in [0 256]
+static inline ImU32 ImMixU32(ImU32 a, ImU32 b, ImU32 s) {
+#ifdef IMPLOT_MIX64
+    const ImU32 af = 256 - s;
+    const ImU32 bf = s;
+    const ImU64 al = (a & 0x00ff00ff) | (((ImU64)(a & 0xff00ff00)) << 24);
+    const ImU64 bl = (b & 0x00ff00ff) | (((ImU64)(b & 0xff00ff00)) << 24);
+    const ImU64 mix = (al * af + bl * bf);
+    return ((mix >> 32) & 0xff00ff00) | ((mix & 0xff00ff00) >> 8);
+#else
+    const ImU32 af = 256 - s;
+    const ImU32 bf = s;
+    const ImU32 al = (a & 0x00ff00ff);
+    const ImU32 ah = (a & 0xff00ff00) >> 8;
+    const ImU32 bl = (b & 0x00ff00ff);
+    const ImU32 bh = (b & 0xff00ff00) >> 8;
+    const ImU32 ml = (al * af + bl * bf);
+    const ImU32 mh = (ah * af + bh * bf);
+    return (mh & 0xff00ff00) | ((ml & 0xff00ff00) >> 8);
+#endif
+}
 #endif
 
 //-----------------------------------------------------------------------------

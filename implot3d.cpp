@@ -123,6 +123,89 @@ ImVec2 CalcLegendSize(ImPlot3DItemGroup& items, const ImVec2& pad, const ImVec2&
     return legend_size;
 }
 
+bool ShowLegendEntries(ImPlot3DItemGroup& items, const ImRect& legend_bb, bool hovered, const ImVec2& pad, const ImVec2& spacing, bool vertical, ImDrawList& draw_list) {
+    const float txt_ht = ImGui::GetTextLineHeight();
+    const float icon_size = txt_ht;
+    const float icon_shrink = 2;
+    ImU32 col_txt = GetStyleColorU32(ImPlot3DCol_LegendText);
+    ImU32 col_txt_dis = ImAlphaU32(col_txt, 0.25f);
+    float sum_label_width = 0;
+    bool any_item_hovered = false;
+
+    const int num_items = items.GetLegendCount();
+    if (num_items < 1)
+        return hovered;
+
+    // Build render order
+    ImPlot3DContext& gp = *GImPlot3D;
+    ImVector<int> indices;
+    indices.resize(num_items);
+    for (int i = 0; i < num_items; ++i)
+        indices[i] = i;
+    // TODO sorting
+    // if (ImHasFlag(items.Legend.Flags, ImPlot3DLegendFlags_Sort) && num_items > 1) {
+    //    gp.SortItems = &items;
+    //    qsort(indices.Data, num_items, sizeof(int), LegendSortingComp);
+    //}
+
+    // Render legend items
+    for (int i = 0; i < num_items; ++i) {
+        const int idx = indices[i];
+        ImPlot3DItem* item = items.GetLegendItem(idx);
+        const char* label = items.GetLegendLabel(idx);
+        const float label_width = ImGui::CalcTextSize(label, nullptr, true).x;
+        const ImVec2 top_left = vertical ? legend_bb.Min + pad + ImVec2(0, i * (txt_ht + spacing.y)) : legend_bb.Min + pad + ImVec2(i * (icon_size + spacing.x) + sum_label_width, 0);
+        sum_label_width += label_width;
+        ImRect icon_bb;
+        icon_bb.Min = top_left + ImVec2(icon_shrink, icon_shrink);
+        icon_bb.Max = top_left + ImVec2(icon_size - icon_shrink, icon_size - icon_shrink);
+        ImRect label_bb;
+        label_bb.Min = top_left;
+        label_bb.Max = top_left + ImVec2(label_width + icon_size, icon_size);
+        ImU32 col_txt_hl;
+        ImU32 col_item = ImAlphaU32(item->Color, 1);
+
+        ImRect button_bb(icon_bb.Min, label_bb.Max);
+
+        ImGui::KeepAliveID(item->ID);
+
+        bool item_hov = false;
+        bool item_hld = false;
+        bool item_clk = ImHasFlag(items.Legend.Flags, ImPlot3DLegendFlags_NoButtons)
+                            ? false
+                            : ImGui::ButtonBehavior(button_bb, item->ID, &item_hov, &item_hld);
+
+        if (item_clk)
+            item->Show = !item->Show;
+
+        const bool can_hover = (item_hov) && !ImHasFlag(items.Legend.Flags, ImPlot3DLegendFlags_NoHighlightItem);
+
+        if (can_hover) {
+            // TODO hover rect
+            // item->LegendHoverRect.Min = icon_bb.Min;
+            // item->LegendHoverRect.Max = label_bb.Max;
+            item->LegendHovered = true;
+            col_txt_hl = ImMixU32(col_txt, col_item, 64);
+            any_item_hovered = true;
+        } else {
+            col_txt_hl = ImGui::GetColorU32(col_txt);
+        }
+        ImU32 col_icon;
+        if (item_hld)
+            col_icon = item->Show ? ImAlphaU32(col_item, 0.5f) : ImGui::GetColorU32(ImGuiCol_TextDisabled, 0.5f);
+        else if (item_hov)
+            col_icon = item->Show ? ImAlphaU32(col_item, 0.75f) : ImGui::GetColorU32(ImGuiCol_TextDisabled, 0.75f);
+        else
+            col_icon = item->Show ? col_item : col_txt_dis;
+
+        draw_list.AddRectFilled(icon_bb.Min, icon_bb.Max, col_icon);
+        const char* text_display_end = ImGui::FindRenderedTextEnd(label, nullptr);
+        if (label != text_display_end)
+            draw_list.AddText(top_left + ImVec2(icon_size, 0), item->Show ? col_txt_hl : col_txt_dis, label, text_display_end);
+    }
+    return hovered && !any_item_hovered;
+}
+
 void RenderLegend() {
     ImPlot3DContext& gp = *GImPlot3D;
     ImPlot3DPlot& plot = *gp.CurrentPlot;
@@ -150,6 +233,9 @@ void RenderLegend() {
     ImU32 col_bd = GetStyleColorU32(ImPlot3DCol_LegendBorder);
     draw_list->AddRectFilled(legend.Rect.Min, legend.Rect.Max, col_bg);
     draw_list->AddRect(legend.Rect.Min, legend.Rect.Max, col_bd);
+
+    // Render legends
+    ShowLegendEntries(plot.Items, legend.Rect, legend.Hovered, gp.Style.LegendInnerPadding, gp.Style.LegendSpacing, !legend_horz, *draw_list);
 }
 
 //-----------------------------------------------------------------------------
