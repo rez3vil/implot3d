@@ -113,7 +113,7 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     plot.SetupLocked = false;
 
     // Populate title
-    if (title_id && ImGui::FindRenderedTextEnd(title_id, nullptr) != title_id && !(plot.Flags & ImPlot3DFlags_NoTitle))
+    if (title_id && ImGui::FindRenderedTextEnd(title_id, nullptr) != title_id && !ImHasFlag(plot.Flags, ImPlot3DFlags_NoTitle))
         plot.TextBuffer.append(title_id, title_id + strlen(title_id) + 1);
     else
         plot.TextBuffer.clear();
@@ -641,7 +641,7 @@ bool ImPlot3DQuat::operator!=(const ImPlot3DQuat& rhs) const {
 ImPlot3DStyle::ImPlot3DStyle() {
     // Item style
     LineWeight = 1;
-    Marker = ImPlot3DMarker_Circle;
+    Marker = ImPlot3DMarker_None;
     MarkerSize = 4;
     MarkerWeight = 1;
     // Plot style

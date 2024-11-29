@@ -59,6 +59,7 @@ typedef int ImPlot3DMarker; // -> ImPlot3DMarker_              // Enum: Marker s
 // Flags
 typedef int ImPlot3DFlags;        // -> ImPlot3DFlags_         // Flags: for BeginPlot()
 typedef int ImPlot3DScatterFlags; // -> ImPlot3DScatterFlags_  // Flags: Scatter plot flags
+typedef int ImPlot3DLineFlags;    // -> ImPlot3DLineFlags_     // Flags: Line plot flags
 typedef int ImPlot3DItemFlags;    // -> ImPlot3DItemFlags_     // Flags: Item flags
 
 namespace ImPlot3D {
@@ -97,6 +98,8 @@ IMPLOT3D_API void EndPlot(); // Only call if BeginPlot() returns true!
 //-----------------------------------------------------------------------------
 
 IMPLOT3D_TMP void PlotScatter(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DScatterFlags flags = 0, int offset = 0, int stride = sizeof(T));
+
+IMPLOT3D_TMP void PlotLine(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DLineFlags flags = 0, int offset = 0, int stride = sizeof(T));
 
 //-----------------------------------------------------------------------------
 // [SECTION] Plot Utils
@@ -188,8 +191,15 @@ enum ImPlot3DMarker_ {
 
 // Flags for PlotScatter
 enum ImPlot3DScatterFlags_ {
-    ImPlot3DScatterFlags_None = 0,        // Default
-    ImPlot3DScatterFlags_NoClip = 1 << 0, // Markers on the edge of a plot will not be clipped
+    ImPlot3DScatterFlags_None = 0, // Default
+};
+
+// Flags for PlotLine
+enum ImPlot3DLineFlags_ {
+    ImPlot3DLineFlags_None = 0,          // Default
+    ImPlot3DLineFlags_Segments = 1 << 0, // A line segment will be rendered from every two consecutive points
+    ImPlot3DLineFlags_Loop = 1 << 1,     // The last and first point will be connected to form a closed loop
+    ImPlot3DLineFlags_SkipNaN = 1 << 2,  // NaNs values will be skipped instead of rendered as missing data
 };
 
 enum ImPlot3DItemFlags_ {

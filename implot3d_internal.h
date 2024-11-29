@@ -12,9 +12,8 @@
 //--------------------------------------------------
 
 // Table of Contents:
-// [SECTION] ImPlot3DPoint
-// [SECTION] ImPlot3DQuat
 // [SECTION] Structs
+// [SECTION] Generic Helpers
 // [SECTION] Context Pointer
 // [SECTION] Context Utils
 // [SECTION] Style Utils
@@ -116,6 +115,15 @@ struct ImPlot3DContext {
     ImPlot3DNextItemData NextItemData;
     ImPlot3DStyle Style;
 };
+
+//-----------------------------------------------------------------------------
+// [SECTION] Generic Helpers
+//-----------------------------------------------------------------------------
+
+#ifndef IMPLOT_VERSION
+template <typename TSet, typename TFlag>
+static inline bool ImHasFlag(TSet set, TFlag flag) { return (set & flag) == flag; }
+#endif
 
 //-----------------------------------------------------------------------------
 // [SECTION] Context Pointer

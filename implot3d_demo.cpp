@@ -41,15 +41,19 @@ static void HelpMarker(const char* desc) {
 //-----------------------------------------------------------------------------
 
 void DemoLinePlots() {
+    static float x[] = {0.0f, 0.1f, 0.3f};
+    static float y[] = {0.0f, 0.0f, 0.5f};
+    static float z[] = {0.0f, 0.1f, -0.5f};
     if (ImPlot3D::BeginPlot("Line Plots", ImVec2(-1, 300), ImPlot3DFlags_None)) {
+        ImPlot3D::PlotLine("Points", x, y, z, 3);
         ImPlot3D::EndPlot();
     }
 }
 
 void DemoScatterPlots() {
-    static float x[] = {0, 0.1, 0.5};
-    static float y[] = {0, 0.1, 0.5};
-    static float z[] = {0, 0.1, 0.5};
+    static float x[] = {0.0f, 0.1f, 0.5f};
+    static float y[] = {0.0f, 0.1f, 0.5f};
+    static float z[] = {0.0f, 0.1f, 0.5f};
     if (ImPlot3D::BeginPlot("Scatter Plots", ImVec2(-1, 300), ImPlot3DFlags_None)) {
         ImPlot3D::PlotScatter("Points", x, y, z, 3);
         ImPlot3D::EndPlot();
