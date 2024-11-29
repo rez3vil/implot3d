@@ -121,8 +121,11 @@ struct ImPlot3DContext {
 //-----------------------------------------------------------------------------
 
 #ifndef IMPLOT_VERSION
+// Returns true if flag is set
 template <typename TSet, typename TFlag>
 static inline bool ImHasFlag(TSet set, TFlag flag) { return (set & flag) == flag; }
+// Returns true if val is NAN
+static inline bool ImNan(double val) { return isnan(val); }
 #endif
 
 //-----------------------------------------------------------------------------
