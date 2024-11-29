@@ -138,6 +138,9 @@ IMPLOT3D_INLINE void GetLineRenderProps(const ImDrawList& draw_list, float& half
 //-----------------------------------------------------------------------------
 namespace ImPlot3D {
 
+static const float ITEM_HIGHLIGHT_LINE_SCALE = 2.0f;
+static const float ITEM_HIGHLIGHT_MARK_SCALE = 1.25f;
+
 bool BeginItem(const char* label_id, ImPlot3DItemFlags flags, ImPlot3DCol recolor_from) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PlotX() needs to be called between BeginPlot() and EndPlot()!");
@@ -178,6 +181,15 @@ bool BeginItem(const char* label_id, ImPlot3DItemFlags flags, ImPlot3DCol recolo
     if (!item->Show) {
         EndItem();
         return false;
+    } else {
+        // Legend hover highlight
+        if (item->LegendHovered) {
+            if (!ImHasFlag(gp.CurrentItems->Legend.Flags, ImPlot3DLegendFlags_NoHighlightItem)) {
+                n.LineWeight *= ITEM_HIGHLIGHT_LINE_SCALE;
+                n.MarkerSize *= ITEM_HIGHLIGHT_MARK_SCALE;
+                n.MarkerWeight *= ITEM_HIGHLIGHT_LINE_SCALE;
+            }
+        }
     }
 
     return true;

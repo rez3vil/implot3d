@@ -124,7 +124,7 @@ ImVec2 CalcLegendSize(ImPlot3DItemGroup& items, const ImVec2& pad, const ImVec2&
     return legend_size;
 }
 
-bool ShowLegendEntries(ImPlot3DItemGroup& items, const ImRect& legend_bb, bool hovered, const ImVec2& pad, const ImVec2& spacing, bool vertical, ImDrawList& draw_list) {
+void ShowLegendEntries(ImPlot3DItemGroup& items, const ImRect& legend_bb, bool hovered, const ImVec2& pad, const ImVec2& spacing, bool vertical, ImDrawList& draw_list) {
     const float txt_ht = ImGui::GetTextLineHeight();
     const float icon_size = txt_ht;
     const float icon_shrink = 2;
@@ -134,8 +134,8 @@ bool ShowLegendEntries(ImPlot3DItemGroup& items, const ImRect& legend_bb, bool h
     bool any_item_hovered = false;
 
     const int num_items = items.GetLegendCount();
-    if (num_items < 1)
-        return hovered;
+    if (num_items == 0)
+        return;
 
     // Build render order
     ImPlot3DContext& gp = *GImPlot3D;
@@ -179,9 +179,9 @@ bool ShowLegendEntries(ImPlot3DItemGroup& items, const ImRect& legend_bb, bool h
         if (item_clk)
             item->Show = !item->Show;
 
-        const bool can_hover = (item_hov) && !ImHasFlag(items.Legend.Flags, ImPlot3DLegendFlags_NoHighlightItem);
+        const bool hovering = item_hov && !ImHasFlag(items.Legend.Flags, ImPlot3DLegendFlags_NoHighlightItem);
 
-        if (can_hover) {
+        if (hovering) {
             // TODO hover rect
             // item->LegendHoverRect.Min = icon_bb.Min;
             // item->LegendHoverRect.Max = label_bb.Max;
@@ -189,8 +189,10 @@ bool ShowLegendEntries(ImPlot3DItemGroup& items, const ImRect& legend_bb, bool h
             col_txt_hl = ImMixU32(col_txt, col_item, 64);
             any_item_hovered = true;
         } else {
+            item->LegendHovered = false;
             col_txt_hl = ImGui::GetColorU32(col_txt);
         }
+
         ImU32 col_icon;
         if (item_hld)
             col_icon = item->Show ? ImAlphaU32(col_item, 0.5f) : ImGui::GetColorU32(ImGuiCol_TextDisabled, 0.5f);
@@ -204,7 +206,6 @@ bool ShowLegendEntries(ImPlot3DItemGroup& items, const ImRect& legend_bb, bool h
         if (label != text_display_end)
             draw_list.AddText(top_left + ImVec2(icon_size, 0), item->Show ? col_txt_hl : col_txt_dis, label, text_display_end);
     }
-    return hovered && !any_item_hovered;
 }
 
 void RenderLegend() {
