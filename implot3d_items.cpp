@@ -83,6 +83,19 @@ struct MaxIdx {
 template <> const unsigned int MaxIdx<unsigned short>::Value = 65535;
 template <> const unsigned int MaxIdx<unsigned int>::Value = 4294967295;
 
+IMPLOT3D_INLINE void GetLineRenderProps(const ImDrawList& draw_list, float& half_weight, ImVec2& tex_uv0, ImVec2& tex_uv1) {
+    const bool aa = ImHasFlag(draw_list.Flags, ImDrawListFlags_AntiAliasedLines) &&
+                    ImHasFlag(draw_list.Flags, ImDrawListFlags_AntiAliasedLinesUseTex);
+    if (aa) {
+        ImVec4 tex_uvs = draw_list._Data->TexUvLines[(int)(half_weight * 2)];
+        tex_uv0 = ImVec2(tex_uvs.x, tex_uvs.y);
+        tex_uv1 = ImVec2(tex_uvs.z, tex_uvs.w);
+        half_weight += 1;
+    } else {
+        tex_uv0 = tex_uv1 = draw_list._Data->TexUvWhitePixel;
+    }
+}
+
 //-----------------------------------------------------------------------------
 // [SECTION] Template instantiation utility
 //-----------------------------------------------------------------------------
@@ -269,9 +282,7 @@ struct RendererMarkersLine : RendererBase {
     RendererMarkersLine(const _Getter& getter, const ImVec2* marker, int count, float size, float weight, ImU32 col) : RendererBase(getter.Count, count / 2 * 6, count / 2 * 4), Getter(getter), Marker(marker), Count(count), HalfWeight(ImMax(1.0f, weight) * 0.5f), Size(size), Col(col) {}
 
     void Init(ImDrawList& draw_list) const {
-        // TODO anti-aliasing
-        UV0 = draw_list._Data->TexUvWhitePixel;
-        UV1 = draw_list._Data->TexUvWhitePixel;
+        GetLineRenderProps(draw_list, HalfWeight, UV0, UV1);
     }
 
     IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, int prim) const {
@@ -304,9 +315,7 @@ struct RendererLineStrip : RendererBase {
     }
 
     void Init(ImDrawList& draw_list) const {
-        // TODO anti-aliasing
-        UV0 = draw_list._Data->TexUvWhitePixel;
-        UV1 = draw_list._Data->TexUvWhitePixel;
+        GetLineRenderProps(draw_list, HalfWeight, UV0, UV1);
     }
 
     IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, int prim) const {
@@ -334,9 +343,7 @@ struct RendererLineStripSkip : RendererBase {
     }
 
     void Init(ImDrawList& draw_list) const {
-        // TODO anti-aliasing
-        UV0 = draw_list._Data->TexUvWhitePixel;
-        UV1 = draw_list._Data->TexUvWhitePixel;
+        GetLineRenderProps(draw_list, HalfWeight, UV0, UV1);
     }
 
     IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, int prim) const {
@@ -363,9 +370,7 @@ struct RendererLineSegments : RendererBase {
                                                                            HalfWeight(ImMax(1.0f, weight) * 0.5f) {}
 
     void Init(ImDrawList& draw_list) const {
-        // TODO anti-aliasing
-        UV0 = draw_list._Data->TexUvWhitePixel;
-        UV1 = draw_list._Data->TexUvWhitePixel;
+        GetLineRenderProps(draw_list, HalfWeight, UV0, UV1);
     }
 
     IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, int prim) const {
@@ -587,7 +592,7 @@ void PlotLineEx(const char* label_id, const _Getter& getter, ImPlot3DLineFlags f
             }
         }
 
-        // render markers
+        // Render markers
         if (n.Marker != ImPlot3DMarker_None) {
             const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerOutline]);
             const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerFill]);
