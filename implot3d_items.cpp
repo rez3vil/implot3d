@@ -152,12 +152,6 @@ bool BeginItem(const char* label_id, ImPlot3DItemFlags flags, ImPlot3DCol recolo
     bool just_created;
     ImPlot3DItem* item = RegisterOrGetItem(label_id, flags, &just_created);
 
-    // Don't render if item is hidden
-    if (!item->Show) {
-        EndItem();
-        return false;
-    }
-
     // Set color
     n.Colors[ImPlot3DCol_Line] = IsColorAuto(n.Colors[ImPlot3DCol_Line]) ? GetStyleColorVec4(ImPlot3DCol_Line) : n.Colors[ImPlot3DCol_Line];
     n.Colors[ImPlot3DCol_MarkerFill] = IsColorAuto(n.Colors[ImPlot3DCol_MarkerFill]) ? GetStyleColorVec4(ImPlot3DCol_MarkerFill) : n.Colors[ImPlot3DCol_MarkerFill];
@@ -173,6 +167,18 @@ bool BeginItem(const char* label_id, ImPlot3DItemFlags flags, ImPlot3DCol recolo
     n.RenderLine = n.Colors[ImPlot3DCol_Line].w > 0 && n.LineWeight > 0;
     n.RenderMarkerFill = n.Colors[ImPlot3DCol_MarkerFill].w > 0;
     n.RenderMarkerLine = n.Colors[ImPlot3DCol_MarkerOutline].w > 0 && n.MarkerWeight > 0;
+
+    // Set/override item color
+    if (recolor_from != -1)
+        item->Color = ImGui::ColorConvertFloat4ToU32(n.Colors[recolor_from]);
+    else if (just_created)
+        item->Color = ImGui::ColorConvertFloat4ToU32(ImVec4(1, 1, 1, 1));
+
+    // Don't render if item is hidden
+    if (!item->Show) {
+        EndItem();
+        return false;
+    }
 
     return true;
 }
