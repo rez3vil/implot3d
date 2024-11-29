@@ -189,6 +189,23 @@ ImPlot3DItem* RegisterOrGetItem(const char* label_id, ImPlot3DItemFlags flags, b
     return item;
 }
 
+void SetNextLineStyle(const ImVec4& col, float weight) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    ImPlot3DNextItemData& n = gp.NextItemData;
+    n.Colors[ImPlot3DCol_Line] = col;
+    n.LineWeight = weight;
+}
+
+void SetNextMarkerStyle(ImPlot3DMarker marker, float size, const ImVec4& fill, float weight, const ImVec4& outline) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    ImPlot3DNextItemData& n = gp.NextItemData;
+    n.Marker = marker;
+    n.Colors[ImPlot3DCol_MarkerFill] = fill;
+    n.MarkerSize = size;
+    n.Colors[ImPlot3DCol_MarkerOutline] = outline;
+    n.MarkerWeight = weight;
+}
+
 //-----------------------------------------------------------------------------
 // [SECTION] Draw Utils
 //-----------------------------------------------------------------------------
