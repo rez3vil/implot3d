@@ -66,7 +66,7 @@ void DemoScatterPlots() {
     static float z[] = {0.0f, 0.1f, 0.5f};
     if (ImPlot3D::BeginPlot("Scatter Plots", ImVec2(-1, 300))) {
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Asterisk, 4, ImVec4(0.3, 0.7, 0.6, 1), 1, ImVec4(0.3, 0.8, 0.9, 1));
-        ImPlot3D::PlotScatter("Points", x, y, z, 3);
+        ImPlot3D::PlotScatter("Points", x, y, z, 1);
         ImPlot3D::EndPlot();
     }
 }

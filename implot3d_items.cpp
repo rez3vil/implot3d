@@ -195,6 +195,20 @@ bool BeginItem(const char* label_id, ImPlot3DItemFlags flags, ImPlot3DCol recolo
     return true;
 }
 
+template <typename _Getter>
+bool BeginItemEx(const char* label_id, const _Getter& getter, ImPlot3DItemFlags flags = 0, ImPlot3DCol recolor_from = IMPLOT3D_AUTO) {
+    if (BeginItem(label_id, flags, recolor_from)) {
+        ImPlot3DContext& gp = *GImPlot3D;
+        ImPlot3DPlot& plot = *gp.CurrentPlot;
+        if (plot.FitThisFrame && !ImHasFlag(flags, ImPlot3DItemFlags_NoFit)) {
+            for (int i = 0; i < getter.Count; i++)
+                plot.ExtendFit(getter(i));
+        }
+        return true;
+    }
+    return false;
+}
+
 void EndItem() {
     ImPlot3DContext& gp = *GImPlot3D;
     gp.NextItemData.Reset();
@@ -590,7 +604,7 @@ void RenderMarkers(const _Getter& getter, ImPlot3DMarker marker, float size, boo
 
 template <typename Getter>
 void PlotScatterEx(const char* label_id, const Getter& getter, ImPlot3DScatterFlags flags) {
-    if (BeginItem(label_id, flags, ImPlot3DCol_MarkerOutline)) {
+    if (BeginItemEx(label_id, getter, flags, ImPlot3DCol_MarkerOutline)) {
         const ImPlot3DNextItemData& n = GetItemData();
         ImPlot3DMarker marker = n.Marker == ImPlot3DMarker_None ? ImPlot3DMarker_Circle : n.Marker;
         const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerOutline]);
@@ -618,7 +632,7 @@ CALL_INSTANTIATE_FOR_NUMERIC_TYPES()
 
 template <typename _Getter>
 void PlotLineEx(const char* label_id, const _Getter& getter, ImPlot3DLineFlags flags) {
-    if (BeginItem(label_id, flags, ImPlot3DCol_Line)) {
+    if (BeginItemEx(label_id, getter, flags, ImPlot3DCol_Line)) {
         const ImPlot3DNextItemData& n = GetItemData();
         if (getter.Count > 1) {
             if (n.RenderLine) {

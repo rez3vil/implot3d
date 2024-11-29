@@ -38,6 +38,7 @@
 
 #include "implot3d.h"
 #include "implot3d_internal.h"
+#include <iostream>
 
 #ifndef IMGUI_DISABLE
 
@@ -294,6 +295,20 @@ void EndPlot() {
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "Mismatched BeginPlot()/EndPlot()!");
     ImPlot3DPlot& plot = *gp.CurrentPlot;
 
+    // Handle data fitting
+    if (plot.FitThisFrame) {
+        plot.FitThisFrame = false;
+        plot.Rotation = init_rotation;
+        plot.RangeMin = plot.FitMin;
+        plot.RangeMax = plot.FitMax;
+        for (int i = 0; i < 3; i++) {
+            if (ImAlmostEqual(plot.RangeMin[i], plot.RangeMax[i])) {
+                plot.RangeMax[i] += 0.5;
+                plot.RangeMin[i] -= 0.5;
+            }
+        }
+    }
+
     // Lock setup if not already done
     SetupLock();
 
@@ -465,9 +480,9 @@ void HandleInput(ImPlot3DPlot& plot) {
 
     // Handle double click
     if (plot_clicked && ImGui::IsMouseDoubleClicked(0)) {
-        plot.Rotation = init_rotation;
-        plot.RangeMin = ImPlot3DPoint(0.0f, 0.0f, 0.0f);
-        plot.RangeMax = ImPlot3DPoint(1.0f, 1.0f, 1.0f);
+        plot.FitThisFrame = true;
+        plot.FitMin = ImPlot3DPoint(HUGE_VAL, HUGE_VAL, HUGE_VAL);
+        plot.FitMax = ImPlot3DPoint(-HUGE_VAL, -HUGE_VAL, -HUGE_VAL);
     }
 
     // Handle translation with right mouse button
@@ -857,9 +872,6 @@ ImPlot3DPoint operator*(float lhs, const ImPlot3DPoint& rhs) {
 //-----------------------------------------------------------------------------
 // [SECTION] ImPlot3DQuat
 //-----------------------------------------------------------------------------
-
-constexpr ImPlot3DQuat::ImPlot3DQuat() : x(0.0f), y(0.0f), z(0.0f), w(1.0f) {}
-constexpr ImPlot3DQuat::ImPlot3DQuat(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
 
 ImPlot3DQuat::ImPlot3DQuat(float _angle, const ImPlot3DPoint& _axis) {
     float half_angle = _angle * 0.5f;

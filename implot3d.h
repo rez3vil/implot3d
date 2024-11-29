@@ -66,9 +66,9 @@ typedef int ImPlot3DLocation; // -> ImPlot3DLocation_          // Enum: Location
 
 // Flags
 typedef int ImPlot3DFlags;        // -> ImPlot3DFlags_         // Flags: for BeginPlot()
+typedef int ImPlot3DItemFlags;    // -> ImPlot3DItemFlags_     // Flags: Item flags
 typedef int ImPlot3DScatterFlags; // -> ImPlot3DScatterFlags_  // Flags: Scatter plot flags
 typedef int ImPlot3DLineFlags;    // -> ImPlot3DLineFlags_     // Flags: Line plot flags
-typedef int ImPlot3DItemFlags;    // -> ImPlot3DItemFlags_     // Flags: Item flags
 typedef int ImPlot3DLegendFlags;  // -> ImPlot3DLegendFlags_   // Flags: Legend flags
 
 namespace ImPlot3D {
@@ -214,24 +214,28 @@ enum ImPlot3DMarker_ {
     ImPlot3DMarker_COUNT
 };
 
-// Flags for PlotScatter
-enum ImPlot3DScatterFlags_ {
-    ImPlot3DScatterFlags_None = 0, // Default
-};
-
-// Flags for PlotLine
-enum ImPlot3DLineFlags_ {
-    ImPlot3DLineFlags_None = 0,          // Default
-    ImPlot3DLineFlags_Segments = 1 << 0, // A line segment will be rendered from every two consecutive points
-    ImPlot3DLineFlags_Loop = 1 << 1,     // The last and first point will be connected to form a closed loop
-    ImPlot3DLineFlags_SkipNaN = 1 << 2,  // NaNs values will be skipped instead of rendered as missing data
-};
-
 // Flags for items
 enum ImPlot3DItemFlags_ {
     ImPlot3DItemFlags_None = 0,          // Default
     ImPlot3DItemFlags_NoLegend = 1 << 0, // The item won't have a legend entry displayed
     ImPlot3DItemFlags_NoFit = 1 << 1,    // The item won't be considered for plot fits
+};
+
+// Flags for PlotScatter
+enum ImPlot3DScatterFlags_ {
+    ImPlot3DScatterFlags_None = 0, // Default
+    ImPlot3DScatterFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
+    ImPlot3DScatterFlags_NoFit = ImPlot3DItemFlags_NoFit,
+};
+
+// Flags for PlotLine
+enum ImPlot3DLineFlags_ {
+    ImPlot3DLineFlags_None = 0, // Default
+    ImPlot3DLineFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
+    ImPlot3DLineFlags_NoFit = ImPlot3DItemFlags_NoFit,
+    ImPlot3DLineFlags_Segments = 1 << 10, // A line segment will be rendered from every two consecutive points
+    ImPlot3DLineFlags_Loop = 1 << 11,     // The last and first point will be connected to form a closed loop
+    ImPlot3DLineFlags_SkipNaN = 1 << 12,  // NaNs values will be skipped instead of rendered as missing data
 };
 
 // Flags for legends
@@ -347,8 +351,9 @@ struct ImPlot3DQuat {
     float x, y, z, w;
 
     // Constructors
-    constexpr ImPlot3DQuat();
-    constexpr ImPlot3DQuat(float _x, float _y, float _z, float _w);
+    constexpr ImPlot3DQuat() : x(0.0f), y(0.0f), z(0.0f), w(1.0f) {}
+    constexpr ImPlot3DQuat(float _x, float _y, float _z, float _w) : x(_x), y(_y), z(_z), w(_w) {}
+
     ImPlot3DQuat(float _angle, const ImPlot3DPoint& _axis);
 
     // Get quaternion magnitude
