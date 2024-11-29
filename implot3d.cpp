@@ -131,27 +131,15 @@ void ShowLegendEntries(ImPlot3DItemGroup& items, const ImRect& legend_bb, bool h
     ImU32 col_txt = GetStyleColorU32(ImPlot3DCol_LegendText);
     ImU32 col_txt_dis = ImAlphaU32(col_txt, 0.25f);
     float sum_label_width = 0;
-    bool any_item_hovered = false;
 
     const int num_items = items.GetLegendCount();
     if (num_items == 0)
         return;
-
-    // Build render order
     ImPlot3DContext& gp = *GImPlot3D;
-    ImVector<int> indices;
-    indices.resize(num_items);
-    for (int i = 0; i < num_items; ++i)
-        indices[i] = i;
-    // TODO sorting
-    // if (ImHasFlag(items.Legend.Flags, ImPlot3DLegendFlags_Sort) && num_items > 1) {
-    //    gp.SortItems = &items;
-    //    qsort(indices.Data, num_items, sizeof(int), LegendSortingComp);
-    //}
 
     // Render legend items
     for (int i = 0; i < num_items; ++i) {
-        const int idx = indices[i];
+        const int idx = i;
         ImPlot3DItem* item = items.GetLegendItem(idx);
         const char* label = items.GetLegendLabel(idx);
         const float label_width = ImGui::CalcTextSize(label, nullptr, true).x;
@@ -182,12 +170,8 @@ void ShowLegendEntries(ImPlot3DItemGroup& items, const ImRect& legend_bb, bool h
         const bool hovering = item_hov && !ImHasFlag(items.Legend.Flags, ImPlot3DLegendFlags_NoHighlightItem);
 
         if (hovering) {
-            // TODO hover rect
-            // item->LegendHoverRect.Min = icon_bb.Min;
-            // item->LegendHoverRect.Max = label_bb.Max;
             item->LegendHovered = true;
             col_txt_hl = ImMixU32(col_txt, col_item, 64);
-            any_item_hovered = true;
         } else {
             item->LegendHovered = false;
             col_txt_hl = ImGui::GetColorU32(col_txt);
@@ -465,8 +449,8 @@ void RenderAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQu
             draw_list->AddLine(plane_pix[c][i], plane_pix[c][(i + 1) % 4], colBorder);
 
     // Draw ticks
-    const float target_lines = 10.0f; // Target number of tick lines
-    const ImU32 colTicks = GetStyleColorU32(ImPlot3DCol_PlotBorder);
+    const float target_lines = 7.0f; // Target number of tick lines
+    ImVec4 colTicks = GetStyleColorVec4(ImPlot3DCol_PlotBorder);
     for (int c = 0; c < 3; c++) {
         float range = range_max[c] - range_min[c];
 
@@ -490,11 +474,17 @@ void RenderAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQu
                     p0 = plane_pix[planeIdx][0] + (plane_pix[planeIdx][1] - plane_pix[planeIdx][0]) * tNorm;
                     p1 = plane_pix[planeIdx][3] + (plane_pix[planeIdx][2] - plane_pix[planeIdx][3]) * tNorm;
                 }
-                // const ImU32 colTicks = ImGui::ColorConvertFloat4ToU32(ImVec4(c == 0, c == 1, c == 2, 1.0f)); // XXX
-                draw_list->AddLine(p0, p1, colTicks);
+                ImVec4 col = colTicks;
+                bool isMajor = int((t - start) / spacing) % 3 == 0; // TODO check if it is major or minor tick
+                col.w *= isMajor ? 0.6f : 0.3f;
+                draw_list->AddLine(p0, p1, ImGui::ColorConvertFloat4ToU32(col));
             }
         }
     }
+
+    // TODO render tick text
+
+    // TODO render axis labels
 }
 
 void SetupLock() {

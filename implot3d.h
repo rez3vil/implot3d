@@ -231,7 +231,6 @@ enum ImPlot3DLegendFlags_ {
     ImPlot3DLegendFlags_NoButtons = 1 << 0,       // Legend icons will not function as hide/show buttons
     ImPlot3DLegendFlags_NoHighlightItem = 1 << 1, // Plot items will not be highlighted when their legend entry is hovered
     ImPlot3DLegendFlags_Horizontal = 1 << 2,      // Legend entries will be displayed horizontally
-    ImPlot3DLegendFlags_Sort = 1 << 3,            // Legend entries will be displayed in alphabetical order
 };
 
 // Used to position legend on a plot
