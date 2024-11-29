@@ -234,8 +234,13 @@ IMPLOT3D_API ImPlot3DItem* GetCurrentItem();
 // Convert a position in the current plot's coordinate system to the current plot's normalized device coordinate system (NDC)
 // When the cube aspect ratio is [1,1,1], the NDC varies from [-0.5, 0.5] in each axis
 IMPLOT3D_API ImPlot3DPoint PlotToNDC(const ImPlot3DPoint& point);
-// Convert a position in the current plot's NDC coordinate system to pixels
+IMPLOT3D_API ImPlot3DPoint NDCToPlot(const ImPlot3DPoint& point);
+// Convert a position in the current plot's NDC to pixels
 IMPLOT3D_API ImVec2 NDCToPixels(const ImPlot3DPoint& point);
+// Convert a pixel coordinate to a ray in the NDC
+IMPLOT3D_API ImPlot3DRay PixelsToNDCRay(const ImVec2& pix);
+// Convert a ray in the NDC to a ray in the current plot's coordinate system
+IMPLOT3D_API ImPlot3DRay NDCRayToPlotRay(const ImPlot3DRay& ray);
 
 //-----------------------------------------------------------------------------
 // [SECTION] Setup Utils

@@ -340,6 +340,16 @@ ImVec2 PlotToPixels(double x, double y, double z) {
     return PlotToPixels(ImPlot3DPoint(x, y, z));
 }
 
+ImPlot3DRay PixelsToPlotRay(const ImVec2& pix) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PixelsToPlotRay() needs to be called between BeginPlot() and EndPlot()!");
+    return NDCRayToPlotRay(PixelsToNDCRay(pix));
+}
+
+ImPlot3DRay PixelsToPlotRay(double x, double y) {
+    return PixelsToPlotRay(ImVec2(x, y));
+}
+
 ImVec2 GetPlotPos() {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "GetPlotPos() needs to be called between BeginPlot() and EndPlot()!");
@@ -359,6 +369,13 @@ ImPlot3DPoint PlotToNDC(const ImPlot3DPoint& point) {
     return (point - plot.RangeMin) / (plot.RangeMax - plot.RangeMin) - ImPlot3DPoint(0.5f, 0.5f, 0.5f);
 }
 
+ImPlot3DPoint NDCToPlot(const ImPlot3DPoint& point) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "NDCToPlot() needs to be called between BeginPlot() and EndPlot()!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    return plot.RangeMin + (point + ImPlot3DPoint(0.5f, 0.5f, 0.5f)) * (plot.RangeMax - plot.RangeMin);
+}
+
 ImVec2 NDCToPixels(const ImPlot3DPoint& point) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "NDCToPixels() needs to be called between BeginPlot() and EndPlot()!");
@@ -367,11 +384,57 @@ ImVec2 NDCToPixels(const ImPlot3DPoint& point) {
     float zoom = ImMin(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
     ImVec2 center = plot.PlotRect.GetCenter();
     ImPlot3DPoint point_pix = zoom * (plot.Rotation * point);
-    point_pix.y *= -1.0f; // Flip y-axis
+    point_pix.y *= -1.0f; // Invert y-axis
     point_pix.x += center.x;
     point_pix.y += center.y;
 
     return {point_pix.x, point_pix.y};
+}
+
+ImPlot3DRay PixelsToNDCRay(const ImVec2& pix) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PixelsToNDCRay() needs to be called between BeginPlot() and EndPlot()!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+
+    // Calculate zoom factor and plot center
+    float zoom = ImMin(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
+    ImVec2 center = plot.PlotRect.GetCenter();
+
+    // Undo screen transformations to get back to NDC space
+    float x = (pix.x - center.x) / zoom;
+    float y = -(pix.y - center.y) / zoom; // Invert y-axis
+
+    // Define near and far points in NDC space along the z-axis
+    ImPlot3DPoint ndc_near = plot.Rotation.Inverse() * ImPlot3DPoint(x, y, -0.5f);
+    ImPlot3DPoint ndc_far = plot.Rotation.Inverse() * ImPlot3DPoint(x, y, 0.5f);
+
+    // Create the ray in NDC space
+    ImPlot3DRay ndc_ray;
+    ndc_ray.Origin = ndc_near;
+    ndc_ray.Direction = (ndc_far - ndc_near).Normalized();
+
+    return ndc_ray;
+}
+
+ImPlot3DRay NDCRayToPlotRay(const ImPlot3DRay& ray) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "NDCRayToPlotRay() needs to be called between BeginPlot() and EndPlot()!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+
+    // Convert NDC origin and a point along the ray to plot coordinates
+    ImPlot3DPoint plot_origin = NDCToPlot(ray.Origin);
+    ImPlot3DPoint ndc_point_along_ray = ray.Origin + ray.Direction;
+    ImPlot3DPoint plot_point_along_ray = NDCToPlot(ndc_point_along_ray);
+
+    // Compute the direction in plot coordinates
+    ImPlot3DPoint plot_direction = (plot_point_along_ray - plot_origin).Normalized();
+
+    // Create the ray in plot coordinates
+    ImPlot3DRay plot_ray;
+    plot_ray.Origin = plot_origin;
+    plot_ray.Direction = plot_direction;
+
+    return plot_ray;
 }
 
 //-----------------------------------------------------------------------------
@@ -410,7 +473,20 @@ void HandleInput(ImPlot3DPlot& plot) {
     // Handle translation with right mouse button
     if (plot.Held && ImGui::IsMouseDown(0)) {
         ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
-        // TODO
+
+        // Compute delta_pixels in 3D (invert y-axis)
+        ImPlot3DPoint delta_pixels(delta.x, -delta.y, 0.0f);
+
+        // Convert delta to NDC space
+        float zoom = ImMin(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
+        ImPlot3DPoint delta_NDC = plot.Rotation.Inverse() * (delta_pixels / zoom);
+
+        // Convert delta to plot space
+        ImPlot3DPoint delta_plot = delta_NDC * (plot.RangeMax - plot.RangeMin);
+
+        // Adjust RangeMin and RangeMax to translate the plot
+        plot.RangeMin -= delta_plot;
+        plot.RangeMax -= delta_plot;
     }
 
     // Handle rotation with left mouse dragging
@@ -761,6 +837,18 @@ ImPlot3DPoint ImPlot3DPoint::Cross(const ImPlot3DPoint& rhs) const {
 }
 
 float ImPlot3DPoint::Magnitude() const { return std::sqrt(x * x + y * y + z * z); }
+
+void ImPlot3DPoint::Normalize() {
+    float mag = Magnitude();
+    x /= mag;
+    y /= mag;
+    z /= mag;
+}
+
+ImPlot3DPoint ImPlot3DPoint::Normalized() const {
+    float mag = Magnitude();
+    return ImPlot3DPoint(x / mag, y / mag, z / mag);
+}
 
 ImPlot3DPoint operator*(float lhs, const ImPlot3DPoint& rhs) {
     return ImPlot3DPoint(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z);

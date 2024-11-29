@@ -24,6 +24,10 @@
 // [SECTION] Demo
 // [SECTION] Debugging
 // [SECTION] Flags & Enumerations
+// [SECTION] ImPlot3DPoint
+// [SECTION] ImPlot3DRay
+// [SECTION] ImPlot3DPlane
+// [SECTION] ImPlot3DQuat
 // [SECTION] ImPlot3DStyle
 
 #pragma once
@@ -51,6 +55,8 @@
 struct ImPlot3DContext;
 struct ImPlot3DStyle;
 struct ImPlot3DPoint;
+struct ImPlot3DRay;
+struct ImPlot3DPlane;
 struct ImPlot3DQuat;
 
 // Enums
@@ -117,6 +123,9 @@ IMPLOT3D_TMP void PlotLine(const char* label_id, const T* xs, const T* ys, const
 // Convert a position in the current plot's coordinate system to pixels
 IMPLOT3D_API ImVec2 PlotToPixels(const ImPlot3DPoint& point);
 IMPLOT3D_API ImVec2 PlotToPixels(double x, double y, double z);
+// Convert a pixel coordinate to a ray in the current plot's coordinate system
+IMPLOT3D_API ImPlot3DRay PixelsToPlotRay(const ImVec2& pix);
+IMPLOT3D_API ImPlot3DRay PixelsToPlotRay(double x, double y);
 
 IMPLOT3D_API ImVec2 GetPlotPos();  // Get the current plot position (top-left) in pixels
 IMPLOT3D_API ImVec2 GetPlotSize(); // Get the current plot size in pixels
@@ -298,12 +307,36 @@ struct ImPlot3DPoint {
     // Get vector magnitude
     float Magnitude() const;
 
+    // Normalize to unit length
+    void Normalize();
+
+    // Return vector normalized to unit length
+    ImPlot3DPoint Normalized() const;
+
     // Friend binary operators to allow commutative behavior
     friend ImPlot3DPoint operator*(float lhs, const ImPlot3DPoint& rhs);
 
 #ifdef IMPLOT3D_POINT_CLASS_EXTRA
     IMPLOT3D_POINT_CLASS_EXTRA // Define additional constructors and implicit cast operators in imconfig.h to convert back and forth between your math types and ImPlot3DPoint
 #endif
+};
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImPlot3DRay
+//-----------------------------------------------------------------------------
+
+struct ImPlot3DRay {
+    ImPlot3DPoint Origin;
+    ImPlot3DPoint Direction;
+};
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImPlot3DPlane
+//-----------------------------------------------------------------------------
+
+struct ImPlot3DPlane {
+    ImPlot3DPoint Point;
+    ImPlot3DPoint Normal;
 };
 
 //-----------------------------------------------------------------------------
