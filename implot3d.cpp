@@ -5,7 +5,7 @@
 // By brenocq
 //
 // Acknowledgments:
-//  This library is heavily inspired by ImPlot
+//  ImPlot3D is heavily inspired by ImPlot
 //  (https://github.com/epezent/implot) by Evan Pezent,
 //  and follows a similar code style and structure to
 //  maintain consistency with ImPlot's API.
@@ -17,6 +17,7 @@
 // [SECTION] Context
 // [SECTION] Legend Utils
 // [SECTION] Begin/End Plot
+// [SECTION] Setup
 // [SECTION] Plot Utils
 // [SECTION] Setup Utils
 // [SECTION] Miscellaneous
