@@ -45,7 +45,7 @@ void DemoLinePlots() {
     static float y[] = {0.0f, 0.0f, 0.5f, 0.5f};
     static float z[] = {0.0f, 0.1f, -0.5f, -0.5f};
     if (ImPlot3D::BeginPlot("Line Plots", ImVec2(-1, 300), ImPlot3DFlags_None)) {
-        ImPlot3D::PlotLine("Points", x, y, z, 4, ImPlot3DLineFlags_Segments);
+        ImPlot3D::PlotLine("Points", x, y, z, 4, ImPlot3DLineFlags_Loop);
         ImPlot3D::EndPlot();
     }
 }

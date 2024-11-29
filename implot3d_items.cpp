@@ -398,6 +398,17 @@ struct GetterXYZ {
     const int Count;
 };
 
+template <typename _Getter>
+struct GetterLoop {
+    GetterLoop(_Getter getter) : Getter(getter), Count(getter.Count + 1) {}
+    template <typename I> IMPLOT3D_INLINE ImPlot3DPoint operator()(I idx) const {
+        idx = idx % (Count - 1);
+        return Getter(idx);
+    }
+    const _Getter Getter;
+    const int Count;
+};
+
 //-----------------------------------------------------------------------------
 // [SECTION] RenderPrimitives
 //-----------------------------------------------------------------------------
@@ -540,6 +551,8 @@ void PlotLineEx(const char* label_id, const _Getter& getter, ImPlot3DLineFlags f
                 const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Line]);
                 if (ImHasFlag(flags, ImPlot3DLineFlags_Segments)) {
                     RenderPrimitives<RendererLineSegments>(getter, col_line, n.LineWeight);
+                } else if (ImHasFlag(flags, ImPlot3DLineFlags_Loop)) {
+                    RenderPrimitives<RendererLineStrip>(GetterLoop<_Getter>(getter), col_line, n.LineWeight);
                 } else {
                     RenderPrimitives<RendererLineStrip>(getter, col_line, n.LineWeight);
                 }
