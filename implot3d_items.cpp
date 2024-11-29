@@ -324,6 +324,33 @@ struct RendererLineStrip : RendererBase {
     mutable ImVec2 UV1;
 };
 
+template <class _Getter>
+struct RendererLineSegments : RendererBase {
+    RendererLineSegments(const _Getter& getter, ImU32 col, float weight) : RendererBase(getter.Count / 2, 6, 4),
+                                                                           Getter(getter),
+                                                                           Col(col),
+                                                                           HalfWeight(ImMax(1.0f, weight) * 0.5f) {}
+
+    void Init(ImDrawList& draw_list) const {
+        // TODO anti-aliasing
+        UV0 = draw_list._Data->TexUvWhitePixel;
+        UV1 = draw_list._Data->TexUvWhitePixel;
+    }
+
+    IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, int prim) const {
+        ImVec2 P1 = PlotToPixels(Getter(prim * 2 + 0));
+        ImVec2 P2 = PlotToPixels(Getter(prim * 2 + 1));
+        PrimLine(draw_list, P1, P2, HalfWeight, Col, UV0, UV1);
+        return true;
+    }
+
+    const _Getter& Getter;
+    const ImU32 Col;
+    mutable float HalfWeight;
+    mutable ImVec2 UV0;
+    mutable ImVec2 UV1;
+};
+
 //-----------------------------------------------------------------------------
 // [SECTION] Indexers
 //-----------------------------------------------------------------------------
@@ -495,6 +522,15 @@ CALL_INSTANTIATE_FOR_NUMERIC_TYPES()
 // [SECTION] PlotLine
 //-----------------------------------------------------------------------------
 
+// } else if (ImHasFlag(flags, ImPlot3DLineFlags_Loop)) {
+//     if (ImHasFlag(flags, ImPlot3DLineFlags_SkipNaN))
+//         RenderPrimitives1<RendererLineStripSkip>(GetterLoop<_Getter>(getter), col_line, n.LineWeight);
+//     else
+//         RenderPrimitives1<RendererLineStrip>(GetterLoop<_Getter>(getter), col_line, n.LineWeight);
+// } else {
+//     if (ImHasFlag(flags, ImPlot3DLineFlags_SkipNaN))
+//         RenderPrimitives1<RendererLineStripSkip>(getter, col_line, n.LineWeight);
+
 template <typename _Getter>
 void PlotLineEx(const char* label_id, const _Getter& getter, ImPlot3DLineFlags flags) {
     if (BeginItem(label_id, flags, ImPlot3DCol_Line)) {
@@ -502,19 +538,11 @@ void PlotLineEx(const char* label_id, const _Getter& getter, ImPlot3DLineFlags f
         if (getter.Count > 1) {
             if (n.RenderLine) {
                 const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Line]);
-                // if (ImHasFlag(flags, ImPlot3DLineFlags_Segments)) {
-                //     RenderPrimitives1<RendererLineSegments>(getter, col_line, n.LineWeight);
-                // } else if (ImHasFlag(flags, ImPlot3DLineFlags_Loop)) {
-                //     if (ImHasFlag(flags, ImPlot3DLineFlags_SkipNaN))
-                //         RenderPrimitives1<RendererLineStripSkip>(GetterLoop<_Getter>(getter), col_line, n.LineWeight);
-                //     else
-                //         RenderPrimitives1<RendererLineStrip>(GetterLoop<_Getter>(getter), col_line, n.LineWeight);
-                // } else {
-                //     if (ImHasFlag(flags, ImPlot3DLineFlags_SkipNaN))
-                //         RenderPrimitives1<RendererLineStripSkip>(getter, col_line, n.LineWeight);
-                // else
-                RenderPrimitives<RendererLineStrip>(getter, col_line, n.LineWeight);
-                //}
+                if (ImHasFlag(flags, ImPlot3DLineFlags_Segments)) {
+                    RenderPrimitives<RendererLineSegments>(getter, col_line, n.LineWeight);
+                } else {
+                    RenderPrimitives<RendererLineStrip>(getter, col_line, n.LineWeight);
+                }
             }
         }
 
