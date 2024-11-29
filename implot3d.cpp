@@ -407,8 +407,14 @@ void HandleInput(ImPlot3DPlot& plot) {
         plot.RangeMax = ImPlot3DPoint(1.0f, 1.0f, 1.0f);
     }
 
-    // Handle mouse drag
+    // Handle translation with right mouse button
     if (plot.Held && ImGui::IsMouseDown(0)) {
+        ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
+        // TODO
+    }
+
+    // Handle rotation with left mouse dragging
+    if (plot.Held && ImGui::IsMouseDown(1)) {
         ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
 
         // Map delta to rotation angles (in radians)
@@ -424,9 +430,10 @@ void HandleInput(ImPlot3DPlot& plot) {
         plot.Rotation.Normalize();
     }
 
-    // Handle mouse wheel
-    if (plot.Hovered && IO.MouseWheel != 0) {
-        float zoom = 1.0f - IO.MouseWheel * 0.1f;
+    // Handle zoom with mouse wheel
+    if (plot.Hovered && (ImGui::IsMouseDown(2) || IO.MouseWheel != 0)) {
+        float delta = ImGui::IsMouseDown(2) ? (-0.01f * IO.MouseDelta.y) : (-0.1f * IO.MouseWheel);
+        float zoom = 1.0f + delta;
         ImPlot3DPoint center = (plot.RangeMin + plot.RangeMax) * 0.5f;
         ImPlot3DPoint size = plot.RangeMax - plot.RangeMin;
         size *= zoom;
