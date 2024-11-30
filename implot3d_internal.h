@@ -337,6 +337,7 @@ struct ImPlot3DPlot {
     void ExtendFit(const ImPlot3DPoint& point);
     ImPlot3DPoint RangeMin() const;
     ImPlot3DPoint RangeMax() const;
+    ImPlot3DPoint RangeCenter() const;
     void SetRange(const ImPlot3DPoint& min, const ImPlot3DPoint& max);
     void SetAxisLabel(ImPlot3DAxis& axis, const char* label);
     const char* GetAxisLabel(const ImPlot3DAxis& axis) const;

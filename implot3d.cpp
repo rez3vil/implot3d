@@ -271,8 +271,8 @@ double NiceNum(double x, bool round) {
 void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, ImPlot3DFormatter formatter, void* formatter_data) {
     if (range.Min == range.Max)
         return;
-    const int nMinor = 10;
-    const int nMajor = 20;
+    const int nMinor = 5;
+    const int nMajor = 3;
     const double nice_range = NiceNum(range.Size() * 0.99, false);
     const double interval = NiceNum(nice_range / (nMajor - 1), true);
     const double graphmin = floor(range.Min / interval) * interval;
@@ -727,6 +727,7 @@ void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
     const ImPlot3DQuat& rotation = plot.Rotation;
     ImPlot3DPoint range_min = plot.RangeMin();
     ImPlot3DPoint range_max = plot.RangeMax();
+    ImPlot3DPoint range_center = plot.RangeCenter();
 
     float zoom = ImMin(plot_area.GetWidth(), plot_area.GetHeight()) / 1.8f;
     ImVec2 center = plot_area.GetCenter();
@@ -766,10 +767,10 @@ void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
     // Faces of the box (defined by 4 corner indices)
     static const int faces[6][4] = {
         {0, 3, 7, 4}, // X-min face
-        {0, 1, 5, 4}, // Y-min face
+        {0, 4, 5, 1}, // Y-min face
         {0, 1, 2, 3}, // Z-min face
         {1, 2, 6, 5}, // X-max face
-        {2, 3, 7, 6}, // Y-max face
+        {3, 7, 6, 2}, // Y-max face
         {4, 5, 6, 7}, // Z-max face
     };
 
@@ -829,6 +830,72 @@ void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
         }
     }
 
+    // Render plot grid
+    ImVec4 col_grid = GetStyleColorVec4(ImPlot3DCol_AxisGrid);
+    ImU32 col_grid_minor = ImGui::GetColorU32(col_grid * ImVec4(1, 1, 1, 0.3f));
+    ImU32 col_grid_major = ImGui::GetColorU32(col_grid * ImVec4(1, 1, 1, 0.6f));
+    for (int face = 0; face < 3; face++) {
+        int face_idx = face + 3 * active_faces[face];
+        const ImPlot3DAxis& axis_u = plot.Axes[(face + 1) % 3];
+        const ImPlot3DAxis& axis_v = plot.Axes[(face + 2) % 3];
+
+        // Get the two axes (u and v) that define the face plane
+        int idx0 = faces[face_idx][0];
+        int idx1 = faces[face_idx][1];
+        int idx2 = faces[face_idx][2];
+        int idx3 = faces[face_idx][3];
+
+        // Corners of the face in plot space
+        ImPlot3DPoint p0 = corners[idx0];
+        ImPlot3DPoint p1 = corners[idx1];
+        ImPlot3DPoint p2 = corners[idx2];
+        ImPlot3DPoint p3 = corners[idx3];
+
+        // Vectors along the edges
+        ImPlot3DPoint u_vec = p1 - p0;
+        ImPlot3DPoint v_vec = p3 - p0;
+
+        // Render grid lines along u axis (axis_u)
+        for (int t = 0; t < axis_u.Ticker.TickCount(); ++t) {
+            const ImPlot3DTick& tick = axis_u.Ticker.Ticks[t];
+
+            // Compute position along u
+            float t_u = (tick.PlotPos - axis_u.Range.Min) / (axis_u.Range.Max - axis_u.Range.Min);
+            ImPlot3DPoint p_start = p0 + u_vec * t_u;
+            ImPlot3DPoint p_end = p3 + u_vec * t_u;
+
+            // Convert to pixel coordinates
+            ImVec2 p_start_pix = PlotToPixels(p_start);
+            ImVec2 p_end_pix = PlotToPixels(p_end);
+
+            // Get color
+            ImU32 col_grid = tick.Major ? col_grid_major : col_grid_minor;
+
+            // Draw the grid line
+            draw_list->AddLine(p_start_pix, p_end_pix, col_grid);
+        }
+
+        // Render grid lines along v axis (axis_v)
+        for (int t = 0; t < axis_v.Ticker.TickCount(); ++t) {
+            const ImPlot3DTick& tick = axis_v.Ticker.Ticks[t];
+
+            // Compute position along v
+            float t_v = (tick.PlotPos - axis_v.Range.Min) / (axis_v.Range.Max - axis_v.Range.Min);
+            ImPlot3DPoint p_start = p0 + v_vec * t_v;
+            ImPlot3DPoint p_end = p1 + v_vec * t_v;
+
+            // Convert to pixel coordinates
+            ImVec2 p_start_pix = PlotToPixels(p_start);
+            ImVec2 p_end_pix = PlotToPixels(p_end);
+
+            // Get color
+            ImU32 col_grid = tick.Major ? col_grid_major : col_grid_minor;
+
+            // Draw the grid line
+            draw_list->AddLine(p_start_pix, p_end_pix, col_grid);
+        }
+    }
+
     // Compute axes start and end corners (given current rotation)
     int axis_corners[3][2];
 
@@ -872,7 +939,7 @@ void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
         // Position at the end of the axis
         ImPlot3DPoint label_pos = (corners[idx0] + corners[idx1]) * 0.5f;
         // Add some offset
-        label_pos += label_pos.Normalized() * 0.1f;
+        label_pos += (label_pos - range_center) * 0.1f;
 
         ImVec2 label_pos_pix = PlotToPixels(label_pos);
 
@@ -1088,10 +1155,10 @@ ImVec4 GetAutoColor(ImPlot3DCol idx) {
         case ImPlot3DCol_PlotBg: return ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
         case ImPlot3DCol_PlotBorder: return ImGui::GetStyleColorVec4(ImGuiCol_Border);
         case ImPlot3DCol_LegendBg: return ImGui::GetStyleColorVec4(ImGuiCol_PopupBg);
-        case ImPlot3DCol_LegendBorder: return GetStyleColorVec4(ImPlot3DCol_PlotBorder);
+        case ImPlot3DCol_LegendBorder: return ImGui::GetStyleColorVec4(ImGuiCol_Border);
         case ImPlot3DCol_LegendText: return ImGui::GetStyleColorVec4(ImGuiCol_Text);
         case ImPlot3DCol_AxisText: return ImGui::GetStyleColorVec4(ImGuiCol_Text);
-        case ImPlot3DCol_AxisGrid: return GetStyleColorVec4(ImPlot3DCol_AxisText) * ImVec4(1, 1, 1, 0.25f);
+        case ImPlot3DCol_AxisGrid: return ImGui::GetStyleColorVec4(ImGuiCol_Text) * ImVec4(1, 1, 1, 0.25f);
         default: return col;
     }
 }
@@ -1404,6 +1471,13 @@ ImPlot3DPoint ImPlot3DPlot::RangeMin() const {
 
 ImPlot3DPoint ImPlot3DPlot::RangeMax() const {
     return ImPlot3DPoint(Axes[0].Range.Max, Axes[1].Range.Max, Axes[2].Range.Max);
+}
+
+ImPlot3DPoint ImPlot3DPlot::RangeCenter() const {
+    return ImPlot3DPoint(
+        (Axes[0].Range.Min + Axes[0].Range.Max) * 0.5f,
+        (Axes[1].Range.Min + Axes[1].Range.Max) * 0.5f,
+        (Axes[2].Range.Min + Axes[2].Range.Max) * 0.5f);
 }
 
 void ImPlot3DPlot::SetRange(const ImPlot3DPoint& min, const ImPlot3DPoint& max) {
