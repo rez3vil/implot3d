@@ -141,6 +141,9 @@ IMPLOT3D_API void EndPlot(); // Only call if BeginPlot() returns true!
 // Enables an axis or sets the label and/or flags for an existing axis. Leave #label = nullptr for no label
 IMPLOT3D_API void SetupAxis(ImAxis3D axis, const char* label = nullptr, ImPlot3DAxisFlags flags = 0);
 
+// Sets the label and/or flags for primary X/Y/Z axes (shorthand for three calls to SetupAxis)
+IMPLOT3D_API void SetupAxes(const char* x_label, const char* y_label, const char* z_label, ImPlot3DAxisFlags x_flags = 0, ImPlot3DAxisFlags y_flags = 0, ImPlot3DAxisFlags z_flags = 0);
+
 IMPLOT3D_API void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags = 0);
 
 //-----------------------------------------------------------------------------

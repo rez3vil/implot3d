@@ -856,6 +856,12 @@ void SetupAxis(ImAxis3D idx, const char* label, ImPlot3DAxisFlags flags) {
     plot.SetAxisLabel(axis, label);
 }
 
+void SetupAxes(const char* x_label, const char* y_label, const char* z_label, ImPlot3DAxisFlags x_flags, ImPlot3DAxisFlags y_flags, ImPlot3DAxisFlags z_flags) {
+    SetupAxis(ImAxis3D_X, x_label, x_flags);
+    SetupAxis(ImAxis3D_Y, y_label, y_flags);
+    SetupAxis(ImAxis3D_Z, z_label, z_flags);
+}
+
 void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,

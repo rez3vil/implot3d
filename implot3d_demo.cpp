@@ -41,27 +41,23 @@ static void HelpMarker(const char* desc) {
 //-----------------------------------------------------------------------------
 
 void DemoLinePlots() {
-    static float x1[] = {0.0f, 0.1f, NAN, 0.1f};
-    static float y1[] = {0.0f, 0.0f, NAN, 0.5f};
-    static float z1[] = {0.0f, 0.1f, NAN, -0.5f};
-    static float x2[] = {-0.5f, -0.4f, 0.5f, -0.5f};
-    static float y2[] = {-0.5f, -0.4f, 0.5f, 0.5f};
-    static float z2[] = {-0.5f, -0.4f, 0.5f, -0.5f};
-    if (ImPlot3D::BeginPlot("Line Plots", ImVec2(-1, 400))) {
-        ImPlot3D::SetupLegend(ImPlot3DLocation_NorthWest, ImPlot3DLegendFlags_Horizontal);
-        ImPlot3D::SetupAxis(ImAxis3D_X, "X-Axis");
-        ImPlot3D::SetupAxis(ImAxis3D_Y, "Y-Axis");
-        ImPlot3D::SetupAxis(ImAxis3D_Z, "Z-Axis");
-
-        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Circle, 2, ImVec4(1, 0, 0, 1), 1, ImVec4(0, 1, 0, 1));
-        ImPlot3D::SetNextLineStyle(ImVec4(0.2f, 0.8f, 0.4f, 1));
-        ImPlot3D::PlotLine("Line loop", x1, y1, z1, 4, ImPlot3DLineFlags_Loop | ImPlot3DLineFlags_SkipNaN);
-
-        ImPlot3D::PlotLine("Colormap line 0", x2, y2, z2, 2);
-        ImPlot3D::PlotLine("Colormap line 1", x2, y2, z2, 2);
-        ImPlot3D::PlotLine("Colormap line 2", x2, y2, z2, 2);
-        ImPlot3D::PlotLine("Colormap line 3", x2, y2, z2, 2);
-
+    static float xs1[1001], ys1[1001], zs1[1001];
+    for (int i = 0; i < 1001; i++) {
+        xs1[i] = i * 0.001f;
+        ys1[i] = 0.5f + 0.5f * cosf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
+        zs1[i] = 0.5f + 0.5f * sinf(50 * (xs1[i] + (float)ImGui::GetTime() / 10));
+    }
+    static double xs2[20], ys2[20], zs2[20];
+    for (int i = 0; i < 20; i++) {
+        xs2[i] = i * 1 / 19.0f;
+        ys2[i] = xs2[i] * xs2[i];
+        zs2[i] = xs2[i] * ys2[i];
+    }
+    if (ImPlot3D::BeginPlot("Line Plots")) {
+        ImPlot3D::SetupAxes("x", "y", "z");
+        ImPlot3D::PlotLine("f(x)", xs1, ys1, zs1, 1001);
+        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Circle);
+        ImPlot3D::PlotLine("g(x)", xs2, ys2, zs2, 20, ImPlot3DLineFlags_Segments);
         ImPlot3D::EndPlot();
     }
 }
