@@ -63,12 +63,26 @@ void DemoLinePlots() {
 }
 
 void DemoScatterPlots() {
-    static float x[] = {0.0f, 0.1f, 0.5f};
-    static float y[] = {0.0f, 0.1f, 0.5f};
-    static float z[] = {0.0f, 0.1f, 0.5f};
-    if (ImPlot3D::BeginPlot("Scatter Plots", ImVec2(-1, 400), ImPlot3DFlags_NoClip)) {
-        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Asterisk, 4, ImVec4(0.3, 0.7, 0.6, 1), 1, ImVec4(0.3, 0.8, 0.9, 1));
-        ImPlot3D::PlotScatter("Points", x, y, z, 3);
+    srand(0);
+    static float xs1[100], ys1[100], zs1[100];
+    for (int i = 0; i < 100; ++i) {
+        xs1[i] = i * 0.01f;
+        ys1[i] = xs1[i] + 0.1f * ((float)rand() / (float)RAND_MAX);
+        zs1[i] = xs1[i] + 0.1f * ((float)rand() / (float)RAND_MAX);
+    }
+    static float xs2[50], ys2[50], zs2[50];
+    for (int i = 0; i < 50; i++) {
+        xs2[i] = 0.25f + 0.2f * ((float)rand() / (float)RAND_MAX);
+        ys2[i] = 0.50f + 0.2f * ((float)rand() / (float)RAND_MAX);
+        zs2[i] = 0.75f + 0.2f * ((float)rand() / (float)RAND_MAX);
+    }
+
+    if (ImPlot3D::BeginPlot("Scatter Plots")) {
+        ImPlot3D::PlotScatter("Data 1", xs1, ys1, zs1, 100);
+        // ImPlot3D::PushStyleVar(ImPlot3DStyleVar_FillAlpha, 0.25f);
+        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 6, ImPlot3D::GetColormapColor(1), IMPLOT3D_AUTO, ImPlot3D::GetColormapColor(1));
+        ImPlot3D::PlotScatter("Data 2", xs2, ys2, zs1, 50);
+        // ImPlot3D::PopStyleVar();
         ImPlot3D::EndPlot();
     }
 }

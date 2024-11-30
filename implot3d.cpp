@@ -1283,6 +1283,29 @@ ImVec4 NextColormapColor() {
     return ImGui::ColorConvertU32ToFloat4(NextColormapColorU32());
 }
 
+ImU32 GetColormapColorU32(int idx, ImPlot3DColormap cmap) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    cmap = cmap == IMPLOT3D_AUTO ? gp.Style.Colormap : cmap;
+    IM_ASSERT_USER_ERROR(cmap >= 0 && cmap < gp.ColormapData.Count, "Invalid colormap index!");
+    idx = idx % gp.ColormapData.GetKeyCount(cmap);
+    return gp.ColormapData.GetKeyColor(cmap, idx);
+}
+
+ImVec4 GetColormapColor(int idx, ImPlot3DColormap cmap) {
+    return ImGui::ColorConvertU32ToFloat4(GetColormapColorU32(idx, cmap));
+}
+
+ImU32 SampleColormapU32(float t, ImPlot3DColormap cmap) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    cmap = cmap == IMPLOT3D_AUTO ? gp.Style.Colormap : cmap;
+    IM_ASSERT_USER_ERROR(cmap >= 0 && cmap < gp.ColormapData.Count, "Invalid colormap index!");
+    return gp.ColormapData.LerpTable(cmap, t);
+}
+
+ImVec4 SampleColormap(float t, ImPlot3DColormap cmap) {
+    return ImGui::ColorConvertU32ToFloat4(SampleColormapU32(t, cmap));
+}
+
 //-----------------------------------------------------------------------------
 // [SECTION] Context Utils
 //-----------------------------------------------------------------------------

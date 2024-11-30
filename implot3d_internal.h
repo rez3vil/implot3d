@@ -494,6 +494,9 @@ IMPLOT3D_API const char* GetStyleColorName(ImPlot3DCol idx);
 // Get styling data for next item (call between BeginItem/EndItem)
 IMPLOT3D_API const ImPlot3DNextItemData& GetItemData();
 
+// Returns a color from the Color map given an index >= 0 (modulo will be performed)
+IMPLOT3D_API ImU32 GetColormapColorU32(int idx, ImPlot3DColormap cmap);
+
 // Returns the next unused colormap color and advances the colormap. Can be used to skip colors if desired
 IMPLOT3D_API ImU32 NextColormapColorU32();
 

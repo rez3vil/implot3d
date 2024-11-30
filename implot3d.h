@@ -229,6 +229,13 @@ IMPLOT3D_API ImPlot3DColormap GetColormapIndex(const char* name);
 // Can also be used with no return value to skip colors if desired. You need to call it between Begin/EndPlot!
 IMPLOT3D_API ImVec4 NextColormapColor();
 
+// Returns the size of a colormap
+IMPLOT3D_API int GetColormapSize(ImPlot3DColormap cmap = IMPLOT3D_AUTO);
+// Returns a color from a colormap given an index >= 0 (modulo will be performed)
+IMPLOT3D_API ImVec4 GetColormapColor(int idx, ImPlot3DColormap cmap = IMPLOT3D_AUTO);
+// Sample a color from the current colormap given t between 0 and 1
+IMPLOT3D_API ImVec4 SampleColormap(float t, ImPlot3DColormap cmap = IMPLOT3D_AUTO);
+
 //-----------------------------------------------------------------------------
 // [SECTION] Demo
 //-----------------------------------------------------------------------------
