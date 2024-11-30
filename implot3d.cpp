@@ -16,6 +16,8 @@
 // [SECTION] Macros
 // [SECTION] Context
 // [SECTION] Legend Utils
+// [SECTION] Formatter
+// [SECTION] Locator
 // [SECTION] Begin/End Plot
 // [SECTION] Setup
 // [SECTION] Plot Utils
@@ -38,7 +40,6 @@
 
 #ifndef IMGUI_DEFINE_MATH_OPERATORS
 #define IMGUI_DEFINE_MATH_OPERATORS
-#include "imgui.h"
 #endif
 
 #include "implot3d.h"
@@ -227,6 +228,77 @@ void RenderLegend() {
 
     // Render legends
     ShowLegendEntries(plot.Items, legend.Rect, legend.Hovered, gp.Style.LegendInnerPadding, gp.Style.LegendSpacing, !legend_horz, *draw_list);
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] Formatter
+//-----------------------------------------------------------------------------
+
+int Formatter_Default(float value, char* buff, int size, void* data) {
+    char* fmt = (char*)data;
+    return ImFormatString(buff, size, fmt, value);
+}
+
+//------------------------------------------------------------------------------
+// [SECTION] Locator
+//------------------------------------------------------------------------------
+
+double NiceNum(double x, bool round) {
+    double f;
+    double nf;
+    int expv = (int)floor(ImLog10(x));
+    f = x / ImPow(10.0, (double)expv);
+    if (round)
+        if (f < 1.5)
+            nf = 1;
+        else if (f < 3)
+            nf = 2;
+        else if (f < 7)
+            nf = 5;
+        else
+            nf = 10;
+    else if (f <= 1)
+        nf = 1;
+    else if (f <= 2)
+        nf = 2;
+    else if (f <= 5)
+        nf = 5;
+    else
+        nf = 10;
+    return nf * ImPow(10.0, expv);
+}
+
+void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, ImPlot3DFormatter formatter, void* formatter_data) {
+    if (range.Min == range.Max)
+        return;
+    const int nMinor = 10;
+    const int nMajor = 20;
+    const double nice_range = NiceNum(range.Size() * 0.99, false);
+    const double interval = NiceNum(nice_range / (nMajor - 1), true);
+    const double graphmin = floor(range.Min / interval) * interval;
+    const double graphmax = ceil(range.Max / interval) * interval;
+    bool first_major_set = false;
+    int first_major_idx = 0;
+    const int idx0 = ticker.TickCount(); // ticker may have user custom ticks
+    ImVec2 total_size(0, 0);
+    for (double major = graphmin; major < graphmax + 0.5 * interval; major += interval) {
+        // is this zero? combat zero formatting issues
+        if (major - interval < 0 && major + interval > 0)
+            major = 0;
+        if (range.Contains(major)) {
+            if (!first_major_set) {
+                first_major_idx = ticker.TickCount();
+                first_major_set = true;
+            }
+            total_size += ticker.AddTick(major, true, true, formatter, formatter_data).LabelSize;
+        }
+        for (int i = 1; i < nMinor; ++i) {
+            double minor = major + i * interval / nMinor;
+            if (range.Contains(minor)) {
+                total_size += ticker.AddTick(minor, false, true, formatter, formatter_data).LabelSize;
+            }
+        }
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -649,7 +721,7 @@ void HandleInput(ImPlot3DPlot& plot) {
     }
 }
 
-void RenderAxes(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
+void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
     // Get plot parameters
     const ImRect& plot_area = plot.PlotRect;
     const ImPlot3DQuat& rotation = plot.Rotation;
@@ -763,21 +835,21 @@ void RenderAxes(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
     // Lookup table for axis_corners based on active_faces
     static const int axis_corners_lookup[8][3][2] = {
         // Index 0: active_faces = {0, 0, 0}
-        {{2, 3}, {1, 2}, {1, 5}},
+        {{3, 2}, {1, 2}, {1, 5}},
         // Index 1: active_faces = {0, 0, 1}
-        {{6, 7}, {5, 6}, {1, 5}},
+        {{7, 6}, {5, 6}, {1, 5}},
         // Index 2: active_faces = {0, 1, 0}
         {{0, 1}, {1, 2}, {2, 6}},
         // Index 3: active_faces = {0, 1, 1}
         {{4, 5}, {5, 6}, {2, 6}},
         // Index 4: active_faces = {1, 0, 0}
-        {{2, 3}, {3, 0}, {0, 4}},
+        {{3, 2}, {0, 3}, {0, 4}},
         // Index 5: active_faces = {1, 0, 1}
-        {{6, 7}, {7, 4}, {0, 4}},
+        {{7, 6}, {4, 7}, {0, 4}},
         // Index 6: active_faces = {1, 1, 0}
-        {{0, 1}, {3, 0}, {3, 7}},
+        {{0, 1}, {0, 3}, {3, 7}},
         // Index 7: active_faces = {1, 1, 1}
-        {{4, 5}, {7, 4}, {3, 7}},
+        {{4, 5}, {4, 7}, {3, 7}},
     };
     int index = (active_faces[0] << 2) | (active_faces[1] << 1) | (active_faces[2]);
     for (int a = 0; a < 3; a++) {
@@ -812,7 +884,11 @@ void RenderAxes(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
 
         // Compute text angle
         ImVec2 screen_delta = corners_pix[idx1] - corners_pix[idx0];
-        float angle = atan2f(-screen_delta.y, screen_delta.x); // fmod(, M_PI);
+        float angle = atan2f(-screen_delta.y, screen_delta.x);
+        if (angle > M_PI_2)
+            angle -= M_PI;
+        if (angle < -M_PI_2)
+            angle += M_PI;
 
         AddTextRotated(draw_list, label_pos_pix, angle, col_ax_txt, label);
     }
@@ -833,6 +909,22 @@ void SetupLock() {
 
     ImGui::PushClipRect(plot.FrameRect.Min, plot.FrameRect.Max, true);
 
+    // Set default formatter/locator
+    for (int i = 0; i < 3; i++) {
+        ImPlot3DAxis& axis = plot.Axes[i];
+
+        // Set formatter
+        if (axis.Formatter == nullptr) {
+            axis.Formatter = Formatter_Default;
+            if (axis.FormatterData == nullptr)
+                axis.FormatterData = (void*)IMPLOT3D_LABEL_FORMAT;
+        }
+
+        // Set locator
+        if (axis.Locator == nullptr)
+            axis.Locator = Locator_Default;
+    }
+
     // Draw frame background
     ImU32 f_bg_color = GetStyleColorU32(ImPlot3DCol_FrameBg);
     draw_list->AddRectFilled(plot.FrameRect.Min, plot.FrameRect.Max, f_bg_color);
@@ -844,8 +936,15 @@ void SetupLock() {
     // Handle user input
     HandleInput(plot);
 
-    // Render axes
-    RenderAxes(draw_list, plot);
+    // Compute ticks
+    for (int i = 0; i < 3; i++) {
+        ImPlot3DAxis& axis = plot.Axes[i];
+        axis.Ticker.Reset();
+        axis.Locator(axis.Ticker, axis.Range, axis.Formatter, axis.FormatterData);
+    }
+
+    // Render plot box
+    RenderPlotBox(draw_list, plot);
 
     // Render title
     if (!plot.TextBuffer.empty()) {

@@ -12,7 +12,10 @@
 //--------------------------------------------------
 
 // Table of Contents:
+// [SECTION] Constants
 // [SECTION] Generic Helpers
+// [SECTION] Forward Declarations
+// [SECTION] Callbacks
 // [SECTION] Structs
 // [SECTION] Context Pointer
 // [SECTION] Context Utils
@@ -20,6 +23,8 @@
 // [SECTION] Item Utils
 // [SECTION] Plot Utils
 // [SECTION] Setup Utils
+// [SECTION] Formatter
+// [SECTION] Locator
 
 #pragma once
 
@@ -31,10 +36,23 @@
 #include "imgui_internal.h"
 
 //-----------------------------------------------------------------------------
+// [SECTION] Constants
+//-----------------------------------------------------------------------------
+
+// Default label format for axis labels
+#define IMPLOT3D_LABEL_FORMAT "%g"
+// Max character size for tick labels
+#define IMPLOT3D_LABEL_MAX_SIZE 32
+
+//-----------------------------------------------------------------------------
 // [SECTION] Generic Helpers
 //-----------------------------------------------------------------------------
 
 #ifndef IMPLOT_VERSION
+// Define generic helpers if ImPlot didn't define them already
+
+// Computes the common (base-10) logarithm
+static inline float ImLog10(float x) { return log10f(x); }
 // Returns true if flag is set
 template <typename TSet, typename TFlag>
 static inline bool ImHasFlag(TSet set, TFlag flag) { return (set & flag) == flag; }
@@ -70,6 +88,18 @@ static inline ImU32 ImMixU32(ImU32 a, ImU32 b, ImU32 s) {
 #endif
 }
 #endif
+
+//-----------------------------------------------------------------------------
+// [SECTION] Forward Declarations
+//-----------------------------------------------------------------------------
+
+struct ImPlot3DTicker;
+
+//------------------------------------------------------------------------------
+// [SECTION] Callbacks
+//------------------------------------------------------------------------------
+
+typedef void (*ImPlot3DLocator)(ImPlot3DTicker& ticker, const ImPlot3DRange& range, ImPlot3DFormatter formatter, void* formatter_data);
 
 //-----------------------------------------------------------------------------
 // [SECTION] Structs
@@ -162,11 +192,88 @@ struct ImPlot3DItemGroup {
     }
 };
 
+// Tick mark info
+struct ImPlot3DTick {
+    float PlotPos;
+    bool Major;
+    bool ShowLabel;
+    ImVec2 LabelSize;
+    int TextOffset;
+    int Idx;
+
+    ImPlot3DTick(double value, bool major, bool show_label) {
+        PlotPos = value;
+        Major = major;
+        ShowLabel = show_label;
+        TextOffset = -1;
+    }
+};
+
+// Collection of ticks
+struct ImPlot3DTicker {
+    ImVector<ImPlot3DTick> Ticks;
+    ImGuiTextBuffer TextBuffer;
+
+    ImPlot3DTicker() {
+        Reset();
+    }
+
+    ImPlot3DTick& AddTick(double value, bool major, bool show_label, const char* label) {
+        ImPlot3DTick tick(value, major, show_label);
+        if (show_label && label != nullptr) {
+            tick.TextOffset = TextBuffer.size();
+            TextBuffer.append(label, label + strlen(label) + 1);
+            tick.LabelSize = ImGui::CalcTextSize(TextBuffer.Buf.Data + tick.TextOffset);
+        }
+        return AddTick(tick);
+    }
+
+    ImPlot3DTick& AddTick(double value, bool major, bool show_label, ImPlot3DFormatter formatter, void* data) {
+        ImPlot3DTick tick(value, major, show_label);
+        if (show_label && formatter != nullptr) {
+            char buff[IMPLOT3D_LABEL_MAX_SIZE];
+            tick.TextOffset = TextBuffer.size();
+            formatter(tick.PlotPos, buff, sizeof(buff), data);
+            TextBuffer.append(buff, buff + strlen(buff) + 1);
+            tick.LabelSize = ImGui::CalcTextSize(TextBuffer.Buf.Data + tick.TextOffset);
+        }
+        return AddTick(tick);
+    }
+
+    inline ImPlot3DTick& AddTick(ImPlot3DTick tick) {
+        tick.Idx = Ticks.size();
+        Ticks.push_back(tick);
+        return Ticks.back();
+    }
+
+    const char* GetText(int idx) const {
+        return TextBuffer.Buf.Data + Ticks[idx].TextOffset;
+    }
+
+    const char* GetText(const ImPlot3DTick& tick) {
+        return GetText(tick.Idx);
+    }
+
+    void Reset() {
+        Ticks.shrink(0);
+        TextBuffer.Buf.shrink(0);
+    }
+
+    int TickCount() const {
+        return Ticks.Size;
+    }
+};
+
 // Holds axis information
 struct ImPlot3DAxis {
     ImPlot3DAxisFlags Flags;
     ImPlot3DRange Range;
     int LabelOffset;
+    // Ticks
+    ImPlot3DTicker Ticker;
+    ImPlot3DFormatter Formatter;
+    void* FormatterData;
+    ImPlot3DLocator Locator;
     // Fit data
     bool FitThisFrame;
     ImPlot3DRange FitExtents;
@@ -177,6 +284,10 @@ struct ImPlot3DAxis {
         Range.Min = 0.0f;
         Range.Max = 1.0f;
         LabelOffset = -1;
+        // Ticks
+        Formatter = nullptr;
+        FormatterData = nullptr;
+        Locator = nullptr;
         // Fit data
         FitThisFrame = true;
         FitExtents.Min = HUGE_VAL;
@@ -305,6 +416,18 @@ IMPLOT3D_API ImPlot3DRay NDCRayToPlotRay(const ImPlot3DRay& ray);
 //-----------------------------------------------------------------------------
 
 IMPLOT3D_API void SetupLock();
+
+//-----------------------------------------------------------------------------
+// [SECTION] Formatter
+//-----------------------------------------------------------------------------
+
+int Formatter_Default(float value, char* buff, int size, void* data);
+
+//------------------------------------------------------------------------------
+// [SECTION] Locator
+//------------------------------------------------------------------------------
+
+void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, ImPlot3DFormatter formatter, void* formatter_data);
 
 } // namespace ImPlot3D
 

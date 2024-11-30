@@ -30,10 +30,10 @@
 // [SECTION] ImPlot3DBox
 // [SECTION] ImPlot3DQuat
 // [SECTION] ImPlot3DStyle
+// [SECTION] Callbacks
 
 #pragma once
 #include "imgui.h"
-#include "imgui_internal.h"
 #ifndef IMGUI_DISABLE
 
 //-----------------------------------------------------------------------------
@@ -435,6 +435,7 @@ struct ImPlot3DRange {
 
     void Expand(float value);
     bool Contains(float value) const;
+    float Size() const { return Max - Min; }
 };
 
 //-----------------------------------------------------------------------------
@@ -504,5 +505,12 @@ struct ImPlot3DStyle {
     // Constructor
     IMPLOT3D_API ImPlot3DStyle();
 };
+
+//-----------------------------------------------------------------------------
+// [SECTION] Callbacks
+//-----------------------------------------------------------------------------
+
+// Callback signature for axis tick label formatter
+typedef int (*ImPlot3DFormatter)(float value, char* buff, int size, void* user_data);
 
 #endif // #ifndef IMGUI_DISABLE
