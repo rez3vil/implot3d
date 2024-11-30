@@ -250,7 +250,7 @@ struct ImPlot3DTicker {
         return TextBuffer.Buf.Data + Ticks[idx].TextOffset;
     }
 
-    const char* GetText(const ImPlot3DTick& tick) {
+    const char* GetText(const ImPlot3DTick& tick) const {
         return GetText(tick.Idx);
     }
 

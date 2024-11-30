@@ -47,7 +47,7 @@ void DemoLinePlots() {
     static float x2[] = {-0.5f, -0.4f, 0.5f, -0.5f};
     static float y2[] = {-0.5f, -0.4f, 0.5f, 0.5f};
     static float z2[] = {-0.5f, -0.4f, 0.5f, -0.5f};
-    if (ImPlot3D::BeginPlot("Line Plots", ImVec2(-1, 300))) {
+    if (ImPlot3D::BeginPlot("Line Plots", ImVec2(-1, 400))) {
         ImPlot3D::SetupLegend(ImPlot3DLocation_NorthWest, ImPlot3DLegendFlags_Horizontal);
         ImPlot3D::SetupAxis(ImAxis3D_X, "X-Axis");
         ImPlot3D::SetupAxis(ImAxis3D_Y, "Y-Axis");
@@ -68,7 +68,7 @@ void DemoScatterPlots() {
     static float x[] = {0.0f, 0.1f, 0.5f};
     static float y[] = {0.0f, 0.1f, 0.5f};
     static float z[] = {0.0f, 0.1f, 0.5f};
-    if (ImPlot3D::BeginPlot("Scatter Plots", ImVec2(-1, 300), ImPlot3DFlags_NoClip)) {
+    if (ImPlot3D::BeginPlot("Scatter Plots", ImVec2(-1, 400), ImPlot3DFlags_NoClip)) {
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Asterisk, 4, ImVec4(0.3, 0.7, 0.6, 1), 1, ImVec4(0.3, 0.8, 0.9, 1));
         ImPlot3D::PlotScatter("Points", x, y, z, 3);
         ImPlot3D::EndPlot();

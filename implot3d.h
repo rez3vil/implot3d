@@ -363,8 +363,8 @@ struct ImPlot3DPoint {
     // Cross product
     ImPlot3DPoint Cross(const ImPlot3DPoint& rhs) const;
 
-    // Get vector magnitude
-    float Magnitude() const;
+    // Get vector length
+    float Length() const;
 
     // Normalize to unit length
     void Normalize();
@@ -451,8 +451,8 @@ struct ImPlot3DQuat {
 
     ImPlot3DQuat(float _angle, const ImPlot3DPoint& _axis);
 
-    // Get quaternion magnitude
-    float Magnitude() const;
+    // Get quaternion length
+    float Length() const;
 
     // Get normalized quaternion
     ImPlot3DQuat Normalized() const;

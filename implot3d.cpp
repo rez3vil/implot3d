@@ -273,6 +273,7 @@ void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, ImPlot3
         return;
     const int nMinor = 5;
     const int nMajor = 3;
+    const int max_ticks_labels = 7;
     const double nice_range = NiceNum(range.Size() * 0.99, false);
     const double interval = NiceNum(nice_range / (nMajor - 1), true);
     const double graphmin = floor(range.Min / interval) * interval;
@@ -298,6 +299,14 @@ void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, ImPlot3
                 total_size += ticker.AddTick(minor, false, true, formatter, formatter_data).LabelSize;
             }
         }
+    }
+
+    // Prune tick labels
+    if (ticker.TickCount() > max_ticks_labels) {
+        for (int i = first_major_idx - 1; i >= idx0; i -= 2)
+            ticker.Ticks[i].ShowLabel = false;
+        for (int i = first_major_idx + 1; i < ticker.TickCount(); i += 2)
+            ticker.Ticks[i].ShowLabel = false;
     }
 }
 
@@ -924,6 +933,90 @@ void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
         axis_corners[a][1] = axis_corners_lookup[index][a][1];
     }
 
+    // Render tick labels
+    for (int a = 0; a < 3; a++) {
+        const ImPlot3DAxis& axis = plot.Axes[a];
+
+        // Corner indices for this axis
+        int idx0 = axis_corners[a][0];
+        int idx1 = axis_corners[a][1];
+
+        // Start and end points of the axis in plot space
+        ImPlot3DPoint axis_start = corners[idx0];
+        ImPlot3DPoint axis_end = corners[idx1];
+
+        // Direction vector along the axis
+        ImPlot3DPoint axis_dir = axis_end - axis_start;
+
+        // Convert axis start and end to screen space
+        ImVec2 axis_start_pix = corners_pix[idx0];
+        ImVec2 axis_end_pix = corners_pix[idx1];
+
+        // Screen space axis direction
+        ImVec2 axis_screen_dir = axis_end_pix - axis_start_pix;
+        float axis_length = ImSqrt(ImLengthSqr(axis_screen_dir));
+        if (axis_length != 0.0f)
+            axis_screen_dir /= axis_length;
+        else
+            axis_screen_dir = ImVec2(1.0f, 0.0f); // Default direction if length is zero
+
+        // Perpendicular direction in screen space
+        ImVec2 offset_dir_pix = ImVec2(-axis_screen_dir.y, axis_screen_dir.x);
+
+        // Make sure direction points away from cube center
+        ImVec2 box_center_pix = PlotToPixels(plot.RangeCenter());
+        ImVec2 axis_center_pix = (axis_start_pix + axis_end_pix) * 0.5f;
+        ImVec2 center_to_axis_pix = axis_center_pix - box_center_pix;
+        center_to_axis_pix /= ImSqrt(ImLengthSqr(center_to_axis_pix));
+        if (ImDot(offset_dir_pix, center_to_axis_pix) < 0.0f)
+            offset_dir_pix = -offset_dir_pix;
+
+        // Adjust the offset magnitude
+        float offset_magnitude = 20.0f; // Adjust as needed
+        ImVec2 offset_pix = offset_dir_pix * offset_magnitude;
+
+        // Compute angle perpendicular to axis in screen space
+        float angle = atan2f(-axis_screen_dir.y, axis_screen_dir.x) + IM_PI * 0.5f;
+
+        // Normalize angle to be between -π and π
+        if (angle > IM_PI)
+            angle -= 2 * IM_PI;
+        if (angle < -IM_PI)
+            angle += 2 * IM_PI;
+
+        // Adjust angle to keep labels upright
+        if (angle > IM_PI * 0.5f)
+            angle -= IM_PI;
+        if (angle < -IM_PI * 0.5f)
+            angle += IM_PI;
+
+        // Adjust text color
+        ImU32 col_tick_txt = GetStyleColorU32(ImPlot3DCol_AxisText);
+
+        // Loop over ticks
+        for (int t = 0; t < axis.Ticker.TickCount(); ++t) {
+            const ImPlot3DTick& tick = axis.Ticker.Ticks[t];
+            if (!tick.ShowLabel)
+                continue;
+
+            // Compute position along the axis
+            float t_axis = (tick.PlotPos - axis.Range.Min) / (axis.Range.Max - axis.Range.Min);
+            ImPlot3DPoint tick_pos = axis_start + axis_dir * t_axis;
+
+            // Convert to pixel coordinates
+            ImVec2 tick_pos_pix = PlotToPixels(tick_pos);
+
+            // Get the tick label text
+            const char* label = axis.Ticker.GetText(tick);
+
+            // Adjust label position by offset
+            ImVec2 label_pos_pix = tick_pos_pix + offset_pix;
+
+            // Render the tick label
+            AddTextRotated(draw_list, label_pos_pix, angle, col_tick_txt, label);
+        }
+    }
+
     // Render axis labels
     for (int a = 0; a < 3; a++) {
         const ImPlot3DAxis& axis = plot.Axes[a];
@@ -938,8 +1031,8 @@ void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
 
         // Position at the end of the axis
         ImPlot3DPoint label_pos = (corners[idx0] + corners[idx1]) * 0.5f;
-        // Add some offset
-        label_pos += (label_pos - range_center) * 0.1f;
+        // Add offset
+        label_pos += (label_pos - range_center) * 0.4f;
 
         ImVec2 label_pos_pix = PlotToPixels(label_pos);
 
@@ -1243,18 +1336,18 @@ ImPlot3DPoint ImPlot3DPoint::Cross(const ImPlot3DPoint& rhs) const {
     return ImPlot3DPoint(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
 }
 
-float ImPlot3DPoint::Magnitude() const { return std::sqrt(x * x + y * y + z * z); }
+float ImPlot3DPoint::Length() const { return std::sqrt(x * x + y * y + z * z); }
 
 void ImPlot3DPoint::Normalize() {
-    float mag = Magnitude();
-    x /= mag;
-    y /= mag;
-    z /= mag;
+    float l = Length();
+    x /= l;
+    y /= l;
+    z /= l;
 }
 
 ImPlot3DPoint ImPlot3DPoint::Normalized() const {
-    float mag = Magnitude();
-    return ImPlot3DPoint(x / mag, y / mag, z / mag);
+    float l = Length();
+    return ImPlot3DPoint(x / l, y / l, z / l);
 }
 
 ImPlot3DPoint operator*(float lhs, const ImPlot3DPoint& rhs) {
@@ -1367,13 +1460,13 @@ ImPlot3DQuat::ImPlot3DQuat(float _angle, const ImPlot3DPoint& _axis) {
     w = std::cos(half_angle);
 }
 
-float ImPlot3DQuat::Magnitude() const {
+float ImPlot3DQuat::Length() const {
     return std::sqrt(x * x + y * y + z * z + w * w);
 }
 
 ImPlot3DQuat ImPlot3DQuat::Normalized() const {
-    float mag = Magnitude();
-    return ImPlot3DQuat(x / mag, y / mag, z / mag, w / mag);
+    float l = Length();
+    return ImPlot3DQuat(x / l, y / l, z / l, w / l);
 }
 
 ImPlot3DQuat ImPlot3DQuat::Conjugate() const {
@@ -1381,8 +1474,8 @@ ImPlot3DQuat ImPlot3DQuat::Conjugate() const {
 }
 
 ImPlot3DQuat ImPlot3DQuat::Inverse() const {
-    float mag_squared = x * x + y * y + z * z + w * w;
-    return ImPlot3DQuat(-x / mag_squared, -y / mag_squared, -z / mag_squared, w / mag_squared);
+    float l_squared = x * x + y * y + z * z + w * w;
+    return ImPlot3DQuat(-x / l_squared, -y / l_squared, -z / l_squared, w / l_squared);
 }
 
 ImPlot3DQuat ImPlot3DQuat::operator*(const ImPlot3DQuat& rhs) const {
@@ -1394,11 +1487,11 @@ ImPlot3DQuat ImPlot3DQuat::operator*(const ImPlot3DQuat& rhs) const {
 }
 
 ImPlot3DQuat& ImPlot3DQuat::Normalize() {
-    float mag = Magnitude();
-    x /= mag;
-    y /= mag;
-    z /= mag;
-    w /= mag;
+    float l = Length();
+    x /= l;
+    y /= l;
+    z /= l;
+    w /= l;
     return *this;
 }
 
