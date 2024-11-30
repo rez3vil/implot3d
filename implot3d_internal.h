@@ -131,6 +131,113 @@ struct ImPlot3DNextItemData {
     }
 };
 
+// Colormap data storage
+struct ImPlot3DColormapData {
+    ImVector<ImU32> Keys;
+    ImVector<int> KeyCounts;
+    ImVector<int> KeyOffsets;
+    ImVector<ImU32> Tables;
+    ImVector<int> TableSizes;
+    ImVector<int> TableOffsets;
+    ImGuiTextBuffer Text;
+    ImVector<int> TextOffsets;
+    ImVector<bool> Quals;
+    ImGuiStorage Map;
+    int Count;
+
+    ImPlot3DColormapData() { Count = 0; }
+
+    int Append(const char* name, const ImU32* keys, int count, bool qual) {
+        if (GetIndex(name) != -1)
+            return -1;
+        KeyOffsets.push_back(Keys.size());
+        KeyCounts.push_back(count);
+        Keys.reserve(Keys.size() + count);
+        for (int i = 0; i < count; ++i)
+            Keys.push_back(keys[i]);
+        TextOffsets.push_back(Text.size());
+        Text.append(name, name + strlen(name) + 1);
+        Quals.push_back(qual);
+        ImGuiID id = ImHashStr(name);
+        int idx = Count++;
+        Map.SetInt(id, idx);
+        _AppendTable(idx);
+        return idx;
+    }
+
+    void _AppendTable(ImPlot3DColormap cmap) {
+        int key_count = GetKeyCount(cmap);
+        const ImU32* keys = GetKeys(cmap);
+        int off = Tables.size();
+        TableOffsets.push_back(off);
+        if (IsQual(cmap)) {
+            Tables.reserve(key_count);
+            for (int i = 0; i < key_count; ++i)
+                Tables.push_back(keys[i]);
+            TableSizes.push_back(key_count);
+        } else {
+            int max_size = 255 * (key_count - 1) + 1;
+            Tables.reserve(off + max_size);
+            // ImU32 last = keys[0];
+            // Tables.push_back(last);
+            // int n = 1;
+            for (int i = 0; i < key_count - 1; ++i) {
+                for (int s = 0; s < 255; ++s) {
+                    ImU32 a = keys[i];
+                    ImU32 b = keys[i + 1];
+                    ImU32 c = ImMixU32(a, b, s);
+                    // if (c != last) {
+                    Tables.push_back(c);
+                    // last = c;
+                    // n++;
+                    // }
+                }
+            }
+            ImU32 c = keys[key_count - 1];
+            // if (c != last) {
+            Tables.push_back(c);
+            // n++;
+            // }
+            // TableSizes.push_back(n);
+            TableSizes.push_back(max_size);
+        }
+    }
+
+    void RebuildTables() {
+        Tables.resize(0);
+        TableSizes.resize(0);
+        TableOffsets.resize(0);
+        for (int i = 0; i < Count; ++i)
+            _AppendTable(i);
+    }
+
+    inline bool IsQual(ImPlot3DColormap cmap) const { return Quals[cmap]; }
+    inline const char* GetName(ImPlot3DColormap cmap) const { return cmap < Count ? Text.Buf.Data + TextOffsets[cmap] : nullptr; }
+    inline ImPlot3DColormap GetIndex(const char* name) const {
+        ImGuiID key = ImHashStr(name);
+        return Map.GetInt(key, -1);
+    }
+
+    inline const ImU32* GetKeys(ImPlot3DColormap cmap) const { return &Keys[KeyOffsets[cmap]]; }
+    inline int GetKeyCount(ImPlot3DColormap cmap) const { return KeyCounts[cmap]; }
+    inline ImU32 GetKeyColor(ImPlot3DColormap cmap, int idx) const { return Keys[KeyOffsets[cmap] + idx]; }
+    inline void SetKeyColor(ImPlot3DColormap cmap, int idx, ImU32 value) {
+        Keys[KeyOffsets[cmap] + idx] = value;
+        RebuildTables();
+    }
+
+    inline const ImU32* GetTable(ImPlot3DColormap cmap) const { return &Tables[TableOffsets[cmap]]; }
+    inline int GetTableSize(ImPlot3DColormap cmap) const { return TableSizes[cmap]; }
+    inline ImU32 GetTableColor(ImPlot3DColormap cmap, int idx) const { return Tables[TableOffsets[cmap] + idx]; }
+
+    inline ImU32 LerpTable(ImPlot3DColormap cmap, float t) const {
+        int off = TableOffsets[cmap];
+        int siz = TableSizes[cmap];
+        int idx = Quals[cmap] ? ImClamp((int)(siz * t), 0, siz - 1) : (int)((siz - 1) * t + 0.5f);
+        return Tables[off + idx];
+    }
+};
+
 // State information for plot items
 struct ImPlot3DItem {
     ImGuiID ID;
@@ -175,6 +282,11 @@ struct ImPlot3DLegend {
 struct ImPlot3DItemGroup {
     ImPool<ImPlot3DItem> ItemPool;
     ImPlot3DLegend Legend;
+    int ColormapIdx;
+
+    ImPlot3DItemGroup() {
+        ColormapIdx = 0;
+    }
 
     int GetItemCount() const { return ItemPool.GetBufSize(); }
     ImGuiID GetItemID(const char* label_id) { return ImGui::GetID(label_id); }
@@ -189,6 +301,7 @@ struct ImPlot3DItemGroup {
     void Reset() {
         ItemPool.Clear();
         Legend.Reset();
+        ColormapIdx = 0;
     }
 };
 
@@ -349,6 +462,7 @@ struct ImPlot3DContext {
     ImPlot3DItemGroup* CurrentItems;
     ImPlot3DNextItemData NextItemData;
     ImPlot3DStyle Style;
+    ImPlot3DColormapData ColormapData;
 };
 
 //-----------------------------------------------------------------------------
@@ -379,6 +493,9 @@ IMPLOT3D_API const char* GetStyleColorName(ImPlot3DCol idx);
 
 // Get styling data for next item (call between BeginItem/EndItem)
 IMPLOT3D_API const ImPlot3DNextItemData& GetItemData();
+
+// Returns the next unused colormap color and advances the colormap. Can be used to skip colors if desired
+IMPLOT3D_API ImU32 NextColormapColorU32();
 
 //-----------------------------------------------------------------------------
 // [SECTION] Item Utils

@@ -155,10 +155,23 @@ bool BeginItem(const char* label_id, ImPlot3DItemFlags flags, ImPlot3DCol recolo
     bool just_created;
     ImPlot3DItem* item = RegisterOrGetItem(label_id, flags, &just_created);
 
-    // Set color
-    n.Colors[ImPlot3DCol_Line] = IsColorAuto(n.Colors[ImPlot3DCol_Line]) ? GetStyleColorVec4(ImPlot3DCol_Line) : n.Colors[ImPlot3DCol_Line];
-    n.Colors[ImPlot3DCol_MarkerFill] = IsColorAuto(n.Colors[ImPlot3DCol_MarkerFill]) ? GetStyleColorVec4(ImPlot3DCol_MarkerFill) : n.Colors[ImPlot3DCol_MarkerFill];
-    n.Colors[ImPlot3DCol_MarkerOutline] = IsColorAuto(n.Colors[ImPlot3DCol_MarkerOutline]) ? GetStyleColorVec4(ImPlot3DCol_MarkerOutline) : n.Colors[ImPlot3DCol_MarkerOutline];
+    // Set/override item color
+    if (recolor_from != -1) {
+        if (!IsColorAuto(n.Colors[recolor_from]))
+            item->Color = ImGui::ColorConvertFloat4ToU32(n.Colors[recolor_from]);
+        else if (!IsColorAuto(gp.Style.Colors[recolor_from]))
+            item->Color = ImGui::ColorConvertFloat4ToU32(gp.Style.Colors[recolor_from]);
+        else if (just_created)
+            item->Color = NextColormapColorU32();
+    } else if (just_created) {
+        item->Color = NextColormapColorU32();
+    }
+
+    // Set next item color
+    ImVec4 item_color = ImGui::ColorConvertU32ToFloat4(item->Color);
+    n.Colors[ImPlot3DCol_Line] = IsColorAuto(n.Colors[ImPlot3DCol_Line]) ? (IsColorAuto(ImPlot3DCol_Line) ? item_color : gp.Style.Colors[ImPlot3DCol_Line]) : n.Colors[ImPlot3DCol_Line];
+    n.Colors[ImPlot3DCol_MarkerOutline] = IsColorAuto(n.Colors[ImPlot3DCol_MarkerOutline]) ? (IsColorAuto(ImPlot3DCol_MarkerOutline) ? n.Colors[ImPlot3DCol_Line] : gp.Style.Colors[ImPlot3DCol_MarkerOutline]) : n.Colors[ImPlot3DCol_MarkerOutline];
+    n.Colors[ImPlot3DCol_MarkerFill] = IsColorAuto(n.Colors[ImPlot3DCol_MarkerFill]) ? (IsColorAuto(ImPlot3DCol_MarkerFill) ? n.Colors[ImPlot3DCol_Line] : gp.Style.Colors[ImPlot3DCol_MarkerFill]) : n.Colors[ImPlot3DCol_MarkerFill];
 
     // Set size & weight
     n.LineWeight = n.LineWeight < 0.0f ? style.LineWeight : n.LineWeight;
@@ -170,12 +183,6 @@ bool BeginItem(const char* label_id, ImPlot3DItemFlags flags, ImPlot3DCol recolo
     n.RenderLine = n.Colors[ImPlot3DCol_Line].w > 0 && n.LineWeight > 0;
     n.RenderMarkerFill = n.Colors[ImPlot3DCol_MarkerFill].w > 0;
     n.RenderMarkerLine = n.Colors[ImPlot3DCol_MarkerOutline].w > 0 && n.MarkerWeight > 0;
-
-    // Set/override item color
-    if (recolor_from != -1)
-        item->Color = ImGui::ColorConvertFloat4ToU32(n.Colors[recolor_from]);
-    else if (just_created)
-        item->Color = ImGui::ColorConvertFloat4ToU32(ImVec4(1, 1, 1, 1));
 
     // Don't render if item is hidden
     if (!item->Show) {

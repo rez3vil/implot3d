@@ -68,6 +68,7 @@ typedef int ImPlot3DCol;      // -> ImPlot3DCol_               // Enum: Styling 
 typedef int ImPlot3DMarker;   // -> ImPlot3DMarker_            // Enum: Marker styles
 typedef int ImPlot3DLocation; // -> ImPlot3DLocation_          // Enum: Locations
 typedef int ImAxis3D;         // -> ImAxis3D_                  // Enum: Axis indices
+typedef int ImPlot3DColormap; // -> ImPlot3DColormap_          // Enum: Colormaps
 
 // Flags
 typedef int ImPlot3DFlags;        // -> ImPlot3DFlags_         // Flags: for BeginPlot()
@@ -137,7 +138,7 @@ IMPLOT3D_API void EndPlot(); // Only call if BeginPlot() returns true!
 //   call it yourself, then the first subsequent plotting or utility function will
 //   call it for you.
 
-// Enables an axis or sets the label and/or flags for an existing axis. Leave #label = nullptr for no label.
+// Enables an axis or sets the label and/or flags for an existing axis. Leave #label = nullptr for no label
 IMPLOT3D_API void SetupAxis(ImAxis3D axis, const char* label = nullptr, ImPlot3DAxisFlags flags = 0);
 
 IMPLOT3D_API void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags = 0);
@@ -191,6 +192,39 @@ IMPLOT3D_API void SetNextMarkerStyle(ImPlot3DMarker marker = IMPLOT3D_AUTO, floa
 // Get color
 IMPLOT3D_API ImVec4 GetStyleColorVec4(ImPlot3DCol idx);
 IMPLOT3D_API ImU32 GetStyleColorU32(ImPlot3DCol idx);
+
+//-----------------------------------------------------------------------------
+// [SECTION] Colormaps
+//-----------------------------------------------------------------------------
+
+// Item styling is based on colormaps when the relevant ImPlot3DCol_XXX is set to
+// IMPLOT3D_AUTO_COL (default). Several built-in colormaps are available. You can
+// add and then push/pop your own colormaps as well. To permanently set a colormap,
+// modify the Colormap index member of your ImPlot3DStyle.
+
+// Colormap data will be ignored and a custom color will be used if you have done one of the following:
+//     1) Modified an item style color in your ImPlot3DStyle to anything other than IMPLOT3D_AUTO_COL.
+//     3) Set the next item style with a SetNextXXXStyle function.
+
+// Add a new colormap. The color data will be copied. The colormap can be used by pushing either the returned index or the
+// string name with PushColormap. The colormap name must be unique and the size must be greater than 1. You will receive
+// an assert otherwise! By default colormaps are considered to be qualitative (i.e. discrete). If you want to create a
+// continuous colormap, set #qual=false. This will treat the colors you provide as keys, and ImPlot3D will build a linearly
+// interpolated lookup table. The memory footprint of this table will be exactly ((size-1)*255+1)*4 bytes.
+
+IMPLOT3D_API ImPlot3DColormap AddColormap(const char* name, const ImVec4* cols, int size, bool qual = true);
+IMPLOT3D_API ImPlot3DColormap AddColormap(const char* name, const ImU32* cols, int size, bool qual = true);
+
+// Returns the number of available colormaps (i.e. the built-in + user-added count)
+IMPLOT3D_API int GetColormapCount();
+// Returns a null terminated string name for a colormap given an index. Returns nullptr if index is invalid
+IMPLOT3D_API const char* GetColormapName(ImPlot3DColormap cmap);
+// Returns an index number for a colormap given a valid string name. Returns -1 if name is invalid
+IMPLOT3D_API ImPlot3DColormap GetColormapIndex(const char* name);
+
+// Returns the next color from the current colormap and advances the colormap for the current plot
+// Can also be used with no return value to skip colors if desired. You need to call it between Begin/EndPlot!
+IMPLOT3D_API ImVec4 NextColormapColor();
 
 //-----------------------------------------------------------------------------
 // [SECTION] Demo
@@ -312,6 +346,26 @@ enum ImAxis3D_ {
     ImAxis3D_Y,
     ImAxis3D_Z,
     ImAxis3D_COUNT,
+};
+
+// Colormaps
+enum ImPlot3DColormap_ {
+    ImPlot3DColormap_Deep = 0,      // Same as seaborn "deep"
+    ImPlot3DColormap_Dark = 1,      // Same as matplotlib "Set1"
+    ImPlot3DColormap_Pastel = 2,    // Same as matplotlib "Pastel1"
+    ImPlot3DColormap_Paired = 3,    // Same as matplotlib "Paired"
+    ImPlot3DColormap_Viridis = 4,   // Same as matplotlib "viridis"
+    ImPlot3DColormap_Plasma = 5,    // Same as matplotlib "plasma"
+    ImPlot3DColormap_Hot = 6,       // Same as matplotlib/MATLAB "hot"
+    ImPlot3DColormap_Cool = 7,      // Same as matplotlib/MATLAB "cool"
+    ImPlot3DColormap_Pink = 8,      // Same as matplotlib/MATLAB "pink"
+    ImPlot3DColormap_Jet = 9,       // Same as matplotlib/MATLAB "jet"
+    ImPlot3DColormap_Twilight = 10, // Same as matplotlib "twilight"
+    ImPlot3DColormap_RdBu = 11,     // Same as matplotlib "RdBu"
+    ImPlot3DColormap_BrBG = 12,     // Same as matplotlib "BrGB"
+    ImPlot3DColormap_PiYG = 13,     // Same as matplotlib "PiYG"
+    ImPlot3DColormap_Spectral = 14, // Same as matplotlib "Spectral"
+    ImPlot3DColormap_Greys = 15,    // White/black
 };
 
 //-----------------------------------------------------------------------------
@@ -502,6 +556,8 @@ struct ImPlot3DStyle {
     ImVec2 LegendSpacing;      // Spacing between legend entries
     // Colors
     ImVec4 Colors[ImPlot3DCol_COUNT];
+    // Colormap
+    ImPlot3DColormap Colormap; // The current colormap. Set this to either an ImPlotColormap_ enum or an index returned by AddColormap
     // Constructor
     IMPLOT3D_API ImPlot3DStyle();
 };

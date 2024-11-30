@@ -57,8 +57,10 @@ void DemoLinePlots() {
         ImPlot3D::SetNextLineStyle(ImVec4(0.2f, 0.8f, 0.4f, 1));
         ImPlot3D::PlotLine("Line loop", x1, y1, z1, 4, ImPlot3DLineFlags_Loop | ImPlot3DLineFlags_SkipNaN);
 
-        ImPlot3D::SetNextLineStyle(ImVec4(0.8f, 0.2f, 0.4f, 1));
-        ImPlot3D::PlotLine("Red line", x2, y2, z2, 2);
+        ImPlot3D::PlotLine("Colormap line 0", x2, y2, z2, 2);
+        ImPlot3D::PlotLine("Colormap line 1", x2, y2, z2, 2);
+        ImPlot3D::PlotLine("Colormap line 2", x2, y2, z2, 2);
+        ImPlot3D::PlotLine("Colormap line 3", x2, y2, z2, 2);
 
         ImPlot3D::EndPlot();
     }
