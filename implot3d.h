@@ -224,13 +224,17 @@ enum ImPlot3DCol_ {
     ImPlot3DCol_MarkerOutline, // Marker outline color
     ImPlot3DCol_MarkerFill,    // Marker fill color
     // Plot colors
-    ImPlot3DCol_TitleText,    // Title color
-    ImPlot3DCol_FrameBg,      // Frame background color
-    ImPlot3DCol_PlotBg,       // Plot area background color
-    ImPlot3DCol_PlotBorder,   // Plot area border color
+    ImPlot3DCol_TitleText,  // Title color
+    ImPlot3DCol_FrameBg,    // Frame background color
+    ImPlot3DCol_PlotBg,     // Plot area background color
+    ImPlot3DCol_PlotBorder, // Plot area border color
+    // Legend colors
     ImPlot3DCol_LegendBg,     // Legend background color
     ImPlot3DCol_LegendBorder, // Legend border color
     ImPlot3DCol_LegendText,   // Legend text color
+    // Axis colors
+    ImPlot3DCol_AxisText, // Axis label and tick lables color
+    ImPlot3DCol_AxisGrid, // Axis grid color
     ImPlot3DCol_COUNT,
 };
 
@@ -297,7 +301,8 @@ enum ImPlot3DLocation_ {
 // Flags for axis
 enum ImPlot3DAxisFlags_ {
     ImPlot3DAxisFlags_None = 0,             // Default
-    ImPlot3DAxisFlags_NoGridLines = 1 << 0, // No grid lines will be displayed
+    ImPlot3DAxisFlags_NoLabel = 1 << 0,     // No axis label will be displayed
+    ImPlot3DAxisFlags_NoGridLines = 1 << 1, // No grid lines will be displayed
 };
 
 // Axis indices

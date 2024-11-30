@@ -183,6 +183,7 @@ struct ImPlot3DAxis {
         FitExtents.Max = -HUGE_VAL;
     }
 
+    bool HasLabel() const;
     void ExtendFit(float value);
     void ApplyFit();
     float PlotToNDC(float value) const;
@@ -227,6 +228,7 @@ struct ImPlot3DPlot {
     ImPlot3DPoint RangeMax() const;
     void SetRange(const ImPlot3DPoint& min, const ImPlot3DPoint& max);
     void SetAxisLabel(ImPlot3DAxis& axis, const char* label);
+    const char* GetAxisLabel(const ImPlot3DAxis& axis) const;
 };
 
 struct ImPlot3DContext {

@@ -488,6 +488,101 @@ ImPlot3DRay NDCRayToPlotRay(const ImPlot3DRay& ray) {
 // [SECTION] Setup Utils
 //-----------------------------------------------------------------------------
 
+void AddTextRotated(ImDrawList* draw_list, ImVec2 pos, float angle, ImU32 col, const char* text_begin, const char* text_end = nullptr) {
+    if (!text_end)
+        text_end = text_begin + strlen(text_begin);
+
+    ImGuiContext& g = *GImGui;
+    ImFont* font = g.Font;
+
+    // Align to be pixel perfect
+    pos.x = IM_FLOOR(pos.x);
+    pos.y = IM_FLOOR(pos.y);
+
+    const float scale = g.FontSize / font->FontSize;
+
+    // Measure the size of the text in unrotated coordinates
+    ImVec2 text_size = font->CalcTextSizeA(g.FontSize, FLT_MAX, 0.0f, text_begin, text_end, nullptr);
+
+    // Compute the offset to center the text around 'pos'
+    ImVec2 text_offset = ImVec2(text_size.x * 0.5f, text_size.y * 0.5f);
+
+    // Precompute sine and cosine of the angle
+    float cos_a = cosf(-angle);
+    float sin_a = sinf(-angle);
+
+    const char* s = text_begin;
+    int chars_total = (int)(text_end - s);
+    int chars_rendered = 0;
+    const int vtx_count_max = chars_total * 4;
+    const int idx_count_max = chars_total * 6;
+    draw_list->PrimReserve(idx_count_max, vtx_count_max);
+
+    // Position along the baseline (unrotated)
+    ImVec2 pen = ImVec2(0, 0);
+    // Start position centered
+    pen.x -= text_size.x * 0.5f;
+
+    while (s < text_end) {
+        unsigned int c = (unsigned int)*s;
+        if (c < 0x80) {
+            s += 1;
+        } else {
+            s += ImTextCharFromUtf8(&c, s, text_end);
+            if (c == 0) // Malformed UTF-8?
+                break;
+        }
+
+        const ImFontGlyph* glyph = font->FindGlyph((ImWchar)c);
+        if (glyph == nullptr) {
+            continue;
+        }
+
+        // Glyph dimensions and positions
+        ImVec2 glyph_offset = ImVec2(glyph->X0, glyph->Y0) * scale;
+        ImVec2 glyph_size = ImVec2(glyph->X1 - glyph->X0, glyph->Y1 - glyph->Y0) * scale;
+
+        // Corners of the glyph quad in unrotated space
+        ImVec2 corners[4];
+        corners[0] = pen + glyph_offset;
+        corners[1] = pen + glyph_offset + ImVec2(glyph_size.x, 0);
+        corners[2] = pen + glyph_offset + glyph_size;
+        corners[3] = pen + glyph_offset + ImVec2(0, glyph_size.y);
+
+        // Adjust for centering
+        for (int i = 0; i < 4; ++i) {
+            corners[i] -= text_offset;
+        }
+
+        // Rotate and translate the corners
+        for (int i = 0; i < 4; ++i) {
+            float x = corners[i].x;
+            float y = corners[i].y;
+            corners[i].x = x * cos_a - y * sin_a + pos.x;
+            corners[i].y = x * sin_a + y * cos_a + pos.y;
+        }
+
+        // Texture coordinates
+        ImVec2 uv0 = ImVec2(glyph->U0, glyph->V0);
+        ImVec2 uv1 = ImVec2(glyph->U1, glyph->V1);
+
+        // Render the glyph quad
+        draw_list->PrimQuadUV(corners[0], corners[1], corners[2], corners[3],
+                              uv0, ImVec2(glyph->U1, glyph->V0),
+                              uv1, ImVec2(glyph->U0, glyph->V1),
+                              col);
+
+        // Advance the pen position
+        pen.x += glyph->AdvanceX * scale;
+
+        chars_rendered++;
+    }
+
+    // Return unused vertices
+    int chars_skipped = chars_total - chars_rendered;
+    draw_list->PrimUnreserve(chars_skipped * 6, chars_skipped * 4);
+}
+
 void AddTextCentered(ImDrawList* draw_list, ImVec2 top_center, ImU32 col, const char* text_begin) {
     const char* text_end = ImGui::FindRenderedTextEnd(text_begin);
     ImVec2 text_size = ImGui::CalcTextSize(text_begin, text_end, true);
@@ -590,15 +685,16 @@ void RenderAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQu
         draw_list->AddQuadFilled(plane_pix[c][0], plane_pix[c][1], plane_pix[c][2], plane_pix[c][3], colBg);
     }
     // Draw border
-    const ImU32 colBorder = GetStyleColorU32(ImPlot3DCol_PlotBorder);
+    const ImU32 col_border = GetStyleColorU32(ImPlot3DCol_PlotBorder);
     for (int c = 0; c < 3; c++)
         for (int i = 0; i < 4; i++)
-            draw_list->AddLine(plane_pix[c][i], plane_pix[c][(i + 1) % 4], colBorder);
+            draw_list->AddLine(plane_pix[c][i], plane_pix[c][(i + 1) % 4], col_border);
 
-    // Draw ticks
+    // Draw grid
     const float target_lines = 7.0f; // Target number of tick lines
-    ImVec4 colTicks = GetStyleColorVec4(ImPlot3DCol_PlotBorder);
+    ImVec4 col_grid = GetStyleColorVec4(ImPlot3DCol_AxisGrid);
     for (int c = 0; c < 3; c++) {
+        // TODO should not call GetCurrentPlot() here
         if (ImHasFlag(GetCurrentPlot()->Axes[c].Flags, ImPlot3DAxisFlags_NoGridLines))
             continue;
         float range = range_max[c] - range_min[c];
@@ -612,7 +708,7 @@ void RenderAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQu
             if (t < range_min[c] || t > range_max[c])
                 continue;
             float tNorm = (t - range_min[c]) / range;
-            // Draw ticks for the other 2 planes
+            // Draw grid for the other 2 planes
             for (size_t i = 0; i < 2; i++) {
                 size_t planeIdx = (c + i + 1) % 3;
                 ImVec2 p0, p1;
@@ -623,9 +719,9 @@ void RenderAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQu
                     p0 = plane_pix[planeIdx][0] + (plane_pix[planeIdx][1] - plane_pix[planeIdx][0]) * tNorm;
                     p1 = plane_pix[planeIdx][3] + (plane_pix[planeIdx][2] - plane_pix[planeIdx][3]) * tNorm;
                 }
-                ImVec4 col = colTicks;
-                bool isMajor = int((t - start) / spacing) % 3 == 0; // TODO check if it is major or minor tick
-                col.w *= isMajor ? 0.6f : 0.3f;
+                ImVec4 col = col_grid;
+                bool is_major = int((t - start) / spacing) % 3 == 0; // TODO check if it is major or minor tick
+                col.w *= is_major ? 0.6f : 0.3f;
                 draw_list->AddLine(p0, p1, ImGui::ColorConvertFloat4ToU32(col));
             }
         }
@@ -634,6 +730,16 @@ void RenderAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQu
     // TODO render tick text
 
     // TODO render axis labels
+    ImPlot3DPlot& plot = *GetCurrentPlot();
+    ImVec4 col_ax_txt = GetStyleColorVec4(ImPlot3DCol_AxisText);
+    for (int a = 0; a < 3; a++) {
+        ImPlot3DAxis& axis = plot.Axes[a];
+        if (!axis.HasLabel())
+            continue;
+        const char* label = plot.GetAxisLabel(axis);
+        ImVec2 label_pos = plane_pix[a][0];
+        AddTextRotated(draw_list, label_pos, 3.1415 / 4, ImGui::ColorConvertFloat4ToU32(col_ax_txt), label, label + strlen(label));
+    }
 }
 
 void SetupLock() {
@@ -695,15 +801,17 @@ void StyleColorsAuto(ImPlot3DStyle* dst) {
     ImVec4* colors = style->Colors;
 
     colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_TitleText] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_FrameBg] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_PlotBg] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_PlotBorder] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_LegendBg] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_LegendBorder] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_LegendText] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_TitleText] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_AxisText] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_AxisGrid] = IMPLOT3D_AUTO_COL;
 }
 
 void StyleColorsClassic(ImPlot3DStyle* dst) {
@@ -711,15 +819,17 @@ void StyleColorsClassic(ImPlot3DStyle* dst) {
     ImVec4* colors = style->Colors;
 
     colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_TitleText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
     colors[ImPlot3DCol_FrameBg] = ImVec4(0.43f, 0.43f, 0.43f, 0.39f);
     colors[ImPlot3DCol_PlotBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.35f);
     colors[ImPlot3DCol_PlotBorder] = ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
     colors[ImPlot3DCol_LegendBg] = ImVec4(0.11f, 0.11f, 0.14f, 0.92f);
     colors[ImPlot3DCol_LegendBorder] = ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
     colors[ImPlot3DCol_LegendText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-    colors[ImPlot3DCol_TitleText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+    colors[ImPlot3DCol_AxisText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+    colors[ImPlot3DCol_AxisGrid] = ImVec4(0.90f, 0.90f, 0.90f, 0.25f);
 }
 
 void StyleColorsDark(ImPlot3DStyle* dst) {
@@ -727,15 +837,17 @@ void StyleColorsDark(ImPlot3DStyle* dst) {
     ImVec4* colors = style->Colors;
 
     colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_TitleText] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     colors[ImPlot3DCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 0.07f);
     colors[ImPlot3DCol_PlotBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.50f);
     colors[ImPlot3DCol_PlotBorder] = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
     colors[ImPlot3DCol_LegendBg] = ImVec4(0.08f, 0.08f, 0.08f, 0.94f);
     colors[ImPlot3DCol_LegendBorder] = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
     colors[ImPlot3DCol_LegendText] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-    colors[ImPlot3DCol_TitleText] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    colors[ImPlot3DCol_AxisText] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    colors[ImPlot3DCol_AxisGrid] = ImVec4(1.00f, 1.00f, 1.00f, 0.25f);
 }
 
 void StyleColorsLight(ImPlot3DStyle* dst) {
@@ -743,15 +855,17 @@ void StyleColorsLight(ImPlot3DStyle* dst) {
     ImVec4* colors = style->Colors;
 
     colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_TitleText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     colors[ImPlot3DCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     colors[ImPlot3DCol_PlotBg] = ImVec4(0.42f, 0.57f, 1.00f, 0.13f);
     colors[ImPlot3DCol_PlotBorder] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
     colors[ImPlot3DCol_LegendBg] = ImVec4(1.00f, 1.00f, 1.00f, 0.98f);
     colors[ImPlot3DCol_LegendBorder] = ImVec4(0.82f, 0.82f, 0.82f, 0.80f);
     colors[ImPlot3DCol_LegendText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
-    colors[ImPlot3DCol_TitleText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+    colors[ImPlot3DCol_AxisText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+    colors[ImPlot3DCol_AxisGrid] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
 }
 
 ImVec4 GetStyleColorVec4(ImPlot3DCol idx) {
@@ -800,7 +914,9 @@ ImVec4 GetAutoColor(ImPlot3DCol idx) {
         case ImPlot3DCol_PlotBorder: return ImGui::GetStyleColorVec4(ImGuiCol_Border);
         case ImPlot3DCol_LegendBg: return ImGui::GetStyleColorVec4(ImGuiCol_PopupBg);
         case ImPlot3DCol_LegendBorder: return GetStyleColorVec4(ImPlot3DCol_PlotBorder);
-        case ImPlot3DCol_LegendText: return GetStyleColorVec4(ImPlot3DCol_TitleText); // TODO Change to inlay text
+        case ImPlot3DCol_LegendText: return ImGui::GetStyleColorVec4(ImGuiCol_Text);
+        case ImPlot3DCol_AxisText: return ImGui::GetStyleColorVec4(ImGuiCol_Text);
+        case ImPlot3DCol_AxisGrid: return GetStyleColorVec4(ImPlot3DCol_AxisText) * ImVec4(1, 1, 1, 0.25f);
         default: return col;
     }
 }
@@ -817,6 +933,8 @@ const char* GetStyleColorName(ImPlot3DCol idx) {
         "LegendBg",
         "LegendBorder",
         "LegendText",
+        "AxisText",
+        "AxisGrid",
     };
     return color_names[idx];
 }
@@ -1066,6 +1184,10 @@ bool ImPlot3DQuat::operator!=(const ImPlot3DQuat& rhs) const {
 // [SECTION] ImPlot3DAxis
 //-----------------------------------------------------------------------------
 
+bool ImPlot3DAxis::HasLabel() const {
+    return LabelOffset != -1 && !ImHasFlag(Flags, ImPlot3DAxisFlags_NoLabel);
+}
+
 void ImPlot3DAxis::ExtendFit(float value) {
     FitExtents.Min = ImMin(FitExtents.Min, value);
     FitExtents.Max = ImMax(FitExtents.Max, value);
@@ -1123,6 +1245,8 @@ void ImPlot3DPlot::SetAxisLabel(ImPlot3DAxis& axis, const char* label) {
         axis.LabelOffset = -1;
     }
 }
+
+const char* ImPlot3DPlot::GetAxisLabel(const ImPlot3DAxis& axis) const { return TextBuffer.Buf.Data + axis.LabelOffset; }
 
 //-----------------------------------------------------------------------------
 // [SECTION] ImPlot3DStyle
