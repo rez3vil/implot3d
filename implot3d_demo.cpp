@@ -36,6 +36,32 @@ static void HelpMarker(const char* desc) {
     }
 }
 
+// Utility structure for realtime plot
+struct ScrollingBuffer {
+    int MaxSize;
+    int Offset;
+    ImVector<float> Data;
+    ScrollingBuffer(int max_size = 2000) {
+        MaxSize = max_size;
+        Offset = 0;
+        Data.reserve(MaxSize);
+    }
+    void AddPoint(float x) {
+        if (Data.size() < MaxSize)
+            Data.push_back(x);
+        else {
+            Data[Offset] = x;
+            Offset = (Offset + 1) % MaxSize;
+        }
+    }
+    void Erase() {
+        if (Data.size() > 0) {
+            Data.shrink(0);
+            Offset = 0;
+        }
+    }
+};
+
 //-----------------------------------------------------------------------------
 // [SECTION] Plots
 //-----------------------------------------------------------------------------
@@ -83,6 +109,32 @@ void DemoScatterPlots() {
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 6, ImPlot3D::GetColormapColor(1), IMPLOT3D_AUTO, ImPlot3D::GetColormapColor(1));
         ImPlot3D::PlotScatter("Data 2", xs2, ys2, zs1, 50);
         ImPlot3D::PopStyleVar();
+        ImPlot3D::EndPlot();
+    }
+}
+
+void DemoRealtimePlots() {
+    ImGui::BulletText("Move your mouse to change the data!");
+    static ScrollingBuffer sdata1, sdata2, sdata3;
+
+    // Pool mouse data every 10 ms
+    static float t = 0.0f;
+    static float last_t = -1.0f;
+    t += ImGui::GetIO().DeltaTime;
+    if (t - last_t > 0.01f) {
+        last_t = t;
+        ImVec2 mouse = ImGui::GetMousePos();
+        sdata1.AddPoint(t);
+        sdata2.AddPoint(ImClamp(mouse.x, 0.0f, 1e4f));
+        sdata3.AddPoint(ImClamp(mouse.y, 0.0f, 1e4f));
+    }
+
+    static ImPlot3DAxisFlags flags = ImPlot3DAxisFlags_NoTickLabels;
+
+    if (ImPlot3D::BeginPlot("Scrolling Plot", ImVec2(-1, 400))) {
+        ImPlot3D::SetupAxes("Time", "Mouse X", "Mouse Y", flags, flags, flags);
+        // ImPlot3D::SetupAxisLimits(ImAxis_X1, t - history, t, ImGuiCond_Always);
+        ImPlot3D::PlotLine("Mouse", &sdata1.Data[0], &sdata2.Data[0], &sdata3.Data[0], sdata1.Data.size(), 0, sdata1.Offset, sizeof(float));
         ImPlot3D::EndPlot();
     }
 }
@@ -154,6 +206,7 @@ void ShowDemoWindow(bool* p_open) {
         if (ImGui::BeginTabItem("Plots")) {
             DemoHeader("Line Plots", DemoLinePlots);
             DemoHeader("Scatter Plots", DemoScatterPlots);
+            DemoHeader("Realtime Plots", DemoRealtimePlots);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Help")) {

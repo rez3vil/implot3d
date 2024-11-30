@@ -705,6 +705,8 @@ void PlotScatterEx(const char* label_id, const Getter& getter, ImPlot3DScatterFl
 
 template <typename T>
 void PlotScatter(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DScatterFlags flags, int offset, int stride) {
+    if (count < 1)
+        return;
     GetterXYZ<IndexerIdx<T>, IndexerIdx<T>, IndexerIdx<T>> getter(IndexerIdx<T>(xs, count, offset, stride), IndexerIdx<T>(ys, count, offset, stride), IndexerIdx<T>(zs, count, offset, stride), count);
     return PlotScatterEx(label_id, getter, flags);
 }
@@ -752,6 +754,8 @@ void PlotLineEx(const char* label_id, const _Getter& getter, ImPlot3DLineFlags f
 }
 
 IMPLOT3D_TMP void PlotLine(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DLineFlags flags, int offset, int stride) {
+    if (count < 2)
+        return;
     GetterXYZ<IndexerIdx<T>, IndexerIdx<T>, IndexerIdx<T>> getter(IndexerIdx<T>(xs, count, offset, stride), IndexerIdx<T>(ys, count, offset, stride), IndexerIdx<T>(zs, count, offset, stride), count);
     return PlotLineEx(label_id, getter, flags);
 }
