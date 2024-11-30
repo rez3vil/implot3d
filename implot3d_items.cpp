@@ -586,8 +586,8 @@ void RenderPrimitives(const _Getter& getter, Args... args) {
         cull_box.Min = ImPlot3DPoint(-HUGE_VAL, -HUGE_VAL, -HUGE_VAL);
         cull_box.Max = ImPlot3DPoint(HUGE_VAL, HUGE_VAL, HUGE_VAL);
     } else {
-        cull_box.Min = plot.RangeMin;
-        cull_box.Max = plot.RangeMax;
+        cull_box.Min = plot.RangeMin();
+        cull_box.Max = plot.RangeMax();
     }
 
     // Initialize renderer

@@ -162,6 +162,30 @@ struct ImPlot3DItemGroup {
     }
 };
 
+// Holds axis information
+struct ImPlot3DAxis {
+    ImPlot3DAxisFlags Flags;
+    ImPlot3DRange Range;
+    // Fit data
+    bool FitThisFrame;
+    ImPlot3DRange FitExtents;
+
+    // Constructor
+    ImPlot3DAxis() {
+        Flags = ImPlot3DAxisFlags_None;
+        Range.Min = 0.0f;
+        Range.Max = 1.0f;
+        FitThisFrame = true;
+        FitExtents.Min = HUGE_VAL;
+        FitExtents.Max = -HUGE_VAL;
+    }
+
+    void ExtendFit(float value);
+    void ApplyFit();
+    float PlotToNDC(float value) const;
+    float NDCToPlot(float value) const;
+};
+
 // Holds plot state information that must persist after EndPlot
 struct ImPlot3DPlot {
     ImGuiID ID;
@@ -173,16 +197,13 @@ struct ImPlot3DPlot {
     ImRect PlotRect;   // Bounding rectangle for the actual plot area
     // Rotation and range
     ImPlot3DQuat Rotation;
-    ImPlot3DPoint RangeMin;
-    ImPlot3DPoint RangeMax;
+    ImPlot3DAxis Axes[3];
     // User input
     bool SetupLocked;
     bool Hovered;
     bool Held;
     // Fit data
     bool FitThisFrame;
-    ImPlot3DPoint FitMin;
-    ImPlot3DPoint FitMax;
     // Items
     ImPlot3DItemGroup Items;
     ImPlot3DItem* CurrentItem;
@@ -190,26 +211,18 @@ struct ImPlot3DPlot {
     ImPlot3DPlot() {
         Flags = ImPlot3DFlags_None;
         Rotation = ImPlot3DQuat(0.0f, 0.0f, 0.0f, 1.0f);
-        RangeMin = ImPlot3DPoint(0.0f, 0.0f, 0.0f);
-        RangeMax = ImPlot3DPoint(1.0f, 1.0f, 1.0f);
+        for (int i = 0; i < ImPlot3DAxisIdx_COUNT; ++i)
+            Axes[i] = ImPlot3DAxis();
         SetupLocked = false;
         Hovered = Held = false;
         FitThisFrame = true;
-        FitMin = ImPlot3DPoint(HUGE_VAL, HUGE_VAL, HUGE_VAL);
-        FitMax = ImPlot3DPoint(-HUGE_VAL, -HUGE_VAL, -HUGE_VAL);
         CurrentItem = nullptr;
     }
 
-    inline void ExtendFit(const ImPlot3DPoint& point) {
-        if (!ImNanOrInf(point.x) && !ImNanOrInf(point.y) && !ImNanOrInf(point.z)) {
-            FitMin.x = point.x < FitMin.x ? point.x : FitMin.x;
-            FitMin.y = point.y < FitMin.y ? point.y : FitMin.y;
-            FitMin.z = point.z < FitMin.z ? point.z : FitMin.z;
-            FitMax.x = point.x > FitMax.x ? point.x : FitMax.x;
-            FitMax.y = point.y > FitMax.y ? point.y : FitMax.y;
-            FitMax.z = point.z > FitMax.z ? point.z : FitMax.z;
-        }
-    }
+    void ExtendFit(const ImPlot3DPoint& point);
+    ImPlot3DPoint RangeMin() const;
+    ImPlot3DPoint RangeMax() const;
+    void SetRange(const ImPlot3DPoint& min, const ImPlot3DPoint& max);
 };
 
 struct ImPlot3DContext {

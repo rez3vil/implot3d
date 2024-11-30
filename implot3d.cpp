@@ -26,7 +26,10 @@
 // [SECTION] Style Utils
 // [SECTION] ImPlot3DPoint
 // [SECTION] ImPlot3DBox
+// [SECTION] ImPlot3DRange
 // [SECTION] ImPlot3DQuat
+// [SECTION] ImPlot3DAxis
+// [SECTION] ImPlot3DPlot
 // [SECTION] ImPlot3DStyle
 
 //-----------------------------------------------------------------------------
@@ -254,8 +257,8 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     plot.Flags = flags;
     if (just_created) {
         plot.Rotation = init_rotation;
-        plot.RangeMin = ImPlot3DPoint(0.0f, 0.0f, 0.0f);
-        plot.RangeMax = ImPlot3DPoint(1.0f, 1.0f, 1.0f);
+        for (int i = 0; i < 3; i++)
+            plot.Axes[i] = ImPlot3DAxis();
     }
     plot.SetupLocked = false;
 
@@ -299,12 +302,10 @@ void EndPlot() {
     if (plot.FitThisFrame) {
         plot.FitThisFrame = false;
         plot.Rotation = init_rotation;
-        plot.RangeMin = plot.FitMin;
-        plot.RangeMax = plot.FitMax;
         for (int i = 0; i < 3; i++) {
-            if (ImAlmostEqual(plot.RangeMin[i], plot.RangeMax[i])) {
-                plot.RangeMax[i] += 0.5;
-                plot.RangeMin[i] -= 0.5;
+            if (plot.Axes[i].FitThisFrame) {
+                plot.Axes[i].FitThisFrame = false;
+                plot.Axes[i].ApplyFit();
             }
         }
     }
@@ -385,14 +386,22 @@ ImPlot3DPoint PlotToNDC(const ImPlot3DPoint& point) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PlotToNDC() needs to be called between BeginPlot() and EndPlot()!");
     ImPlot3DPlot& plot = *gp.CurrentPlot;
-    return (point - plot.RangeMin) / (plot.RangeMax - plot.RangeMin) - ImPlot3DPoint(0.5f, 0.5f, 0.5f);
+
+    ImPlot3DPoint ndc_point;
+    for (int i = 0; i < 3; i++)
+        ndc_point[i] = plot.Axes[i].PlotToNDC(point[i]);
+    return ndc_point;
 }
 
 ImPlot3DPoint NDCToPlot(const ImPlot3DPoint& point) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "NDCToPlot() needs to be called between BeginPlot() and EndPlot()!");
     ImPlot3DPlot& plot = *gp.CurrentPlot;
-    return plot.RangeMin + (point + ImPlot3DPoint(0.5f, 0.5f, 0.5f)) * (plot.RangeMax - plot.RangeMin);
+
+    ImPlot3DPoint plot_point;
+    for (int i = 0; i < 3; i++)
+        plot_point[i] = plot.Axes[i].NDCToPlot(point[i]);
+    return plot_point;
 }
 
 ImVec2 NDCToPixels(const ImPlot3DPoint& point) {
@@ -485,8 +494,8 @@ void HandleInput(ImPlot3DPlot& plot) {
     // Handle double click
     if (plot_clicked && ImGui::IsMouseDoubleClicked(0)) {
         plot.FitThisFrame = true;
-        plot.FitMin = ImPlot3DPoint(HUGE_VAL, HUGE_VAL, HUGE_VAL);
-        plot.FitMax = ImPlot3DPoint(-HUGE_VAL, -HUGE_VAL, -HUGE_VAL);
+        for (int i = 0; i < 3; i++)
+            plot.Axes[i].FitThisFrame = true;
     }
 
     // Handle translation with right mouse button
@@ -501,11 +510,10 @@ void HandleInput(ImPlot3DPlot& plot) {
         ImPlot3DPoint delta_NDC = plot.Rotation.Inverse() * (delta_pixels / zoom);
 
         // Convert delta to plot space
-        ImPlot3DPoint delta_plot = delta_NDC * (plot.RangeMax - plot.RangeMin);
+        ImPlot3DPoint delta_plot = delta_NDC * (plot.RangeMax() - plot.RangeMin());
 
-        // Adjust RangeMin and RangeMax to translate the plot
-        plot.RangeMin -= delta_plot;
-        plot.RangeMax -= delta_plot;
+        // Adjust plot range to translate the plot
+        plot.SetRange(plot.RangeMin() - delta_plot, plot.RangeMax() - delta_plot);
     }
 
     // Handle rotation with left mouse dragging
@@ -529,11 +537,10 @@ void HandleInput(ImPlot3DPlot& plot) {
     if (plot.Hovered && (ImGui::IsMouseDown(2) || IO.MouseWheel != 0)) {
         float delta = ImGui::IsMouseDown(2) ? (-0.01f * IO.MouseDelta.y) : (-0.1f * IO.MouseWheel);
         float zoom = 1.0f + delta;
-        ImPlot3DPoint center = (plot.RangeMin + plot.RangeMax) * 0.5f;
-        ImPlot3DPoint size = plot.RangeMax - plot.RangeMin;
+        ImPlot3DPoint center = (plot.RangeMin() + plot.RangeMax()) * 0.5f;
+        ImPlot3DPoint size = plot.RangeMax() - plot.RangeMin();
         size *= zoom;
-        plot.RangeMin = center - size * 0.5f;
-        plot.RangeMax = center + size * 0.5f;
+        plot.SetRange(center - size * 0.5f, center + size * 0.5f);
     }
 }
 
@@ -635,7 +642,7 @@ void SetupLock() {
     HandleInput(plot);
 
     // Render axes
-    RenderAxes(draw_list, plot.PlotRect, plot.Rotation, plot.RangeMin, plot.RangeMax);
+    RenderAxes(draw_list, plot.PlotRect, plot.Rotation, plot.RangeMin(), plot.RangeMax());
 
     // Render title
     if (!plot.TextBuffer.empty()) {
@@ -954,6 +961,19 @@ bool ImPlot3DBox::ClipLineSegment(const ImPlot3DPoint& p0, const ImPlot3DPoint& 
 }
 
 //-----------------------------------------------------------------------------
+// [SECTION] ImPlot3DRange
+//-----------------------------------------------------------------------------
+
+void ImPlot3DRange::Expand(float value) {
+    Min = ImMin(Min, value);
+    Max = ImMax(Max, value);
+}
+
+bool ImPlot3DRange::Contains(float value) const {
+    return value >= Min && value <= Max;
+}
+
+//-----------------------------------------------------------------------------
 // [SECTION] ImPlot3DQuat
 //-----------------------------------------------------------------------------
 
@@ -1019,6 +1039,59 @@ bool ImPlot3DQuat::operator==(const ImPlot3DQuat& rhs) const {
 
 bool ImPlot3DQuat::operator!=(const ImPlot3DQuat& rhs) const {
     return !(*this == rhs);
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImPlot3DAxis
+//-----------------------------------------------------------------------------
+
+void ImPlot3DAxis::ExtendFit(float value) {
+    FitExtents.Min = ImMin(FitExtents.Min, value);
+    FitExtents.Max = ImMax(FitExtents.Max, value);
+}
+
+void ImPlot3DAxis::ApplyFit() {
+    Range.Min = FitExtents.Min;
+    Range.Max = FitExtents.Max;
+    FitExtents.Min = HUGE_VAL;
+    FitExtents.Max = -HUGE_VAL;
+    if (ImAlmostEqual(Range.Min, Range.Max)) {
+        Range.Max += 0.5;
+        Range.Min -= 0.5;
+    }
+}
+
+float ImPlot3DAxis::PlotToNDC(float value) const {
+    return (value - Range.Min) / (Range.Max - Range.Min) - 0.5f;
+}
+
+float ImPlot3DAxis::NDCToPlot(float value) const {
+    return Range.Min + (value + 0.5f) * (Range.Max - Range.Min);
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImPlot3DPlot
+//-----------------------------------------------------------------------------
+
+void ImPlot3DPlot::ExtendFit(const ImPlot3DPoint& point) {
+    for (int i = 0; i < 3; i++) {
+        if (!ImNanOrInf(point[i]) && Axes[i].FitThisFrame)
+            Axes[i].ExtendFit(point[i]);
+    }
+}
+
+ImPlot3DPoint ImPlot3DPlot::RangeMin() const {
+    return ImPlot3DPoint(Axes[0].Range.Min, Axes[1].Range.Min, Axes[2].Range.Min);
+}
+
+ImPlot3DPoint ImPlot3DPlot::RangeMax() const {
+    return ImPlot3DPoint(Axes[0].Range.Max, Axes[1].Range.Max, Axes[2].Range.Max);
+}
+
+void ImPlot3DPlot::SetRange(const ImPlot3DPoint& min, const ImPlot3DPoint& max) {
+    Axes[0].Range = ImPlot3DRange(min.x, max.x);
+    Axes[1].Range = ImPlot3DRange(min.y, max.y);
+    Axes[2].Range = ImPlot3DRange(min.z, max.z);
 }
 
 //-----------------------------------------------------------------------------

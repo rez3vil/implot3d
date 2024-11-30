@@ -60,12 +60,14 @@ struct ImPlot3DPoint;
 struct ImPlot3DRay;
 struct ImPlot3DPlane;
 struct ImPlot3DBox;
+struct ImPlot3DRange;
 struct ImPlot3DQuat;
 
 // Enums
 typedef int ImPlot3DCol;      // -> ImPlot3DCol_               // Enum: Styling colors
 typedef int ImPlot3DMarker;   // -> ImPlot3DMarker_            // Enum: Marker styles
 typedef int ImPlot3DLocation; // -> ImPlot3DLocation_          // Enum: Locations
+typedef int ImPlot3DAxisIdx;  // -> ImPlot3DAxisIdx_           // Enum: Axis indices
 
 // Flags
 typedef int ImPlot3DFlags;        // -> ImPlot3DFlags_         // Flags: for BeginPlot()
@@ -73,6 +75,7 @@ typedef int ImPlot3DItemFlags;    // -> ImPlot3DItemFlags_     // Flags: Item fl
 typedef int ImPlot3DScatterFlags; // -> ImPlot3DScatterFlags_  // Flags: Scatter plot flags
 typedef int ImPlot3DLineFlags;    // -> ImPlot3DLineFlags_     // Flags: Line plot flags
 typedef int ImPlot3DLegendFlags;  // -> ImPlot3DLegendFlags_   // Flags: Legend flags
+typedef int ImPlot3DAxisFlags;    // -> ImPlot3DAxisFlags_     // Flags: Axis flags
 
 namespace ImPlot3D {
 
@@ -263,6 +266,20 @@ enum ImPlot3DLocation_ {
     ImPlot3DLocation_SouthEast = ImPlot3DLocation_South | ImPlot3DLocation_East  // Bottom-right
 };
 
+// Flags for axis
+enum ImPlot3DAxisFlags_ {
+    ImPlot3DAxisFlags_None = 0,             // Default
+    ImPlot3DAxisFlags_NoGridLines = 1 << 0, // No grid lines will be displayed
+};
+
+// Axis indices
+enum ImPlot3DAxisIdx_ {
+    ImPlot3DAxisIdx_X = 0,
+    ImPlot3DAxisIdx_Y,
+    ImPlot3DAxisIdx_Z,
+    ImPlot3DAxisIdx_COUNT,
+};
+
 //-----------------------------------------------------------------------------
 // [SECTION] ImPlot3DPoint
 //-----------------------------------------------------------------------------
@@ -369,6 +386,21 @@ struct ImPlot3DBox {
 
     // Method to clip a line segment against the box
     bool ClipLineSegment(const ImPlot3DPoint& p0, const ImPlot3DPoint& p1, ImPlot3DPoint& p0_clipped, ImPlot3DPoint& p1_clipped) const;
+};
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImPlot3DRange
+//-----------------------------------------------------------------------------
+
+struct ImPlot3DRange {
+    float Min;
+    float Max;
+
+    constexpr ImPlot3DRange() : Min(0.0f), Max(0.0f) {}
+    constexpr ImPlot3DRange(float min, float max) : Min(min), Max(max) {}
+
+    void Expand(float value);
+    bool Contains(float value) const;
 };
 
 //-----------------------------------------------------------------------------
