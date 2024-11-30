@@ -2,7 +2,7 @@
 // ImPlot3D v0.1
 // implot3d_items.cpp
 // Date: 2024-11-26
-// By brenocq
+// Author: Breno Cunha Queiroz (brenocq.com)
 //
 // Acknowledgments:
 //  ImPlot3D is heavily inspired by ImPlot

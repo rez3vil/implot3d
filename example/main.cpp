@@ -2,7 +2,7 @@
 // ImPlot3D Example
 // main.cpp
 // Date: 2024-11-17
-// By brenocq
+// Author: Breno Cunha Queiroz (brenocq.com)
 //--------------------------------------------------
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
