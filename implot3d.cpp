@@ -38,6 +38,7 @@
 
 #ifndef IMGUI_DEFINE_MATH_OPERATORS
 #define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui.h"
 #endif
 
 #include "implot3d.h"
@@ -117,7 +118,7 @@ ImVec2 CalcLegendSize(ImPlot3DItemGroup& items, const ImVec2& pad, const ImVec2&
     // Get label max width
     float max_label_width = 0;
     float sum_label_width = 0;
-    for (int i = 0; i < nItems; ++i) {
+    for (int i = 0; i < nItems; i++) {
         const char* label = items.GetLegendLabel(i);
         const float label_width = ImGui::CalcTextSize(label, nullptr, true).x;
         max_label_width = label_width > max_label_width ? label_width : max_label_width;
@@ -142,7 +143,7 @@ void ShowLegendEntries(ImPlot3DItemGroup& items, const ImRect& legend_bb, bool h
     ImPlot3DContext& gp = *GImPlot3D;
 
     // Render legend items
-    for (int i = 0; i < num_items; ++i) {
+    for (int i = 0; i < num_items; i++) {
         const int idx = i;
         ImPlot3DItem* item = items.GetLegendItem(idx);
         const char* label = items.GetLegendLabel(idx);
@@ -504,10 +505,7 @@ void AddTextRotated(ImDrawList* draw_list, ImVec2 pos, float angle, ImU32 col, c
     // Measure the size of the text in unrotated coordinates
     ImVec2 text_size = font->CalcTextSizeA(g.FontSize, FLT_MAX, 0.0f, text_begin, text_end, nullptr);
 
-    // Compute the offset to center the text around 'pos'
-    ImVec2 text_offset = ImVec2(text_size.x * 0.5f, text_size.y * 0.5f);
-
-    // Precompute sine and cosine of the angle
+    // Precompute sine and cosine of the angle (note: angle should be positive for rotation in ImGui)
     float cos_a = cosf(-angle);
     float sin_a = sinf(-angle);
 
@@ -518,10 +516,8 @@ void AddTextRotated(ImDrawList* draw_list, ImVec2 pos, float angle, ImU32 col, c
     const int idx_count_max = chars_total * 6;
     draw_list->PrimReserve(idx_count_max, vtx_count_max);
 
-    // Position along the baseline (unrotated)
-    ImVec2 pen = ImVec2(0, 0);
-    // Start position centered
-    pen.x -= text_size.x * 0.5f;
+    // Adjust pen position to center the text
+    ImVec2 pen = ImVec2(-text_size.x * 0.5f, -text_size.y * 0.5f);
 
     while (s < text_end) {
         unsigned int c = (unsigned int)*s;
@@ -549,13 +545,8 @@ void AddTextRotated(ImDrawList* draw_list, ImVec2 pos, float angle, ImU32 col, c
         corners[2] = pen + glyph_offset + glyph_size;
         corners[3] = pen + glyph_offset + ImVec2(0, glyph_size.y);
 
-        // Adjust for centering
-        for (int i = 0; i < 4; ++i) {
-            corners[i] -= text_offset;
-        }
-
         // Rotate and translate the corners
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 4; i++) {
             float x = corners[i].x;
             float y = corners[i].y;
             corners[i].x = x * cos_a - y * sin_a + pos.x;
@@ -658,87 +649,172 @@ void HandleInput(ImPlot3DPlot& plot) {
     }
 }
 
-void RenderAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQuat& rotation, const ImPlot3DPoint& range_min, const ImPlot3DPoint& range_max) {
+void RenderAxes(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
+    // Get plot parameters
+    const ImRect& plot_area = plot.PlotRect;
+    const ImPlot3DQuat& rotation = plot.Rotation;
+    ImPlot3DPoint range_min = plot.RangeMin();
+    ImPlot3DPoint range_max = plot.RangeMax();
+
     float zoom = ImMin(plot_area.GetWidth(), plot_area.GetHeight()) / 1.8f;
     ImVec2 center = plot_area.GetCenter();
-    ImPlot3DPoint plane_normal[3] = {
-        rotation * ImPlot3DPoint(1.0f, 0.0f, 0.0f),
-        rotation * ImPlot3DPoint(0.0f, 1.0f, 0.0f),
-        rotation * ImPlot3DPoint(0.0f, 0.0f, 1.0f)};
-    ImPlot3DPoint plane[3][4] = {
-        {ImPlot3DPoint(0.5f, -0.5f, -0.5f), ImPlot3DPoint(0.5f, -0.5f, 0.5f), ImPlot3DPoint(0.5f, 0.5f, 0.5f), ImPlot3DPoint(0.5f, 0.5f, -0.5f)},
-        {ImPlot3DPoint(-0.5f, 0.5f, -0.5f), ImPlot3DPoint(-0.5f, 0.5f, 0.5f), ImPlot3DPoint(0.5f, 0.5f, 0.5f), ImPlot3DPoint(0.5f, 0.5f, -0.5f)},
-        {ImPlot3DPoint(-0.5f, -0.5f, 0.5f), ImPlot3DPoint(-0.5f, 0.5f, 0.5f), ImPlot3DPoint(0.5f, 0.5f, 0.5f), ImPlot3DPoint(0.5f, -0.5f, 0.5f)}};
-    ImVec2 plane_pix[3][4];
 
-    // Transform planes
-    for (int c = 0; c < 3; c++) {
-        const float sign = -plane_normal[c][2] > 0.0f ? 1.0f : -1.0f; // Dot product between plane normal and view vector
+    // Define rotated plot box face normals
+    ImPlot3DPoint rot_face_n[3] = {
+        ImPlot3DPoint(1.0f, 0.0f, 0.0f),
+        ImPlot3DPoint(0.0f, 1.0f, 0.0f),
+        ImPlot3DPoint(0.0f, 0.0f, 1.0f),
+    };
+    for (int i = 0; i < 3; i++)
+        rot_face_n[i] = rotation * rot_face_n[i];
+
+    // Active faces to be plotted (visible from the viewer's perspective)
+    // If active_faces[0] is true, the X-max face is visible, the X-min face otherwise
+    // If active_faces[1] is true, the Y-max face is visible, the Y-min face otherwise
+    // If active_faces[2] is true, the Z-max face is visible, the Z-min face otherwise
+    bool active_faces[3] = {rot_face_n[0].z < 0, rot_face_n[1].z < 0, rot_face_n[2].z < 0};
+
+    // Box corners in plot space
+    ImPlot3DPoint corners[8] = {
+        ImPlot3DPoint(range_min.x, range_min.y, range_min.z),
+        ImPlot3DPoint(range_max.x, range_min.y, range_min.z),
+        ImPlot3DPoint(range_max.x, range_max.y, range_min.z),
+        ImPlot3DPoint(range_min.x, range_max.y, range_min.z),
+        ImPlot3DPoint(range_min.x, range_min.y, range_max.z),
+        ImPlot3DPoint(range_max.x, range_min.y, range_max.z),
+        ImPlot3DPoint(range_max.x, range_max.y, range_max.z),
+        ImPlot3DPoint(range_min.x, range_max.y, range_max.z),
+    };
+
+    // Box corners in pixel space
+    ImVec2 corners_pix[8];
+    for (int i = 0; i < 8; i++)
+        corners_pix[i] = PlotToPixels(corners[i]);
+
+    // Faces of the box (defined by 4 corner indices)
+    static const int faces[6][4] = {
+        {0, 3, 7, 4}, // X-min face
+        {0, 1, 5, 4}, // Y-min face
+        {0, 1, 2, 3}, // Z-min face
+        {1, 2, 6, 5}, // X-max face
+        {2, 3, 7, 6}, // Y-max face
+        {4, 5, 6, 7}, // Z-max face
+    };
+
+    // Edges of the box (defined by 2 corner indices)
+    static const int edges[12][2] = {
+        // Bottom face edges
+        {0, 1},
+        {1, 2},
+        {2, 3},
+        {3, 0},
+        // Top face edges
+        {4, 5},
+        {5, 6},
+        {6, 7},
+        {7, 4},
+        // Vertical edges
+        {0, 4},
+        {1, 5},
+        {2, 6},
+        {3, 7},
+    };
+
+    // Face edges (4 edge indices for each face)
+    static const int face_edges[6][4] = {
+        {3, 11, 8, 7},  // X-min face (edges connecting corners {0, 3, 7, 4})
+        {0, 9, 4, 8},   // Y-min face (edges connecting corners {0, 1, 5, 4})
+        {0, 1, 2, 3},   // Z-min face (edges connecting corners {0, 1, 2, 3})
+        {1, 10, 5, 9},  // X-max face (edges connecting corners {1, 2, 6, 5})
+        {2, 10, 6, 11}, // Y-max face (edges connecting corners {2, 3, 7, 6})
+        {4, 5, 6, 7},   // Z-max face (edges connecting corners {4, 5, 6, 7})
+    };
+
+    // Render plot background
+    const ImU32 col_bg = GetStyleColorU32(ImPlot3DCol_PlotBg);
+    for (int a = 0; a < 3; a++) {
+        int idx[4]; // Corner indices
         for (int i = 0; i < 4; i++)
-            plane_pix[c][i] = NDCToPixels(sign * plane[c][i]);
+            idx[i] = faces[a + 3 * active_faces[a]][i];
+        draw_list->AddQuadFilled(corners_pix[idx[0]], corners_pix[idx[1]], corners_pix[idx[2]], corners_pix[idx[3]], col_bg);
     }
 
-    // Draw background
-    const ImU32 colBg = GetStyleColorU32(ImPlot3DCol_PlotBg);
-    for (int c = 0; c < 3; c++) {
-        // const ImU32 colBg = ImGui::ColorConvertFloat4ToU32(ImVec4(c == 0, c == 1, c == 2, 0.5f)); // XXX
-        draw_list->AddQuadFilled(plane_pix[c][0], plane_pix[c][1], plane_pix[c][2], plane_pix[c][3], colBg);
+    // Render plot border
+    bool render_edge[12]; // True if edge should be rendered
+    for (int i = 0; i < 12; i++)
+        render_edge[i] = false;
+    for (int a = 0; a < 3; a++) {
+        int face_idx = a + 3 * active_faces[a];
+        for (size_t i = 0; i < 4; i++)
+            render_edge[face_edges[face_idx][i]] = true;
     }
-    // Draw border
-    const ImU32 col_border = GetStyleColorU32(ImPlot3DCol_PlotBorder);
-    for (int c = 0; c < 3; c++)
-        for (int i = 0; i < 4; i++)
-            draw_list->AddLine(plane_pix[c][i], plane_pix[c][(i + 1) % 4], col_border);
-
-    // Draw grid
-    const float target_lines = 7.0f; // Target number of tick lines
-    ImVec4 col_grid = GetStyleColorVec4(ImPlot3DCol_AxisGrid);
-    for (int c = 0; c < 3; c++) {
-        // TODO should not call GetCurrentPlot() here
-        if (ImHasFlag(GetCurrentPlot()->Axes[c].Flags, ImPlot3DAxisFlags_NoGridLines))
-            continue;
-        float range = range_max[c] - range_min[c];
-
-        // Estimate initial spacing (powers of 10 for zoom-level adaptation)
-        float spacing = std::pow(10.0f, std::floor(std::log10(range / target_lines)));
-
-        float start = std::floor(range_min[c] / spacing) * spacing;
-        float end = std::ceil(range_max[c] / spacing) * spacing;
-        for (float t = start; t <= end; t += spacing) {
-            if (t < range_min[c] || t > range_max[c])
-                continue;
-            float tNorm = (t - range_min[c]) / range;
-            // Draw grid for the other 2 planes
-            for (size_t i = 0; i < 2; i++) {
-                size_t planeIdx = (c + i + 1) % 3;
-                ImVec2 p0, p1;
-                if (c == 0 || (c == 1 && i == 1)) {
-                    p0 = plane_pix[planeIdx][0] + (plane_pix[planeIdx][3] - plane_pix[planeIdx][0]) * tNorm;
-                    p1 = plane_pix[planeIdx][1] + (plane_pix[planeIdx][2] - plane_pix[planeIdx][1]) * tNorm;
-                } else if (c == 2 || (c == 1 && i == 0)) {
-                    p0 = plane_pix[planeIdx][0] + (plane_pix[planeIdx][1] - plane_pix[planeIdx][0]) * tNorm;
-                    p1 = plane_pix[planeIdx][3] + (plane_pix[planeIdx][2] - plane_pix[planeIdx][3]) * tNorm;
-                }
-                ImVec4 col = col_grid;
-                bool is_major = int((t - start) / spacing) % 3 == 0; // TODO check if it is major or minor tick
-                col.w *= is_major ? 0.6f : 0.3f;
-                draw_list->AddLine(p0, p1, ImGui::ColorConvertFloat4ToU32(col));
-            }
+    ImU32 col_bd = GetStyleColorU32(ImPlot3DCol_PlotBorder);
+    for (int i = 0; i < 12; i++) {
+        if (render_edge[i]) {
+            int idx0 = edges[i][0];
+            int idx1 = edges[i][1];
+            draw_list->AddLine(corners_pix[idx0], corners_pix[idx1], col_bd);
         }
     }
 
-    // TODO render tick text
+    // Compute axes start and end corners (given current rotation)
+    int axis_corners[3][2];
 
-    // TODO render axis labels
-    ImPlot3DPlot& plot = *GetCurrentPlot();
-    ImVec4 col_ax_txt = GetStyleColorVec4(ImPlot3DCol_AxisText);
+    // Lookup table for axis_corners based on active_faces
+    static const int axis_corners_lookup[8][3][2] = {
+        // Index 0: active_faces = {0, 0, 0}
+        {{2, 3}, {1, 2}, {1, 5}},
+        // Index 1: active_faces = {0, 0, 1}
+        {{6, 7}, {5, 6}, {1, 5}},
+        // Index 2: active_faces = {0, 1, 0}
+        {{0, 1}, {1, 2}, {2, 6}},
+        // Index 3: active_faces = {0, 1, 1}
+        {{4, 5}, {5, 6}, {2, 6}},
+        // Index 4: active_faces = {1, 0, 0}
+        {{2, 3}, {3, 0}, {0, 4}},
+        // Index 5: active_faces = {1, 0, 1}
+        {{6, 7}, {7, 4}, {0, 4}},
+        // Index 6: active_faces = {1, 1, 0}
+        {{0, 1}, {3, 0}, {3, 7}},
+        // Index 7: active_faces = {1, 1, 1}
+        {{4, 5}, {7, 4}, {3, 7}},
+    };
+    int index = (active_faces[0] << 2) | (active_faces[1] << 1) | (active_faces[2]);
     for (int a = 0; a < 3; a++) {
-        ImPlot3DAxis& axis = plot.Axes[a];
+        axis_corners[a][0] = axis_corners_lookup[index][a][0];
+        axis_corners[a][1] = axis_corners_lookup[index][a][1];
+    }
+
+    // Render axis labels
+    for (int a = 0; a < 3; a++) {
+        const ImPlot3DAxis& axis = plot.Axes[a];
         if (!axis.HasLabel())
             continue;
+
         const char* label = plot.GetAxisLabel(axis);
-        ImVec2 label_pos = plane_pix[a][0];
-        AddTextRotated(draw_list, label_pos, 3.1415 / 4, ImGui::ColorConvertFloat4ToU32(col_ax_txt), label, label + strlen(label));
+
+        // Corner indices
+        int idx0 = axis_corners[a][0];
+        int idx1 = axis_corners[a][1];
+
+        // Position at the end of the axis
+        ImPlot3DPoint label_pos = (corners[idx0] + corners[idx1]) * 0.5f;
+        // Add some offset
+        label_pos += label_pos.Normalized() * 0.1f;
+
+        ImVec2 label_pos_pix = PlotToPixels(label_pos);
+
+        // Convert to pixel coordinates
+        ImVec2 label_pix = PlotToPixels(label_pos);
+
+        // Adjust label position and angle
+        ImU32 col_ax_txt = GetStyleColorU32(ImPlot3DCol_AxisText);
+
+        // Compute text angle
+        ImVec2 screen_delta = corners_pix[idx1] - corners_pix[idx0];
+        float angle = atan2f(-screen_delta.y, screen_delta.x); // fmod(, M_PI);
+
+        AddTextRotated(draw_list, label_pos_pix, angle, col_ax_txt, label);
     }
 }
 
@@ -769,7 +845,7 @@ void SetupLock() {
     HandleInput(plot);
 
     // Render axes
-    RenderAxes(draw_list, plot.PlotRect, plot.Rotation, plot.RangeMin(), plot.RangeMax());
+    RenderAxes(draw_list, plot);
 
     // Render title
     if (!plot.TextBuffer.empty()) {

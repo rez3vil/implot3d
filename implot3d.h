@@ -300,9 +300,10 @@ enum ImPlot3DLocation_ {
 
 // Flags for axis
 enum ImPlot3DAxisFlags_ {
-    ImPlot3DAxisFlags_None = 0,             // Default
-    ImPlot3DAxisFlags_NoLabel = 1 << 0,     // No axis label will be displayed
-    ImPlot3DAxisFlags_NoGridLines = 1 << 1, // No grid lines will be displayed
+    ImPlot3DAxisFlags_None = 0,              // Default
+    ImPlot3DAxisFlags_NoLabel = 1 << 0,      // No axis label will be displayed
+    ImPlot3DAxisFlags_NoTickLabels = 1 << 1, // No tick labels will be displayed
+    ImPlot3DAxisFlags_NoGridLines = 1 << 2,  // No grid lines will be displayed
 };
 
 // Axis indices

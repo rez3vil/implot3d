@@ -88,7 +88,7 @@ struct ImPlot3DNextItemData {
 
     ImPlot3DNextItemData() { Reset(); }
     void Reset() {
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < 3; i++)
             Colors[i] = IMPLOT3D_AUTO_COL;
         LineWeight = IMPLOT3D_AUTO;
         Marker = IMPLOT3D_AUTO;
@@ -215,7 +215,7 @@ struct ImPlot3DPlot {
     ImPlot3DPlot() {
         Flags = ImPlot3DFlags_None;
         Rotation = ImPlot3DQuat(0.0f, 0.0f, 0.0f, 1.0f);
-        for (int i = 0; i < 3; ++i)
+        for (int i = 0; i < 3; i++)
             Axes[i] = ImPlot3DAxis();
         SetupLocked = false;
         Hovered = Held = false;
