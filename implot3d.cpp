@@ -698,15 +698,15 @@ void HandleInput(ImPlot3DPlot& plot) {
         ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
 
         // Map delta to rotation angles (in radians)
-        float angle_x = delta.y * (3.1415f / 180.0f); // Vertical movement -> rotation around X-axis
-        float angle_y = delta.x * (3.1415f / 180.0f); // Horizontal movement -> rotation around Y-axis
+        float angle_x = delta.x * (3.1415f / 180.0f);
+        float angle_y = delta.y * (3.1415f / 180.0f);
 
         // Create quaternions for the rotations
-        ImPlot3DQuat quat_x(angle_x, ImPlot3DPoint(1.0f, 0.0f, 0.0f));
-        ImPlot3DQuat quat_y(angle_y, ImPlot3DPoint(0.0f, 1.0f, 0.0f));
+        ImPlot3DQuat quat_x(angle_y, ImPlot3DPoint(1.0f, 0.0f, 0.0f));
+        ImPlot3DQuat quat_z(angle_x, ImPlot3DPoint(0.0f, 0.0f, 1.0f));
 
         // Combine the new rotations with the current rotation
-        plot.Rotation = quat_x * quat_y * plot.Rotation;
+        plot.Rotation = quat_x * plot.Rotation * quat_z;
         plot.Rotation.Normalize();
     }
 
