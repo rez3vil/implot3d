@@ -111,12 +111,14 @@ struct ImPlot3DNextItemData {
     ImPlot3DMarker Marker;
     float MarkerSize;
     float MarkerWeight;
+    float FillAlpha;
     bool RenderLine;
     bool RenderMarkerLine;
     bool RenderMarkerFill;
     bool Hidden;
 
     ImPlot3DNextItemData() { Reset(); }
+
     void Reset() {
         for (int i = 0; i < 3; i++)
             Colors[i] = IMPLOT3D_AUTO_COL;
@@ -124,6 +126,7 @@ struct ImPlot3DNextItemData {
         Marker = IMPLOT3D_AUTO;
         MarkerSize = IMPLOT3D_AUTO;
         MarkerWeight = IMPLOT3D_AUTO;
+        FillAlpha = IMPLOT3D_AUTO;
         RenderLine = false;
         RenderMarkerLine = true;
         RenderMarkerFill = true;
@@ -462,6 +465,7 @@ struct ImPlot3DContext {
     ImPlot3DItemGroup* CurrentItems;
     ImPlot3DNextItemData NextItemData;
     ImPlot3DStyle Style;
+    ImVector<ImGuiStyleMod> StyleModifiers;
     ImPlot3DColormapData ColormapData;
 };
 

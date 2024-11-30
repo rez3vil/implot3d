@@ -79,10 +79,10 @@ void DemoScatterPlots() {
 
     if (ImPlot3D::BeginPlot("Scatter Plots")) {
         ImPlot3D::PlotScatter("Data 1", xs1, ys1, zs1, 100);
-        // ImPlot3D::PushStyleVar(ImPlot3DStyleVar_FillAlpha, 0.25f);
+        ImPlot3D::PushStyleVar(ImPlot3DStyleVar_FillAlpha, 0.25f);
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 6, ImPlot3D::GetColormapColor(1), IMPLOT3D_AUTO, ImPlot3D::GetColormapColor(1));
         ImPlot3D::PlotScatter("Data 2", xs2, ys2, zs1, 50);
-        // ImPlot3D::PopStyleVar();
+        ImPlot3D::PopStyleVar();
         ImPlot3D::EndPlot();
     }
 }
@@ -236,6 +236,7 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
             ImGui::SliderFloat("LineWeight", &style.LineWeight, 0.0f, 5.0f, "%.1f");
             ImGui::SliderFloat("MarkerSize", &style.MarkerSize, 2.0f, 10.0f, "%.1f");
             ImGui::SliderFloat("MarkerWeight", &style.MarkerWeight, 0.0f, 5.0f, "%.1f");
+            ImGui::SliderFloat("FillAlpha", &style.FillAlpha, 0.0f, 1.0f, "%.2f");
             ImGui::Text("Plot Styling");
             ImGui::SliderFloat2("PlotDefaultSize", (float*)&style.PlotDefaultSize, 0.0f, 1000, "%.0f");
             ImGui::SliderFloat2("PlotMinSize", (float*)&style.PlotMinSize, 0.0f, 300, "%.0f");

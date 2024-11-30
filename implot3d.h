@@ -65,6 +65,7 @@ struct ImPlot3DQuat;
 
 // Enums
 typedef int ImPlot3DCol;      // -> ImPlot3DCol_               // Enum: Styling colors
+typedef int ImPlot3DStyleVar; // -> ImPlot3DStyleVar_          // Enum: Style variables
 typedef int ImPlot3DMarker;   // -> ImPlot3DMarker_            // Enum: Marker styles
 typedef int ImPlot3DLocation; // -> ImPlot3DLocation_          // Enum: Locations
 typedef int ImAxis3D;         // -> ImAxis3D_                  // Enum: Axis indices
@@ -187,6 +188,15 @@ IMPLOT3D_API void StyleColorsDark(ImPlot3DStyle* dst = nullptr);    // Set color
 IMPLOT3D_API void StyleColorsLight(ImPlot3DStyle* dst = nullptr);   // Set colors with light style
 IMPLOT3D_API void StyleColorsClassic(ImPlot3DStyle* dst = nullptr); // Set colors with classic style
 
+// Temporarily modify a style variable of float type. Don't forget to call PopStyleVar!
+IMPLOT3D_API void PushStyleVar(ImPlot3DStyleVar idx, float val);
+// Temporarily modify a style variable of int type. Don't forget to call PopStyleVar!
+IMPLOT3D_API void PushStyleVar(ImPlot3DStyleVar idx, int val);
+// Temporarily modify a style variable of ImVec2 type. Don't forget to call PopStyleVar!
+IMPLOT3D_API void PushStyleVar(ImPlot3DStyleVar idx, const ImVec2& val);
+// Undo temporary style variable modification(s). Undo multiple pushes at once by increasing count
+IMPLOT3D_API void PopStyleVar(int count = 1);
+
 // Set the line color and weight for the next item only
 IMPLOT3D_API void SetNextLineStyle(const ImVec4& col = IMPLOT3D_AUTO_COL, float weight = IMPLOT3D_AUTO);
 // Set the marker style for the next item only
@@ -280,6 +290,26 @@ enum ImPlot3DCol_ {
     ImPlot3DCol_AxisText, // Axis label and tick lables color
     ImPlot3DCol_AxisGrid, // Axis grid color
     ImPlot3DCol_COUNT,
+};
+
+// Plot styling variables
+enum ImPlot3DStyleVar_ {
+    // Item style
+    ImPlot3DStyleVar_LineWeight,   // float, plot item line weight in pixels
+    ImPlot3DStyleVar_Marker,       // int,   marker specification
+    ImPlot3DStyleVar_MarkerSize,   // float, marker size in pixels (roughly the marker's "radius")
+    ImPlot3DStyleVar_MarkerWeight, // float, plot outline weight of markers in pixels
+    ImPlot3DStyleVar_FillAlpha,    // float, alpha modifier applied to all plot item fills
+    // Plot style
+    ImPlot3DStyleVar_PlotDefaultSize, // ImVec2, default size used when ImVec2(0,0) is passed to BeginPlot
+    ImPlot3DStyleVar_PlotMinSize,     // ImVec2, minimum size plot frame can be when shrunk
+    ImPlot3DStyleVar_PlotPadding,     // ImVec2, padding between widget frame and plot area, labels, or outside legends (i.e. main padding)
+    ImPlot3DStyleVar_LabelPadding,    // ImVec2, padding between axes labels, tick labels, and plot edge
+    // Legend style
+    ImPlot3DStyleVar_LegendPadding,      // ImVec2, legend padding from plot edges
+    ImPlot3DStyleVar_LegendInnerPadding, // ImVec2, legend inner padding from legend edges
+    ImPlot3DStyleVar_LegendSpacing,      // ImVec2, spacing between legend entries
+    ImPlot3DStyleVar_COUNT
 };
 
 enum ImPlot3DMarker_ {
@@ -555,6 +585,7 @@ struct ImPlot3DStyle {
     int Marker;         // Default marker type (ImPlot3DMarker_None)
     float MarkerSize;   // Marker size in pixels (roughly the marker's "radius")
     float MarkerWeight; // Marker outline weight in pixels
+    float FillAlpha;    // Alpha modifier applied to plot fills
     // Plot style
     ImVec2 PlotDefaultSize;
     ImVec2 PlotMinSize;
@@ -567,7 +598,7 @@ struct ImPlot3DStyle {
     // Colors
     ImVec4 Colors[ImPlot3DCol_COUNT];
     // Colormap
-    ImPlot3DColormap Colormap; // The current colormap. Set this to either an ImPlotColormap_ enum or an index returned by AddColormap
+    ImPlot3DColormap Colormap; // The current colormap. Set this to either an ImPlot3DColormap_ enum or an index returned by AddColormap
     // Constructor
     IMPLOT3D_API ImPlot3DStyle();
 };

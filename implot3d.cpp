@@ -1151,6 +1151,40 @@ ImDrawList* GetPlotDrawList() {
 // [SECTION] Styles
 //-----------------------------------------------------------------------------
 
+struct ImPlot3DStyleVarInfo {
+    ImGuiDataType Type;
+    ImU32 Count;
+    ImU32 Offset;
+    void* GetVarPtr(ImPlot3DStyle* style) const { return (void*)((unsigned char*)style + Offset); }
+};
+
+static const ImPlot3DStyleVarInfo GPlot3DStyleVarInfo[] =
+    {
+        // Item style
+        {ImGuiDataType_Float, 1, (ImU32)IM_OFFSETOF(ImPlot3DStyle, LineWeight)},   // ImPlot3DStyleVar_LineWeight
+        {ImGuiDataType_S32, 1, (ImU32)IM_OFFSETOF(ImPlot3DStyle, Marker)},         // ImPlot3DStyleVar_Marker
+        {ImGuiDataType_Float, 1, (ImU32)IM_OFFSETOF(ImPlot3DStyle, MarkerSize)},   // ImPlot3DStyleVar_MarkerSize
+        {ImGuiDataType_Float, 1, (ImU32)IM_OFFSETOF(ImPlot3DStyle, MarkerWeight)}, // ImPlot3DStyleVar_MarkerWeight
+        {ImGuiDataType_Float, 1, (ImU32)IM_OFFSETOF(ImPlot3DStyle, FillAlpha)},    // ImPlot3DStyleVar_FillAlpha
+
+        // Plot style
+        {ImGuiDataType_Float, 2, (ImU32)IM_OFFSETOF(ImPlot3DStyle, PlotDefaultSize)}, // ImPlot3DStyleVar_Plot3DDefaultSize
+        {ImGuiDataType_Float, 2, (ImU32)IM_OFFSETOF(ImPlot3DStyle, PlotMinSize)},     // ImPlot3DStyleVar_Plot3DMinSize
+        {ImGuiDataType_Float, 2, (ImU32)IM_OFFSETOF(ImPlot3DStyle, PlotPadding)},     // ImPlot3DStyleVar_Plot3DPadding
+
+        // Label style
+        {ImGuiDataType_Float, 2, (ImU32)IM_OFFSETOF(ImPlot3DStyle, LabelPadding)},       // ImPlot3DStyleVar_LabelPaddine
+        {ImGuiDataType_Float, 2, (ImU32)IM_OFFSETOF(ImPlot3DStyle, LegendPadding)},      // ImPlot3DStyleVar_LegendPadding
+        {ImGuiDataType_Float, 2, (ImU32)IM_OFFSETOF(ImPlot3DStyle, LegendInnerPadding)}, // ImPlot3DStyleVar_LegendInnerPadding
+        {ImGuiDataType_Float, 2, (ImU32)IM_OFFSETOF(ImPlot3DStyle, LegendSpacing)},      // ImPlot3DStyleVar_LegendSpacing
+};
+
+static const ImPlot3DStyleVarInfo* GetPlotStyleVarInfo(ImPlot3DStyleVar idx) {
+    IM_ASSERT(idx >= 0 && idx < ImPlot3DStyleVar_COUNT);
+    IM_ASSERT(IM_ARRAYSIZE(GPlot3DStyleVarInfo) == ImPlot3DStyleVar_COUNT);
+    return &GPlot3DStyleVarInfo[idx];
+}
+
 ImPlot3DStyle& GetStyle() { return GImPlot3D->Style; }
 
 void StyleColorsAuto(ImPlot3DStyle* dst) {
@@ -1169,24 +1203,6 @@ void StyleColorsAuto(ImPlot3DStyle* dst) {
     colors[ImPlot3DCol_LegendText] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_AxisText] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_AxisGrid] = IMPLOT3D_AUTO_COL;
-}
-
-void StyleColorsClassic(ImPlot3DStyle* dst) {
-    ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
-    ImVec4* colors = style->Colors;
-
-    colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
-    colors[ImPlot3DCol_TitleText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-    colors[ImPlot3DCol_FrameBg] = ImVec4(0.43f, 0.43f, 0.43f, 0.39f);
-    colors[ImPlot3DCol_PlotBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.35f);
-    colors[ImPlot3DCol_PlotBorder] = ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
-    colors[ImPlot3DCol_LegendBg] = ImVec4(0.11f, 0.11f, 0.14f, 0.92f);
-    colors[ImPlot3DCol_LegendBorder] = ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
-    colors[ImPlot3DCol_LegendText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-    colors[ImPlot3DCol_AxisText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-    colors[ImPlot3DCol_AxisGrid] = ImVec4(0.90f, 0.90f, 0.90f, 0.25f);
 }
 
 void StyleColorsDark(ImPlot3DStyle* dst) {
@@ -1223,6 +1239,85 @@ void StyleColorsLight(ImPlot3DStyle* dst) {
     colors[ImPlot3DCol_LegendText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     colors[ImPlot3DCol_AxisText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     colors[ImPlot3DCol_AxisGrid] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+}
+
+void StyleColorsClassic(ImPlot3DStyle* dst) {
+    ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
+    ImVec4* colors = style->Colors;
+
+    colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_TitleText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+    colors[ImPlot3DCol_FrameBg] = ImVec4(0.43f, 0.43f, 0.43f, 0.39f);
+    colors[ImPlot3DCol_PlotBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.35f);
+    colors[ImPlot3DCol_PlotBorder] = ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
+    colors[ImPlot3DCol_LegendBg] = ImVec4(0.11f, 0.11f, 0.14f, 0.92f);
+    colors[ImPlot3DCol_LegendBorder] = ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
+    colors[ImPlot3DCol_LegendText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+    colors[ImPlot3DCol_AxisText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+    colors[ImPlot3DCol_AxisGrid] = ImVec4(0.90f, 0.90f, 0.90f, 0.25f);
+}
+
+void PushStyleVar(ImPlot3DStyleVar idx, float val) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    const ImPlot3DStyleVarInfo* var_info = GetPlotStyleVarInfo(idx);
+    if (var_info->Type == ImGuiDataType_Float && var_info->Count == 1) {
+        float* pvar = (float*)var_info->GetVarPtr(&gp.Style);
+        gp.StyleModifiers.push_back(ImGuiStyleMod((ImGuiStyleVar)idx, *pvar));
+        *pvar = val;
+        return;
+    }
+    IM_ASSERT(0 && "Called PushStyleVar() float variant but variable is not a float!");
+}
+
+void PushStyleVar(ImPlot3DStyleVar idx, int val) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    const ImPlot3DStyleVarInfo* var_info = GetPlotStyleVarInfo(idx);
+    if (var_info->Type == ImGuiDataType_S32 && var_info->Count == 1) {
+        int* pvar = (int*)var_info->GetVarPtr(&gp.Style);
+        gp.StyleModifiers.push_back(ImGuiStyleMod((ImGuiStyleVar)idx, *pvar));
+        *pvar = val;
+        return;
+    } else if (var_info->Type == ImGuiDataType_Float && var_info->Count == 1) {
+        float* pvar = (float*)var_info->GetVarPtr(&gp.Style);
+        gp.StyleModifiers.push_back(ImGuiStyleMod((ImGuiStyleVar)idx, *pvar));
+        *pvar = (float)val;
+        return;
+    }
+    IM_ASSERT(0 && "Called PushStyleVar() int variant but variable is not a int!");
+}
+
+void PushStyleVar(ImPlot3DStyleVar idx, const ImVec2& val) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    const ImPlot3DStyleVarInfo* var_info = GetPlotStyleVarInfo(idx);
+    if (var_info->Type == ImGuiDataType_Float && var_info->Count == 2) {
+        ImVec2* pvar = (ImVec2*)var_info->GetVarPtr(&gp.Style);
+        gp.StyleModifiers.push_back(ImGuiStyleMod((ImGuiStyleVar)idx, *pvar));
+        *pvar = val;
+        return;
+    }
+    IM_ASSERT(0 && "Called PushStyleVar() ImVec2 variant but variable is not a ImVec2!");
+}
+
+void PopStyleVar(int count) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(count <= gp.StyleModifiers.Size, "You can't pop more modifiers than have been pushed!");
+    while (count > 0) {
+        ImGuiStyleMod& backup = gp.StyleModifiers.back();
+        const ImPlot3DStyleVarInfo* info = GetPlotStyleVarInfo(backup.VarIdx);
+        void* data = info->GetVarPtr(&gp.Style);
+        if (info->Type == ImGuiDataType_Float && info->Count == 1) {
+            ((float*)data)[0] = backup.BackupFloat[0];
+        } else if (info->Type == ImGuiDataType_Float && info->Count == 2) {
+            ((float*)data)[0] = backup.BackupFloat[0];
+            ((float*)data)[1] = backup.BackupFloat[1];
+        } else if (info->Type == ImGuiDataType_S32 && info->Count == 1) {
+            ((int*)data)[0] = backup.BackupInt[0];
+        }
+        gp.StyleModifiers.pop_back();
+        count--;
+    }
 }
 
 ImVec4 GetStyleColorVec4(ImPlot3DCol idx) {
@@ -1729,10 +1824,11 @@ const char* ImPlot3DPlot::GetAxisLabel(const ImPlot3DAxis& axis) const { return 
 
 ImPlot3DStyle::ImPlot3DStyle() {
     // Item style
-    LineWeight = 1;
+    LineWeight = 1.0f;
     Marker = ImPlot3DMarker_None;
-    MarkerSize = 4;
-    MarkerWeight = 1;
+    MarkerSize = 4.0f;
+    MarkerWeight = 1.0f;
+    FillAlpha = 1.0f;
     // Plot style
     PlotDefaultSize = ImVec2(400, 400);
     PlotMinSize = ImVec2(200, 200);

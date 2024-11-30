@@ -178,6 +178,10 @@ bool BeginItem(const char* label_id, ImPlot3DItemFlags flags, ImPlot3DCol recolo
     n.Marker = n.Marker < 0 ? style.Marker : n.Marker;
     n.MarkerSize = n.MarkerSize < 0.0f ? style.MarkerSize : n.MarkerSize;
     n.MarkerWeight = n.MarkerWeight < 0.0f ? style.MarkerWeight : n.MarkerWeight;
+    n.FillAlpha = n.FillAlpha < 0 ? gp.Style.FillAlpha : n.FillAlpha;
+
+    // Apply alpha modifiers
+    n.Colors[ImPlot3DCol_MarkerFill].w *= n.FillAlpha;
 
     // Set render flags
     n.RenderLine = n.Colors[ImPlot3DCol_Line].w > 0 && n.LineWeight > 0;
