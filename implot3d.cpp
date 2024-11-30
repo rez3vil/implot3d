@@ -15,7 +15,9 @@
 // [SECTION] Includes
 // [SECTION] Macros
 // [SECTION] Context
+// [SECTION] Text Utils
 // [SECTION] Legend Utils
+// [SECTION] Plot Box Utils
 // [SECTION] Formatter
 // [SECTION] Locator
 // [SECTION] Begin/End Plot
@@ -88,7 +90,102 @@ ImPlot3DContext* GetCurrentContext() { return GImPlot3D; }
 void SetCurrentContext(ImPlot3DContext* ctx) { GImPlot3D = ctx; }
 
 //-----------------------------------------------------------------------------
-// Legend Utils
+// [SECTION] Text Utils
+//-----------------------------------------------------------------------------
+
+void AddTextRotated(ImDrawList* draw_list, ImVec2 pos, float angle, ImU32 col, const char* text_begin, const char* text_end = nullptr) {
+    if (!text_end)
+        text_end = text_begin + strlen(text_begin);
+
+    ImGuiContext& g = *GImGui;
+    ImFont* font = g.Font;
+
+    // Align to be pixel perfect
+    pos.x = IM_FLOOR(pos.x);
+    pos.y = IM_FLOOR(pos.y);
+
+    const float scale = g.FontSize / font->FontSize;
+
+    // Measure the size of the text in unrotated coordinates
+    ImVec2 text_size = font->CalcTextSizeA(g.FontSize, FLT_MAX, 0.0f, text_begin, text_end, nullptr);
+
+    // Precompute sine and cosine of the angle (note: angle should be positive for rotation in ImGui)
+    float cos_a = cosf(-angle);
+    float sin_a = sinf(-angle);
+
+    const char* s = text_begin;
+    int chars_total = (int)(text_end - s);
+    int chars_rendered = 0;
+    const int vtx_count_max = chars_total * 4;
+    const int idx_count_max = chars_total * 6;
+    draw_list->PrimReserve(idx_count_max, vtx_count_max);
+
+    // Adjust pen position to center the text
+    ImVec2 pen = ImVec2(-text_size.x * 0.5f, -text_size.y * 0.5f);
+
+    while (s < text_end) {
+        unsigned int c = (unsigned int)*s;
+        if (c < 0x80) {
+            s += 1;
+        } else {
+            s += ImTextCharFromUtf8(&c, s, text_end);
+            if (c == 0) // Malformed UTF-8?
+                break;
+        }
+
+        const ImFontGlyph* glyph = font->FindGlyph((ImWchar)c);
+        if (glyph == nullptr) {
+            continue;
+        }
+
+        // Glyph dimensions and positions
+        ImVec2 glyph_offset = ImVec2(glyph->X0, glyph->Y0) * scale;
+        ImVec2 glyph_size = ImVec2(glyph->X1 - glyph->X0, glyph->Y1 - glyph->Y0) * scale;
+
+        // Corners of the glyph quad in unrotated space
+        ImVec2 corners[4];
+        corners[0] = pen + glyph_offset;
+        corners[1] = pen + glyph_offset + ImVec2(glyph_size.x, 0);
+        corners[2] = pen + glyph_offset + glyph_size;
+        corners[3] = pen + glyph_offset + ImVec2(0, glyph_size.y);
+
+        // Rotate and translate the corners
+        for (int i = 0; i < 4; i++) {
+            float x = corners[i].x;
+            float y = corners[i].y;
+            corners[i].x = x * cos_a - y * sin_a + pos.x;
+            corners[i].y = x * sin_a + y * cos_a + pos.y;
+        }
+
+        // Texture coordinates
+        ImVec2 uv0 = ImVec2(glyph->U0, glyph->V0);
+        ImVec2 uv1 = ImVec2(glyph->U1, glyph->V1);
+
+        // Render the glyph quad
+        draw_list->PrimQuadUV(corners[0], corners[1], corners[2], corners[3],
+                              uv0, ImVec2(glyph->U1, glyph->V0),
+                              uv1, ImVec2(glyph->U0, glyph->V1),
+                              col);
+
+        // Advance the pen position
+        pen.x += glyph->AdvanceX * scale;
+
+        chars_rendered++;
+    }
+
+    // Return unused vertices
+    int chars_skipped = chars_total - chars_rendered;
+    draw_list->PrimUnreserve(chars_skipped * 6, chars_skipped * 4);
+}
+
+void AddTextCentered(ImDrawList* draw_list, ImVec2 top_center, ImU32 col, const char* text_begin) {
+    const char* text_end = ImGui::FindRenderedTextEnd(text_begin);
+    ImVec2 text_size = ImGui::CalcTextSize(text_begin, text_end, true);
+    draw_list->AddText(ImVec2(top_center.x - text_size.x * 0.5f, top_center.y), col, text_begin, text_end);
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] Legend Utils
 //-----------------------------------------------------------------------------
 
 ImVec2 GetLocationPos(const ImRect& outer_rect, const ImVec2& inner_size, ImPlot3DLocation loc, const ImVec2& pad) {
@@ -228,6 +325,339 @@ void RenderLegend() {
 
     // Render legends
     ShowLegendEntries(plot.Items, legend.Rect, legend.Hovered, gp.Style.LegendInnerPadding, gp.Style.LegendSpacing, !legend_horz, *draw_list);
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] Plot Box Utils
+//-----------------------------------------------------------------------------
+
+// Faces of the box (defined by 4 corner indices)
+static const int faces[6][4] = {
+    {0, 3, 7, 4}, // X-min face
+    {0, 4, 5, 1}, // Y-min face
+    {0, 1, 2, 3}, // Z-min face
+    {1, 2, 6, 5}, // X-max face
+    {3, 7, 6, 2}, // Y-max face
+    {4, 5, 6, 7}, // Z-max face
+};
+
+// Edges of the box (defined by 2 corner indices)
+static const int edges[12][2] = {
+    // Bottom face edges
+    {0, 1},
+    {1, 2},
+    {2, 3},
+    {3, 0},
+    // Top face edges
+    {4, 5},
+    {5, 6},
+    {6, 7},
+    {7, 4},
+    // Vertical edges
+    {0, 4},
+    {1, 5},
+    {2, 6},
+    {3, 7},
+};
+
+// Face edges (4 edge indices for each face)
+static const int face_edges[6][4] = {
+    {3, 11, 8, 7},  // X-min face
+    {0, 8, 4, 9},   // Y-min face
+    {0, 1, 2, 3},   // Z-min face
+    {1, 9, 5, 10},  // X-max face
+    {2, 10, 6, 11}, // Y-max face
+    {4, 5, 6, 7},   // Z-max face
+};
+
+// Lookup table for axis_corners based on active_faces
+static const int axis_corners_lookup[8][3][2] = {
+    // Index 0: active_faces = {0, 0, 0}
+    {{3, 2}, {1, 2}, {1, 5}},
+    // Index 1: active_faces = {0, 0, 1}
+    {{7, 6}, {5, 6}, {1, 5}},
+    // Index 2: active_faces = {0, 1, 0}
+    {{0, 1}, {1, 2}, {2, 6}},
+    // Index 3: active_faces = {0, 1, 1}
+    {{4, 5}, {5, 6}, {2, 6}},
+    // Index 4: active_faces = {1, 0, 0}
+    {{3, 2}, {0, 3}, {0, 4}},
+    // Index 5: active_faces = {1, 0, 1}
+    {{7, 6}, {4, 7}, {0, 4}},
+    // Index 6: active_faces = {1, 1, 0}
+    {{0, 1}, {0, 3}, {3, 7}},
+    // Index 7: active_faces = {1, 1, 1}
+    {{4, 5}, {4, 7}, {3, 7}},
+};
+
+void RenderPlotBackground(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImVec2* corners_pix, const bool* active_faces) {
+    const ImU32 col_bg = GetStyleColorU32(ImPlot3DCol_PlotBg);
+    for (int a = 0; a < 3; a++) {
+        int idx[4]; // Corner indices
+        for (int i = 0; i < 4; i++)
+            idx[i] = faces[a + 3 * active_faces[a]][i];
+        draw_list->AddQuadFilled(corners_pix[idx[0]], corners_pix[idx[1]], corners_pix[idx[2]], corners_pix[idx[3]], col_bg);
+    }
+}
+
+void RenderPlotBorder(ImDrawList* draw_list, const ImVec2* corners_pix, const bool* active_faces) {
+    bool render_edge[12] = {false};
+    for (int a = 0; a < 3; a++) {
+        int face_idx = a + 3 * active_faces[a];
+        for (size_t i = 0; i < 4; i++)
+            render_edge[face_edges[face_idx][i]] = true;
+    }
+    ImU32 col_bd = GetStyleColorU32(ImPlot3DCol_PlotBorder);
+    for (int i = 0; i < 12; i++) {
+        if (render_edge[i]) {
+            int idx0 = edges[i][0];
+            int idx1 = edges[i][1];
+            draw_list->AddLine(corners_pix[idx0], corners_pix[idx1], col_bd);
+        }
+    }
+}
+
+void RenderPlotGrid(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DPoint* corners, const bool* active_faces) {
+    ImVec4 col_grid = GetStyleColorVec4(ImPlot3DCol_AxisGrid);
+    ImU32 col_grid_minor = ImGui::GetColorU32(col_grid * ImVec4(1, 1, 1, 0.3f));
+    ImU32 col_grid_major = ImGui::GetColorU32(col_grid * ImVec4(1, 1, 1, 0.6f));
+    for (int face = 0; face < 3; face++) {
+        int face_idx = face + 3 * active_faces[face];
+        const ImPlot3DAxis& axis_u = plot.Axes[(face + 1) % 3];
+        const ImPlot3DAxis& axis_v = plot.Axes[(face + 2) % 3];
+
+        // Get the two axes (u and v) that define the face plane
+        int idx0 = faces[face_idx][0];
+        int idx1 = faces[face_idx][1];
+        int idx2 = faces[face_idx][2];
+        int idx3 = faces[face_idx][3];
+
+        // Corners of the face in plot space
+        ImPlot3DPoint p0 = corners[idx0];
+        ImPlot3DPoint p1 = corners[idx1];
+        ImPlot3DPoint p2 = corners[idx2];
+        ImPlot3DPoint p3 = corners[idx3];
+
+        // Vectors along the edges
+        ImPlot3DPoint u_vec = p1 - p0;
+        ImPlot3DPoint v_vec = p3 - p0;
+
+        // Render grid lines along u axis (axis_u)
+        for (int t = 0; t < axis_u.Ticker.TickCount(); ++t) {
+            const ImPlot3DTick& tick = axis_u.Ticker.Ticks[t];
+
+            // Compute position along u
+            float t_u = (tick.PlotPos - axis_u.Range.Min) / (axis_u.Range.Max - axis_u.Range.Min);
+            ImPlot3DPoint p_start = p0 + u_vec * t_u;
+            ImPlot3DPoint p_end = p3 + u_vec * t_u;
+
+            // Convert to pixel coordinates
+            ImVec2 p_start_pix = PlotToPixels(p_start);
+            ImVec2 p_end_pix = PlotToPixels(p_end);
+
+            // Get color
+            ImU32 col_line = tick.Major ? col_grid_major : col_grid_minor;
+
+            // Draw the grid line
+            draw_list->AddLine(p_start_pix, p_end_pix, col_line);
+        }
+
+        // Render grid lines along v axis (axis_v)
+        for (int t = 0; t < axis_v.Ticker.TickCount(); ++t) {
+            const ImPlot3DTick& tick = axis_v.Ticker.Ticks[t];
+
+            // Compute position along v
+            float t_v = (tick.PlotPos - axis_v.Range.Min) / (axis_v.Range.Max - axis_v.Range.Min);
+            ImPlot3DPoint p_start = p0 + v_vec * t_v;
+            ImPlot3DPoint p_end = p1 + v_vec * t_v;
+
+            // Convert to pixel coordinates
+            ImVec2 p_start_pix = PlotToPixels(p_start);
+            ImVec2 p_end_pix = PlotToPixels(p_end);
+
+            // Get color
+            ImU32 col_line = tick.Major ? col_grid_major : col_grid_minor;
+
+            // Draw the grid line
+            draw_list->AddLine(p_start_pix, p_end_pix, col_line);
+        }
+    }
+}
+
+void RenderTickLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DPoint* corners, const ImVec2* corners_pix, const int axis_corners[3][2]) {
+    ImVec2 box_center_pix = PlotToPixels(plot.RangeCenter());
+    ImU32 col_tick_txt = GetStyleColorU32(ImPlot3DCol_AxisText);
+
+    for (int a = 0; a < 3; a++) {
+        const ImPlot3DAxis& axis = plot.Axes[a];
+
+        // Corner indices for this axis
+        int idx0 = axis_corners[a][0];
+        int idx1 = axis_corners[a][1];
+
+        // Start and end points of the axis in plot space
+        ImPlot3DPoint axis_start = corners[idx0];
+        ImPlot3DPoint axis_end = corners[idx1];
+
+        // Direction vector along the axis
+        ImPlot3DPoint axis_dir = axis_end - axis_start;
+
+        // Convert axis start and end to screen space
+        ImVec2 axis_start_pix = corners_pix[idx0];
+        ImVec2 axis_end_pix = corners_pix[idx1];
+
+        // Screen space axis direction
+        ImVec2 axis_screen_dir = axis_end_pix - axis_start_pix;
+        float axis_length = ImSqrt(ImLengthSqr(axis_screen_dir));
+        if (axis_length != 0.0f)
+            axis_screen_dir /= axis_length;
+        else
+            axis_screen_dir = ImVec2(1.0f, 0.0f); // Default direction if length is zero
+
+        // Perpendicular direction in screen space
+        ImVec2 offset_dir_pix = ImVec2(-axis_screen_dir.y, axis_screen_dir.x);
+
+        // Make sure direction points away from cube center
+        ImVec2 box_center_pix = PlotToPixels(plot.RangeCenter());
+        ImVec2 axis_center_pix = (axis_start_pix + axis_end_pix) * 0.5f;
+        ImVec2 center_to_axis_pix = axis_center_pix - box_center_pix;
+        center_to_axis_pix /= ImSqrt(ImLengthSqr(center_to_axis_pix));
+        if (ImDot(offset_dir_pix, center_to_axis_pix) < 0.0f)
+            offset_dir_pix = -offset_dir_pix;
+
+        // Adjust the offset magnitude
+        float offset_magnitude = 20.0f; // Adjust as needed
+        ImVec2 offset_pix = offset_dir_pix * offset_magnitude;
+
+        // Compute angle perpendicular to axis in screen space
+        float angle = atan2f(-axis_screen_dir.y, axis_screen_dir.x) + IM_PI * 0.5f;
+
+        // Normalize angle to be between -π and π
+        if (angle > IM_PI)
+            angle -= 2 * IM_PI;
+        if (angle < -IM_PI)
+            angle += 2 * IM_PI;
+
+        // Adjust angle to keep labels upright
+        if (angle > IM_PI * 0.5f)
+            angle -= IM_PI;
+        if (angle < -IM_PI * 0.5f)
+            angle += IM_PI;
+
+        // Loop over ticks
+        for (int t = 0; t < axis.Ticker.TickCount(); ++t) {
+            const ImPlot3DTick& tick = axis.Ticker.Ticks[t];
+            if (!tick.ShowLabel)
+                continue;
+
+            // Compute position along the axis
+            float t_axis = (tick.PlotPos - axis.Range.Min) / (axis.Range.Max - axis.Range.Min);
+            ImPlot3DPoint tick_pos = axis_start + axis_dir * t_axis;
+
+            // Convert to pixel coordinates
+            ImVec2 tick_pos_pix = PlotToPixels(tick_pos);
+
+            // Get the tick label text
+            const char* label = axis.Ticker.GetText(tick);
+
+            // Adjust label position by offset
+            ImVec2 label_pos_pix = tick_pos_pix + offset_pix;
+
+            // Render the tick label
+            AddTextRotated(draw_list, label_pos_pix, angle, col_tick_txt, label);
+        }
+    }
+}
+
+void RenderAxisLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DPoint* corners, const ImVec2* corners_pix, const int axis_corners[3][2]) {
+    ImPlot3DPoint range_center = plot.RangeCenter();
+    for (int a = 0; a < 3; a++) {
+        const ImPlot3DAxis& axis = plot.Axes[a];
+        if (!axis.HasLabel())
+            continue;
+
+        const char* label = plot.GetAxisLabel(axis);
+
+        // Corner indices
+        int idx0 = axis_corners[a][0];
+        int idx1 = axis_corners[a][1];
+
+        // Position at the end of the axis
+        ImPlot3DPoint label_pos = (corners[idx0] + corners[idx1]) * 0.5f;
+        // Add offset
+        label_pos += (label_pos - range_center) * 0.4f;
+
+        // Convert to pixel coordinates
+        ImVec2 label_pos_pix = PlotToPixels(label_pos);
+
+        // Adjust label position and angle
+        ImU32 col_ax_txt = GetStyleColorU32(ImPlot3DCol_AxisText);
+
+        // Compute text angle
+        ImVec2 screen_delta = corners_pix[idx1] - corners_pix[idx0];
+        float angle = atan2f(-screen_delta.y, screen_delta.x);
+        if (angle > IM_PI * 0.5f)
+            angle -= IM_PI;
+        if (angle < -IM_PI * 0.5f)
+            angle += IM_PI;
+
+        AddTextRotated(draw_list, label_pos_pix, angle, col_ax_txt, label);
+    }
+}
+
+void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
+    // Get plot parameters
+    const ImRect& plot_area = plot.PlotRect;
+    const ImPlot3DQuat& rotation = plot.Rotation;
+    ImPlot3DPoint range_min = plot.RangeMin();
+    ImPlot3DPoint range_max = plot.RangeMax();
+    ImPlot3DPoint range_center = plot.RangeCenter();
+
+    // Compute zoom and center
+    float zoom = ImMin(plot_area.GetWidth(), plot_area.GetHeight()) / 1.8f;
+    ImVec2 center = plot_area.GetCenter();
+
+    // Define rotated plot box face normals
+    ImPlot3DPoint rot_face_n[3] = {
+        rotation * ImPlot3DPoint(1.0f, 0.0f, 0.0f),
+        rotation * ImPlot3DPoint(0.0f, 1.0f, 0.0f),
+        rotation * ImPlot3DPoint(0.0f, 0.0f, 1.0f),
+    };
+
+    // Active faces to be plotted (visible from the viewer's perspective)
+    bool active_faces[3] = {rot_face_n[0].z < 0, rot_face_n[1].z < 0, rot_face_n[2].z < 0};
+
+    // Box corners in plot space
+    ImPlot3DPoint corners[8] = {
+        ImPlot3DPoint(range_min.x, range_min.y, range_min.z), // 0
+        ImPlot3DPoint(range_max.x, range_min.y, range_min.z), // 1
+        ImPlot3DPoint(range_max.x, range_max.y, range_min.z), // 2
+        ImPlot3DPoint(range_min.x, range_max.y, range_min.z), // 3
+        ImPlot3DPoint(range_min.x, range_min.y, range_max.z), // 4
+        ImPlot3DPoint(range_max.x, range_min.y, range_max.z), // 5
+        ImPlot3DPoint(range_max.x, range_max.y, range_max.z), // 6
+        ImPlot3DPoint(range_min.x, range_max.y, range_max.z), // 7
+    };
+
+    // Box corners in pixel space
+    ImVec2 corners_pix[8];
+    for (int i = 0; i < 8; i++)
+        corners_pix[i] = PlotToPixels(corners[i]);
+
+    // Compute axes start and end corners (given current rotation)
+    int axis_corners[3][2];
+    int index = (active_faces[0] << 2) | (active_faces[1] << 1) | (active_faces[2]);
+    for (int a = 0; a < 3; a++) {
+        axis_corners[a][0] = axis_corners_lookup[index][a][0];
+        axis_corners[a][1] = axis_corners_lookup[index][a][1];
+    }
+
+    // Render components
+    RenderPlotBackground(draw_list, plot, corners_pix, active_faces);
+    RenderPlotBorder(draw_list, corners_pix, active_faces);
+    RenderPlotGrid(draw_list, plot, corners, active_faces);
+    RenderTickLabels(draw_list, plot, corners, corners_pix, axis_corners);
+    RenderAxisLabels(draw_list, plot, corners, corners_pix, axis_corners);
 }
 
 //-----------------------------------------------------------------------------
@@ -570,97 +1000,6 @@ ImPlot3DRay NDCRayToPlotRay(const ImPlot3DRay& ray) {
 // [SECTION] Setup Utils
 //-----------------------------------------------------------------------------
 
-void AddTextRotated(ImDrawList* draw_list, ImVec2 pos, float angle, ImU32 col, const char* text_begin, const char* text_end = nullptr) {
-    if (!text_end)
-        text_end = text_begin + strlen(text_begin);
-
-    ImGuiContext& g = *GImGui;
-    ImFont* font = g.Font;
-
-    // Align to be pixel perfect
-    pos.x = IM_FLOOR(pos.x);
-    pos.y = IM_FLOOR(pos.y);
-
-    const float scale = g.FontSize / font->FontSize;
-
-    // Measure the size of the text in unrotated coordinates
-    ImVec2 text_size = font->CalcTextSizeA(g.FontSize, FLT_MAX, 0.0f, text_begin, text_end, nullptr);
-
-    // Precompute sine and cosine of the angle (note: angle should be positive for rotation in ImGui)
-    float cos_a = cosf(-angle);
-    float sin_a = sinf(-angle);
-
-    const char* s = text_begin;
-    int chars_total = (int)(text_end - s);
-    int chars_rendered = 0;
-    const int vtx_count_max = chars_total * 4;
-    const int idx_count_max = chars_total * 6;
-    draw_list->PrimReserve(idx_count_max, vtx_count_max);
-
-    // Adjust pen position to center the text
-    ImVec2 pen = ImVec2(-text_size.x * 0.5f, -text_size.y * 0.5f);
-
-    while (s < text_end) {
-        unsigned int c = (unsigned int)*s;
-        if (c < 0x80) {
-            s += 1;
-        } else {
-            s += ImTextCharFromUtf8(&c, s, text_end);
-            if (c == 0) // Malformed UTF-8?
-                break;
-        }
-
-        const ImFontGlyph* glyph = font->FindGlyph((ImWchar)c);
-        if (glyph == nullptr) {
-            continue;
-        }
-
-        // Glyph dimensions and positions
-        ImVec2 glyph_offset = ImVec2(glyph->X0, glyph->Y0) * scale;
-        ImVec2 glyph_size = ImVec2(glyph->X1 - glyph->X0, glyph->Y1 - glyph->Y0) * scale;
-
-        // Corners of the glyph quad in unrotated space
-        ImVec2 corners[4];
-        corners[0] = pen + glyph_offset;
-        corners[1] = pen + glyph_offset + ImVec2(glyph_size.x, 0);
-        corners[2] = pen + glyph_offset + glyph_size;
-        corners[3] = pen + glyph_offset + ImVec2(0, glyph_size.y);
-
-        // Rotate and translate the corners
-        for (int i = 0; i < 4; i++) {
-            float x = corners[i].x;
-            float y = corners[i].y;
-            corners[i].x = x * cos_a - y * sin_a + pos.x;
-            corners[i].y = x * sin_a + y * cos_a + pos.y;
-        }
-
-        // Texture coordinates
-        ImVec2 uv0 = ImVec2(glyph->U0, glyph->V0);
-        ImVec2 uv1 = ImVec2(glyph->U1, glyph->V1);
-
-        // Render the glyph quad
-        draw_list->PrimQuadUV(corners[0], corners[1], corners[2], corners[3],
-                              uv0, ImVec2(glyph->U1, glyph->V0),
-                              uv1, ImVec2(glyph->U0, glyph->V1),
-                              col);
-
-        // Advance the pen position
-        pen.x += glyph->AdvanceX * scale;
-
-        chars_rendered++;
-    }
-
-    // Return unused vertices
-    int chars_skipped = chars_total - chars_rendered;
-    draw_list->PrimUnreserve(chars_skipped * 6, chars_skipped * 4);
-}
-
-void AddTextCentered(ImDrawList* draw_list, ImVec2 top_center, ImU32 col, const char* text_begin) {
-    const char* text_end = ImGui::FindRenderedTextEnd(text_begin);
-    ImVec2 text_size = ImGui::CalcTextSize(text_begin, text_end, true);
-    draw_list->AddText(ImVec2(top_center.x - text_size.x * 0.5f, top_center.y), col, text_begin, text_end);
-}
-
 void HandleInput(ImPlot3DPlot& plot) {
     ImGuiIO& IO = ImGui::GetIO();
 
@@ -727,330 +1066,6 @@ void HandleInput(ImPlot3DPlot& plot) {
         ImPlot3DPoint size = plot.RangeMax() - plot.RangeMin();
         size *= zoom;
         plot.SetRange(center - size * 0.5f, center + size * 0.5f);
-    }
-}
-
-void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
-    // Get plot parameters
-    const ImRect& plot_area = plot.PlotRect;
-    const ImPlot3DQuat& rotation = plot.Rotation;
-    ImPlot3DPoint range_min = plot.RangeMin();
-    ImPlot3DPoint range_max = plot.RangeMax();
-    ImPlot3DPoint range_center = plot.RangeCenter();
-
-    float zoom = ImMin(plot_area.GetWidth(), plot_area.GetHeight()) / 1.8f;
-    ImVec2 center = plot_area.GetCenter();
-
-    // Define rotated plot box face normals
-    ImPlot3DPoint rot_face_n[3] = {
-        ImPlot3DPoint(1.0f, 0.0f, 0.0f),
-        ImPlot3DPoint(0.0f, 1.0f, 0.0f),
-        ImPlot3DPoint(0.0f, 0.0f, 1.0f),
-    };
-    for (int i = 0; i < 3; i++)
-        rot_face_n[i] = rotation * rot_face_n[i];
-
-    // Active faces to be plotted (visible from the viewer's perspective)
-    // If active_faces[0] is true, the X-max face is visible, the X-min face otherwise
-    // If active_faces[1] is true, the Y-max face is visible, the Y-min face otherwise
-    // If active_faces[2] is true, the Z-max face is visible, the Z-min face otherwise
-    bool active_faces[3] = {rot_face_n[0].z < 0, rot_face_n[1].z < 0, rot_face_n[2].z < 0};
-
-    // Box corners in plot space
-    ImPlot3DPoint corners[8] = {
-        ImPlot3DPoint(range_min.x, range_min.y, range_min.z),
-        ImPlot3DPoint(range_max.x, range_min.y, range_min.z),
-        ImPlot3DPoint(range_max.x, range_max.y, range_min.z),
-        ImPlot3DPoint(range_min.x, range_max.y, range_min.z),
-        ImPlot3DPoint(range_min.x, range_min.y, range_max.z),
-        ImPlot3DPoint(range_max.x, range_min.y, range_max.z),
-        ImPlot3DPoint(range_max.x, range_max.y, range_max.z),
-        ImPlot3DPoint(range_min.x, range_max.y, range_max.z),
-    };
-
-    // Box corners in pixel space
-    ImVec2 corners_pix[8];
-    for (int i = 0; i < 8; i++)
-        corners_pix[i] = PlotToPixels(corners[i]);
-
-    // Faces of the box (defined by 4 corner indices)
-    static const int faces[6][4] = {
-        {0, 3, 7, 4}, // X-min face
-        {0, 4, 5, 1}, // Y-min face
-        {0, 1, 2, 3}, // Z-min face
-        {1, 2, 6, 5}, // X-max face
-        {3, 7, 6, 2}, // Y-max face
-        {4, 5, 6, 7}, // Z-max face
-    };
-
-    // Edges of the box (defined by 2 corner indices)
-    static const int edges[12][2] = {
-        // Bottom face edges
-        {0, 1},
-        {1, 2},
-        {2, 3},
-        {3, 0},
-        // Top face edges
-        {4, 5},
-        {5, 6},
-        {6, 7},
-        {7, 4},
-        // Vertical edges
-        {0, 4},
-        {1, 5},
-        {2, 6},
-        {3, 7},
-    };
-
-    // Face edges (4 edge indices for each face)
-    static const int face_edges[6][4] = {
-        {3, 11, 8, 7},  // X-min face (edges connecting corners {0, 3, 7, 4})
-        {0, 9, 4, 8},   // Y-min face (edges connecting corners {0, 1, 5, 4})
-        {0, 1, 2, 3},   // Z-min face (edges connecting corners {0, 1, 2, 3})
-        {1, 10, 5, 9},  // X-max face (edges connecting corners {1, 2, 6, 5})
-        {2, 10, 6, 11}, // Y-max face (edges connecting corners {2, 3, 7, 6})
-        {4, 5, 6, 7},   // Z-max face (edges connecting corners {4, 5, 6, 7})
-    };
-
-    // Render plot background
-    const ImU32 col_bg = GetStyleColorU32(ImPlot3DCol_PlotBg);
-    for (int a = 0; a < 3; a++) {
-        int idx[4]; // Corner indices
-        for (int i = 0; i < 4; i++)
-            idx[i] = faces[a + 3 * active_faces[a]][i];
-        draw_list->AddQuadFilled(corners_pix[idx[0]], corners_pix[idx[1]], corners_pix[idx[2]], corners_pix[idx[3]], col_bg);
-    }
-
-    // Render plot border
-    bool render_edge[12]; // True if edge should be rendered
-    for (int i = 0; i < 12; i++)
-        render_edge[i] = false;
-    for (int a = 0; a < 3; a++) {
-        int face_idx = a + 3 * active_faces[a];
-        for (size_t i = 0; i < 4; i++)
-            render_edge[face_edges[face_idx][i]] = true;
-    }
-    ImU32 col_bd = GetStyleColorU32(ImPlot3DCol_PlotBorder);
-    for (int i = 0; i < 12; i++) {
-        if (render_edge[i]) {
-            int idx0 = edges[i][0];
-            int idx1 = edges[i][1];
-            draw_list->AddLine(corners_pix[idx0], corners_pix[idx1], col_bd);
-        }
-    }
-
-    // Render plot grid
-    ImVec4 col_grid = GetStyleColorVec4(ImPlot3DCol_AxisGrid);
-    ImU32 col_grid_minor = ImGui::GetColorU32(col_grid * ImVec4(1, 1, 1, 0.3f));
-    ImU32 col_grid_major = ImGui::GetColorU32(col_grid * ImVec4(1, 1, 1, 0.6f));
-    for (int face = 0; face < 3; face++) {
-        int face_idx = face + 3 * active_faces[face];
-        const ImPlot3DAxis& axis_u = plot.Axes[(face + 1) % 3];
-        const ImPlot3DAxis& axis_v = plot.Axes[(face + 2) % 3];
-
-        // Get the two axes (u and v) that define the face plane
-        int idx0 = faces[face_idx][0];
-        int idx1 = faces[face_idx][1];
-        int idx2 = faces[face_idx][2];
-        int idx3 = faces[face_idx][3];
-
-        // Corners of the face in plot space
-        ImPlot3DPoint p0 = corners[idx0];
-        ImPlot3DPoint p1 = corners[idx1];
-        ImPlot3DPoint p2 = corners[idx2];
-        ImPlot3DPoint p3 = corners[idx3];
-
-        // Vectors along the edges
-        ImPlot3DPoint u_vec = p1 - p0;
-        ImPlot3DPoint v_vec = p3 - p0;
-
-        // Render grid lines along u axis (axis_u)
-        for (int t = 0; t < axis_u.Ticker.TickCount(); ++t) {
-            const ImPlot3DTick& tick = axis_u.Ticker.Ticks[t];
-
-            // Compute position along u
-            float t_u = (tick.PlotPos - axis_u.Range.Min) / (axis_u.Range.Max - axis_u.Range.Min);
-            ImPlot3DPoint p_start = p0 + u_vec * t_u;
-            ImPlot3DPoint p_end = p3 + u_vec * t_u;
-
-            // Convert to pixel coordinates
-            ImVec2 p_start_pix = PlotToPixels(p_start);
-            ImVec2 p_end_pix = PlotToPixels(p_end);
-
-            // Get color
-            ImU32 col_grid = tick.Major ? col_grid_major : col_grid_minor;
-
-            // Draw the grid line
-            draw_list->AddLine(p_start_pix, p_end_pix, col_grid);
-        }
-
-        // Render grid lines along v axis (axis_v)
-        for (int t = 0; t < axis_v.Ticker.TickCount(); ++t) {
-            const ImPlot3DTick& tick = axis_v.Ticker.Ticks[t];
-
-            // Compute position along v
-            float t_v = (tick.PlotPos - axis_v.Range.Min) / (axis_v.Range.Max - axis_v.Range.Min);
-            ImPlot3DPoint p_start = p0 + v_vec * t_v;
-            ImPlot3DPoint p_end = p1 + v_vec * t_v;
-
-            // Convert to pixel coordinates
-            ImVec2 p_start_pix = PlotToPixels(p_start);
-            ImVec2 p_end_pix = PlotToPixels(p_end);
-
-            // Get color
-            ImU32 col_grid = tick.Major ? col_grid_major : col_grid_minor;
-
-            // Draw the grid line
-            draw_list->AddLine(p_start_pix, p_end_pix, col_grid);
-        }
-    }
-
-    // Compute axes start and end corners (given current rotation)
-    int axis_corners[3][2];
-
-    // Lookup table for axis_corners based on active_faces
-    static const int axis_corners_lookup[8][3][2] = {
-        // Index 0: active_faces = {0, 0, 0}
-        {{3, 2}, {1, 2}, {1, 5}},
-        // Index 1: active_faces = {0, 0, 1}
-        {{7, 6}, {5, 6}, {1, 5}},
-        // Index 2: active_faces = {0, 1, 0}
-        {{0, 1}, {1, 2}, {2, 6}},
-        // Index 3: active_faces = {0, 1, 1}
-        {{4, 5}, {5, 6}, {2, 6}},
-        // Index 4: active_faces = {1, 0, 0}
-        {{3, 2}, {0, 3}, {0, 4}},
-        // Index 5: active_faces = {1, 0, 1}
-        {{7, 6}, {4, 7}, {0, 4}},
-        // Index 6: active_faces = {1, 1, 0}
-        {{0, 1}, {0, 3}, {3, 7}},
-        // Index 7: active_faces = {1, 1, 1}
-        {{4, 5}, {4, 7}, {3, 7}},
-    };
-    int index = (active_faces[0] << 2) | (active_faces[1] << 1) | (active_faces[2]);
-    for (int a = 0; a < 3; a++) {
-        axis_corners[a][0] = axis_corners_lookup[index][a][0];
-        axis_corners[a][1] = axis_corners_lookup[index][a][1];
-    }
-
-    // Render tick labels
-    for (int a = 0; a < 3; a++) {
-        const ImPlot3DAxis& axis = plot.Axes[a];
-
-        // Corner indices for this axis
-        int idx0 = axis_corners[a][0];
-        int idx1 = axis_corners[a][1];
-
-        // Start and end points of the axis in plot space
-        ImPlot3DPoint axis_start = corners[idx0];
-        ImPlot3DPoint axis_end = corners[idx1];
-
-        // Direction vector along the axis
-        ImPlot3DPoint axis_dir = axis_end - axis_start;
-
-        // Convert axis start and end to screen space
-        ImVec2 axis_start_pix = corners_pix[idx0];
-        ImVec2 axis_end_pix = corners_pix[idx1];
-
-        // Screen space axis direction
-        ImVec2 axis_screen_dir = axis_end_pix - axis_start_pix;
-        float axis_length = ImSqrt(ImLengthSqr(axis_screen_dir));
-        if (axis_length != 0.0f)
-            axis_screen_dir /= axis_length;
-        else
-            axis_screen_dir = ImVec2(1.0f, 0.0f); // Default direction if length is zero
-
-        // Perpendicular direction in screen space
-        ImVec2 offset_dir_pix = ImVec2(-axis_screen_dir.y, axis_screen_dir.x);
-
-        // Make sure direction points away from cube center
-        ImVec2 box_center_pix = PlotToPixels(plot.RangeCenter());
-        ImVec2 axis_center_pix = (axis_start_pix + axis_end_pix) * 0.5f;
-        ImVec2 center_to_axis_pix = axis_center_pix - box_center_pix;
-        center_to_axis_pix /= ImSqrt(ImLengthSqr(center_to_axis_pix));
-        if (ImDot(offset_dir_pix, center_to_axis_pix) < 0.0f)
-            offset_dir_pix = -offset_dir_pix;
-
-        // Adjust the offset magnitude
-        float offset_magnitude = 20.0f; // Adjust as needed
-        ImVec2 offset_pix = offset_dir_pix * offset_magnitude;
-
-        // Compute angle perpendicular to axis in screen space
-        float angle = atan2f(-axis_screen_dir.y, axis_screen_dir.x) + IM_PI * 0.5f;
-
-        // Normalize angle to be between -π and π
-        if (angle > IM_PI)
-            angle -= 2 * IM_PI;
-        if (angle < -IM_PI)
-            angle += 2 * IM_PI;
-
-        // Adjust angle to keep labels upright
-        if (angle > IM_PI * 0.5f)
-            angle -= IM_PI;
-        if (angle < -IM_PI * 0.5f)
-            angle += IM_PI;
-
-        // Adjust text color
-        ImU32 col_tick_txt = GetStyleColorU32(ImPlot3DCol_AxisText);
-
-        // Loop over ticks
-        for (int t = 0; t < axis.Ticker.TickCount(); ++t) {
-            const ImPlot3DTick& tick = axis.Ticker.Ticks[t];
-            if (!tick.ShowLabel)
-                continue;
-
-            // Compute position along the axis
-            float t_axis = (tick.PlotPos - axis.Range.Min) / (axis.Range.Max - axis.Range.Min);
-            ImPlot3DPoint tick_pos = axis_start + axis_dir * t_axis;
-
-            // Convert to pixel coordinates
-            ImVec2 tick_pos_pix = PlotToPixels(tick_pos);
-
-            // Get the tick label text
-            const char* label = axis.Ticker.GetText(tick);
-
-            // Adjust label position by offset
-            ImVec2 label_pos_pix = tick_pos_pix + offset_pix;
-
-            // Render the tick label
-            AddTextRotated(draw_list, label_pos_pix, angle, col_tick_txt, label);
-        }
-    }
-
-    // Render axis labels
-    for (int a = 0; a < 3; a++) {
-        const ImPlot3DAxis& axis = plot.Axes[a];
-        if (!axis.HasLabel())
-            continue;
-
-        const char* label = plot.GetAxisLabel(axis);
-
-        // Corner indices
-        int idx0 = axis_corners[a][0];
-        int idx1 = axis_corners[a][1];
-
-        // Position at the end of the axis
-        ImPlot3DPoint label_pos = (corners[idx0] + corners[idx1]) * 0.5f;
-        // Add offset
-        label_pos += (label_pos - range_center) * 0.4f;
-
-        ImVec2 label_pos_pix = PlotToPixels(label_pos);
-
-        // Convert to pixel coordinates
-        ImVec2 label_pix = PlotToPixels(label_pos);
-
-        // Adjust label position and angle
-        ImU32 col_ax_txt = GetStyleColorU32(ImPlot3DCol_AxisText);
-
-        // Compute text angle
-        ImVec2 screen_delta = corners_pix[idx1] - corners_pix[idx0];
-        float angle = atan2f(-screen_delta.y, screen_delta.x);
-        if (angle > M_PI_2)
-            angle -= M_PI;
-        if (angle < -M_PI_2)
-            angle += M_PI;
-
-        AddTextRotated(draw_list, label_pos_pix, angle, col_ax_txt, label);
     }
 }
 
