@@ -48,9 +48,13 @@ void DemoLinePlots() {
     static float y2[] = {-0.5f, -0.5f, 0.5f, 0.5f};
     static float z2[] = {-0.5f, -0.5f, 0.5f, -0.5f};
     if (ImPlot3D::BeginPlot("Line Plots", ImVec2(-1, 300))) {
+        ImPlot3D::SetupLegend(ImPlot3DLocation_NorthWest, ImPlot3DLegendFlags_Horizontal);
+        ImPlot3D::SetupAxis(ImAxis3D_X, "X", ImPlot3DAxisFlags_NoGridLines);
+        ImPlot3D::SetupAxis(ImAxis3D_Y, nullptr, ImPlot3DAxisFlags_NoGridLines);
+        ImPlot3D::SetupAxis(ImAxis3D_Z, "Z");
+
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Circle, 2, ImVec4(1, 0, 0, 1), 1, ImVec4(0, 1, 0, 1));
         ImPlot3D::SetNextLineStyle(ImVec4(0.2f, 0.8f, 0.4f, 1));
-        ImPlot3D::SetupLegend(ImPlot3DLocation_South, ImPlot3DLegendFlags_Horizontal);
         ImPlot3D::PlotLine("Line loop", x1, y1, z1, 4, ImPlot3DLineFlags_Loop | ImPlot3DLineFlags_SkipNaN);
 
         ImPlot3D::SetNextLineStyle(ImVec4(0.8f, 0.2f, 0.4f, 1));

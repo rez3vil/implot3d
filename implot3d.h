@@ -67,7 +67,7 @@ struct ImPlot3DQuat;
 typedef int ImPlot3DCol;      // -> ImPlot3DCol_               // Enum: Styling colors
 typedef int ImPlot3DMarker;   // -> ImPlot3DMarker_            // Enum: Marker styles
 typedef int ImPlot3DLocation; // -> ImPlot3DLocation_          // Enum: Locations
-typedef int ImPlot3DAxisIdx;  // -> ImPlot3DAxisIdx_           // Enum: Axis indices
+typedef int ImAxis3D;         // -> ImAxis3D_                  // Enum: Axis indices
 
 // Flags
 typedef int ImPlot3DFlags;        // -> ImPlot3DFlags_         // Flags: for BeginPlot()
@@ -111,6 +111,34 @@ IMPLOT3D_API void EndPlot(); // Only call if BeginPlot() returns true!
 //-----------------------------------------------------------------------------
 // [SECTION] Setup
 //-----------------------------------------------------------------------------
+
+// The following API allows you to setup and customize various aspects of the
+// current plot. The functions should be called immediately after BeginPlot()
+// and before any other API calls. Typical usage is as follows:
+
+// if (ImPlot3D::BeginPlot(...)) {                     1) Begin a new plot
+//     ImPlot3D::SetupAxis(ImAxis3D_X, "My X-Axis");    2) Make Setup calls
+//     ImPlot3D::SetupAxis(ImAxis3D_Y, "My Y-Axis");
+//     ImPlot3D::SetupLegend(ImPlotLocation_North);
+//     ...
+//     ImPlot3D::SetupFinish();                        3) [Optional] Explicitly finish setup
+//     ImPlot3D::PlotLine(...);                        4) Plot items
+//     ...
+//     ImPlot3D::EndPlot();                            5) End the plot
+// }
+//
+// Important notes:
+//
+// - Always call Setup code at the top of your BeginPlot conditional statement.
+// - Setup is locked once you start plotting or explicitly call SetupFinish.
+//   Do NOT call Setup code after you begin plotting or after you make
+//   any non-Setup API calls (e.g. utils like PlotToPixels also lock Setup).
+// - Calling SetupFinish is OPTIONAL, but probably good practice. If you do not
+//   call it yourself, then the first subsequent plotting or utility function will
+//   call it for you.
+
+// Enables an axis or sets the label and/or flags for an existing axis. Leave #label = nullptr for no label.
+IMPLOT3D_API void SetupAxis(ImAxis3D axis, const char* label = nullptr, ImPlot3DAxisFlags flags = 0);
 
 IMPLOT3D_API void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags = 0);
 
@@ -273,11 +301,11 @@ enum ImPlot3DAxisFlags_ {
 };
 
 // Axis indices
-enum ImPlot3DAxisIdx_ {
-    ImPlot3DAxisIdx_X = 0,
-    ImPlot3DAxisIdx_Y,
-    ImPlot3DAxisIdx_Z,
-    ImPlot3DAxisIdx_COUNT,
+enum ImAxis3D_ {
+    ImAxis3D_X = 0,
+    ImAxis3D_Y,
+    ImAxis3D_Z,
+    ImAxis3D_COUNT,
 };
 
 //-----------------------------------------------------------------------------

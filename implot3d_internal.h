@@ -166,6 +166,7 @@ struct ImPlot3DItemGroup {
 struct ImPlot3DAxis {
     ImPlot3DAxisFlags Flags;
     ImPlot3DRange Range;
+    int LabelOffset;
     // Fit data
     bool FitThisFrame;
     ImPlot3DRange FitExtents;
@@ -175,6 +176,8 @@ struct ImPlot3DAxis {
         Flags = ImPlot3DAxisFlags_None;
         Range.Min = 0.0f;
         Range.Max = 1.0f;
+        LabelOffset = -1;
+        // Fit data
         FitThisFrame = true;
         FitExtents.Min = HUGE_VAL;
         FitExtents.Max = -HUGE_VAL;
@@ -211,7 +214,7 @@ struct ImPlot3DPlot {
     ImPlot3DPlot() {
         Flags = ImPlot3DFlags_None;
         Rotation = ImPlot3DQuat(0.0f, 0.0f, 0.0f, 1.0f);
-        for (int i = 0; i < ImPlot3DAxisIdx_COUNT; ++i)
+        for (int i = 0; i < 3; ++i)
             Axes[i] = ImPlot3DAxis();
         SetupLocked = false;
         Hovered = Held = false;
@@ -223,6 +226,7 @@ struct ImPlot3DPlot {
     ImPlot3DPoint RangeMin() const;
     ImPlot3DPoint RangeMax() const;
     void SetRange(const ImPlot3DPoint& min, const ImPlot3DPoint& max);
+    void SetAxisLabel(ImPlot3DAxis& axis, const char* label);
 };
 
 struct ImPlot3DContext {

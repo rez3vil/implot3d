@@ -331,10 +331,22 @@ void EndPlot() {
 // [SECTION] Setup
 //-----------------------------------------------------------------------------
 
+void SetupAxis(ImAxis3D idx, const char* label, ImPlot3DAxisFlags flags) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
+                         "SetupAxis() needs to be called after BeginPlot() and before any setup locking functions (e.g. PlotX)!");
+
+    // Get plot and axis
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    ImPlot3DAxis& axis = plot.Axes[idx];
+    axis.Flags = flags;
+    plot.SetAxisLabel(axis, label);
+}
+
 void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
-                         "Setup needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!");
+                         "SetupLegend() needs to be called after BeginPlot() and before any setup locking functions (e.g. PlotX)!");
     IM_ASSERT_USER_ERROR(gp.CurrentItems != nullptr,
                          "SetupLegend() needs to be called within an itemized context!");
     ImPlot3DLegend& legend = gp.CurrentItems->Legend;
@@ -373,12 +385,14 @@ ImPlot3DRay PixelsToPlotRay(double x, double y) {
 ImVec2 GetPlotPos() {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "GetPlotPos() needs to be called between BeginPlot() and EndPlot()!");
+    SetupLock();
     return gp.CurrentPlot->PlotRect.Min;
 }
 
 ImVec2 GetPlotSize() {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "GetPlotSize() needs to be called between BeginPlot() and EndPlot()!");
+    SetupLock();
     return gp.CurrentPlot->PlotRect.GetSize();
 }
 
@@ -386,6 +400,7 @@ ImPlot3DPoint PlotToNDC(const ImPlot3DPoint& point) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PlotToNDC() needs to be called between BeginPlot() and EndPlot()!");
     ImPlot3DPlot& plot = *gp.CurrentPlot;
+    SetupLock();
 
     ImPlot3DPoint ndc_point;
     for (int i = 0; i < 3; i++)
@@ -397,6 +412,7 @@ ImPlot3DPoint NDCToPlot(const ImPlot3DPoint& point) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "NDCToPlot() needs to be called between BeginPlot() and EndPlot()!");
     ImPlot3DPlot& plot = *gp.CurrentPlot;
+    SetupLock();
 
     ImPlot3DPoint plot_point;
     for (int i = 0; i < 3; i++)
@@ -408,6 +424,7 @@ ImVec2 NDCToPixels(const ImPlot3DPoint& point) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "NDCToPixels() needs to be called between BeginPlot() and EndPlot()!");
     ImPlot3DPlot& plot = *gp.CurrentPlot;
+    SetupLock();
 
     float zoom = ImMin(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
     ImVec2 center = plot.PlotRect.GetCenter();
@@ -423,6 +440,7 @@ ImPlot3DRay PixelsToNDCRay(const ImVec2& pix) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PixelsToNDCRay() needs to be called between BeginPlot() and EndPlot()!");
     ImPlot3DPlot& plot = *gp.CurrentPlot;
+    SetupLock();
 
     // Calculate zoom factor and plot center
     float zoom = ImMin(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
@@ -448,6 +466,7 @@ ImPlot3DRay NDCRayToPlotRay(const ImPlot3DRay& ray) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "NDCRayToPlotRay() needs to be called between BeginPlot() and EndPlot()!");
     ImPlot3DPlot& plot = *gp.CurrentPlot;
+    SetupLock();
 
     // Convert NDC origin and a point along the ray to plot coordinates
     ImPlot3DPoint plot_origin = NDCToPlot(ray.Origin);
@@ -580,6 +599,8 @@ void RenderAxes(ImDrawList* draw_list, const ImRect& plot_area, const ImPlot3DQu
     const float target_lines = 7.0f; // Target number of tick lines
     ImVec4 colTicks = GetStyleColorVec4(ImPlot3DCol_PlotBorder);
     for (int c = 0; c < 3; c++) {
+        if (ImHasFlag(GetCurrentPlot()->Axes[c].Flags, ImPlot3DAxisFlags_NoGridLines))
+            continue;
         float range = range_max[c] - range_min[c];
 
         // Estimate initial spacing (powers of 10 for zoom-level adaptation)
@@ -1092,6 +1113,15 @@ void ImPlot3DPlot::SetRange(const ImPlot3DPoint& min, const ImPlot3DPoint& max) 
     Axes[0].Range = ImPlot3DRange(min.x, max.x);
     Axes[1].Range = ImPlot3DRange(min.y, max.y);
     Axes[2].Range = ImPlot3DRange(min.z, max.z);
+}
+
+void ImPlot3DPlot::SetAxisLabel(ImPlot3DAxis& axis, const char* label) {
+    if (label && ImGui::FindRenderedTextEnd(label, nullptr) != label) {
+        axis.LabelOffset = TextBuffer.size();
+        TextBuffer.append(label, label + strlen(label) + 1);
+    } else {
+        axis.LabelOffset = -1;
+    }
 }
 
 //-----------------------------------------------------------------------------
