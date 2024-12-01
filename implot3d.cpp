@@ -793,6 +793,11 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     if (frame_size.y < gp.Style.PlotMinSize.y && size.y < 0.0f)
         frame_size.y = gp.Style.PlotMinSize.y;
 
+    // Create child window to capture scroll
+    ImGui::BeginChild(title_id, frame_size, false, ImGuiWindowFlags_NoScrollbar);
+    window = ImGui::GetCurrentWindow();
+    window->ScrollMax.y = 1.0f;
+
     plot.FrameRect = ImRect(window->DC.CursorPos, window->DC.CursorPos + frame_size);
     ImGui::ItemSize(plot.FrameRect);
     if (!ImGui::ItemAdd(plot.FrameRect, plot.ID, &plot.FrameRect)) {
@@ -839,6 +844,9 @@ void EndPlot() {
 
     // Pop frame rect clipping
     ImGui::PopClipRect();
+
+    // End child window
+    ImGui::EndChild();
 
     // Reset current plot
     gp.CurrentPlot = nullptr;
