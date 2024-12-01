@@ -391,17 +391,80 @@ static const int axis_corners_lookup[8][3][2] = {
     {{4, 5}, {4, 7}, {3, 7}},
 };
 
+int GetMouseOverPlane(const ImPlot3DPlot& plot, const bool* active_faces, const ImVec2* corners_pix) {
+    ImGuiIO& io = ImGui::GetIO();
+    ImVec2 mouse_pos = io.MousePos;
+
+    // Check each active face
+    for (int a = 0; a < 3; a++) {
+        int face_idx = a + 3 * active_faces[a];
+        ImVec2 p0 = corners_pix[faces[face_idx][0]];
+        ImVec2 p1 = corners_pix[faces[face_idx][1]];
+        ImVec2 p2 = corners_pix[faces[face_idx][2]];
+        ImVec2 p3 = corners_pix[faces[face_idx][3]];
+
+        // Check if the mouse is inside the face's quad (using a triangle check)
+        if (ImTriangleContainsPoint(p0, p1, p2, mouse_pos) || ImTriangleContainsPoint(p2, p3, p0, mouse_pos))
+            return a; // Return the plane index: 0 -> YZ, 1 -> XZ, 2 -> XY
+    }
+
+    return -1; // Not over any active plane
+}
+
+int GetMouseOverAxis(const ImPlot3DPlot& plot, const ImVec2* corners_pix, int* edge_out = nullptr) {
+    const float axis_proximity_threshold = 10.0f; // Distance in pixels to consider the mouse "close" to an axis
+
+    ImGuiIO& io = ImGui::GetIO();
+    ImVec2 mouse_pos = io.MousePos;
+    if (edge_out)
+        *edge_out = -1;
+
+    // Check each edge for proximity to the mouse
+    for (int edge = 0; edge < 12; edge++) {
+        ImVec2 p0 = corners_pix[edges[edge][0]];
+        ImVec2 p1 = corners_pix[edges[edge][1]];
+
+        // Check distance to the edge
+        ImVec2 closest_point = ImLineClosestPoint(p0, p1, mouse_pos);
+        float dist = ImLengthSqr(mouse_pos - closest_point);
+        if (dist <= axis_proximity_threshold) {
+            if (edge_out)
+                *edge_out = edge;
+
+            // Determine which axis the edge belongs to
+            if (edge < 4 || (edge >= 8 && edge < 10))
+                return 0; // X-axis
+            else if (edge >= 4 && edge < 8)
+                return 1; // Y-axis
+            else
+                return 2; // Z-axis
+        }
+    }
+
+    return -1; // Not over any axis
+}
+
 void RenderPlotBackground(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImVec2* corners_pix, const bool* active_faces) {
-    const ImU32 col_bg = GetStyleColorU32(ImPlot3DCol_PlotBg);
+    const ImVec4 col_bg = GetStyleColorVec4(ImPlot3DCol_PlotBg);
+    const ImVec4 col_bg_hov = col_bg + ImVec4(0.02, 0.02, 0.02, 0.0);
+    int hovered_plane = GetMouseOverPlane(plot, active_faces, corners_pix);
+    if (GetMouseOverAxis(plot, corners_pix) != -1)
+        hovered_plane = -1;
     for (int a = 0; a < 3; a++) {
         int idx[4]; // Corner indices
         for (int i = 0; i < 4; i++)
             idx[i] = faces[a + 3 * active_faces[a]][i];
-        draw_list->AddQuadFilled(corners_pix[idx[0]], corners_pix[idx[1]], corners_pix[idx[2]], corners_pix[idx[3]], col_bg);
+        const ImU32 col = ImGui::ColorConvertFloat4ToU32((hovered_plane == a) ? col_bg_hov : col_bg);
+        draw_list->AddQuadFilled(corners_pix[idx[0]], corners_pix[idx[1]], corners_pix[idx[2]], corners_pix[idx[3]], col);
     }
 }
 
 void RenderPlotBorder(ImDrawList* draw_list, const ImVec2* corners_pix, const bool* active_faces) {
+    ImGuiIO& io = ImGui::GetIO();
+    ImVec2 mouse_pos = io.MousePos;
+    int hovered_edge = -1;
+    GetMouseOverAxis(*GImPlot3D->CurrentPlot, corners_pix, &hovered_edge);
+
     bool render_edge[12] = {false};
     for (int a = 0; a < 3; a++) {
         int face_idx = a + 3 * active_faces[a];
@@ -413,7 +476,8 @@ void RenderPlotBorder(ImDrawList* draw_list, const ImVec2* corners_pix, const bo
         if (render_edge[i]) {
             int idx0 = edges[i][0];
             int idx1 = edges[i][1];
-            draw_list->AddLine(corners_pix[idx0], corners_pix[idx1], col_bd);
+            float thickness = i == hovered_edge ? 3.0f : 1.0f;
+            draw_list->AddLine(corners_pix[idx0], corners_pix[idx1], col_bd, thickness);
         }
     }
 }
