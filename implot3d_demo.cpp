@@ -12,14 +12,28 @@
 //--------------------------------------------------
 
 // Table of Contents:
+// [SECTION] User Namespace
 // [SECTION] Helpers
 // [SECTION] Plots
 // [SECTION] Custom
 // [SECTION] Demo Window
 // [SECTION] Style Editor
+// [SECTION] User Namespace Implementation
 
 #include "implot3d.h"
 #include "implot3d_internal.h"
+
+//-----------------------------------------------------------------------------
+// [SECTION] User Namespace
+//-----------------------------------------------------------------------------
+
+// Encapsulates examples for customizing ImPlot3D
+namespace MyImPlot3D {
+
+// Example for Custom Styles section
+void StyleSeaborn();
+
+} // namespace MyImPlot3D
 
 namespace ImPlot3D {
 
@@ -229,6 +243,28 @@ void DemoNaNValues() {
 // [SECTION] Custom
 //-----------------------------------------------------------------------------
 
+void DemoCustomStyles() {
+    // ImPlot3D::PushColormap(ImPlot3DColormap_Deep);
+    // normally you wouldn't change the entire style each frame
+    ImPlot3DStyle backup = ImPlot3D::GetStyle();
+    MyImPlot3D::StyleSeaborn();
+    if (ImPlot3D::BeginPlot("Seaborn Style")) {
+        ImPlot3D::SetupAxes("X-axis", "Y-axis", "Z-axis");
+        ImPlot3D::SetupAxesLimits(-0.5f, 9.5f, -0.5f, 0.5f, 0, 10);
+        unsigned int xs[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        unsigned int ys[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        unsigned int lin[10] = {8, 8, 9, 7, 8, 8, 8, 9, 7, 8};
+        unsigned int dot[10] = {7, 6, 6, 7, 8, 5, 6, 5, 8, 7};
+        ImPlot3D::NextColormapColor(); // Skip blue
+        ImPlot3D::PlotLine("Line", xs, ys, lin, 10);
+        ImPlot3D::NextColormapColor(); // Skip green
+        ImPlot3D::PlotScatter("Scatter", xs, ys, dot, 10);
+        ImPlot3D::EndPlot();
+    }
+    ImPlot3D::GetStyle() = backup;
+    // ImPlot3D::PopColormap();
+}
+
 void DemoCustomRendering() {
     if (ImPlot3D::BeginPlot("##CustomRend")) {
         ImPlot3D::SetupAxesLimits(-0.1f, 1.1f, -0.1f, 1.1f, -0.1f, 1.1f);
@@ -335,6 +371,7 @@ void ShowDemoWindow(bool* p_open) {
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Custom")) {
+            DemoHeader("Custom Styles", DemoCustomStyles);
             DemoHeader("Custom Rendering", DemoCustomRendering);
             ImGui::EndTabItem();
         }
@@ -528,3 +565,41 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
 }
 
 } // namespace ImPlot3D
+
+//-----------------------------------------------------------------------------
+// [SECTION] User Namespace Implementation
+//-----------------------------------------------------------------------------
+
+namespace MyImPlot3D {
+
+void StyleSeaborn() {
+
+    ImPlot3DStyle& style = ImPlot3D::GetStyle();
+
+    ImVec4* colors = style.Colors;
+    colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    colors[ImPlot3DCol_PlotBg] = ImVec4(0.92f, 0.92f, 0.95f, 1.00f);
+    colors[ImPlot3DCol_PlotBorder] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    colors[ImPlot3DCol_LegendBg] = ImVec4(0.92f, 0.92f, 0.95f, 1.00f);
+    colors[ImPlot3DCol_LegendBorder] = ImVec4(0.80f, 0.81f, 0.85f, 1.00f);
+    colors[ImPlot3DCol_LegendText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+    colors[ImPlot3DCol_TitleText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+    colors[ImPlot3DCol_InlayText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+    colors[ImPlot3DCol_AxisText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+    colors[ImPlot3DCol_AxisGrid] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+
+    style.LineWeight = 1.5;
+    style.Marker = ImPlot3DMarker_None;
+    style.MarkerSize = 4;
+    style.MarkerWeight = 1;
+    style.FillAlpha = 1.0f;
+    style.PlotPadding = ImVec2(12, 12);
+    style.LabelPadding = ImVec2(5, 5);
+    style.LegendPadding = ImVec2(5, 5);
+    style.PlotMinSize = ImVec2(300, 225);
+}
+
+} // namespace MyImPlot3D
