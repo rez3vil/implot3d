@@ -763,6 +763,33 @@ IMPLOT3D_TMP void PlotLine(const char* label_id, const T* xs, const T* ys, const
 CALL_INSTANTIATE_FOR_NUMERIC_TYPES()
 #undef INSTANTIATE_MACRO
 
+//-----------------------------------------------------------------------------
+// [SECTION] PlotText
+//-----------------------------------------------------------------------------
+
+void PlotText(const char* text, float x, float y, float z, float angle, const ImVec2& pix_offset) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PlotText() needs to be called between BeginPlot() and EndPlot()!");
+    SetupLock();
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+
+    ImPlot3DBox cull_box;
+    if (ImHasFlag(plot.Flags, ImPlot3DFlags_NoClip)) {
+        cull_box.Min = ImPlot3DPoint(-HUGE_VAL, -HUGE_VAL, -HUGE_VAL);
+        cull_box.Max = ImPlot3DPoint(HUGE_VAL, HUGE_VAL, HUGE_VAL);
+    } else {
+        cull_box.Min = plot.RangeMin();
+        cull_box.Max = plot.RangeMax();
+    }
+    if (!cull_box.Contains(ImPlot3DPoint(x, y, z)))
+        return;
+
+    ImVec2 p = PlotToPixels(ImPlot3DPoint(x, y, z));
+    p.x += pix_offset.x;
+    p.y += pix_offset.y;
+    AddTextRotated(GetPlotDrawList(), p, angle, GetStyleColorU32(ImPlot3DCol_InlayText), text);
+}
+
 } // namespace ImPlot3D
 
 #endif // #ifndef IMGUI_DISABLE

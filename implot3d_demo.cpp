@@ -162,8 +162,8 @@ void DemoMarkersAndText() {
 
         // Filled markers
         for (int m = 0; m < ImPlot3DMarker_COUNT; ++m) {
-            xs[1] = xs[0] + ImCos(zs[0] / float(ImPlot3DMarker_COUNT) * 2 * M_PI) * 0.5;
-            ys[1] = ys[0] + ImSin(zs[0] / float(ImPlot3DMarker_COUNT) * 2 * M_PI) * 0.5;
+            xs[1] = xs[0] + ImCos(zs[0] / float(ImPlot3DMarker_COUNT) * 2 * IM_PI) * 0.5;
+            ys[1] = ys[0] + ImSin(zs[0] / float(ImPlot3DMarker_COUNT) * 2 * IM_PI) * 0.5;
 
             ImGui::PushID(m);
             ImPlot3D::SetNextMarkerStyle(m, mk_size, IMPLOT3D_AUTO_COL, mk_weight);
@@ -180,8 +180,8 @@ void DemoMarkersAndText() {
 
         // Open markers
         for (int m = 0; m < ImPlot3DMarker_COUNT; ++m) {
-            xs[1] = xs[0] + ImCos(zs[0] / float(ImPlot3DMarker_COUNT) * 2 * M_PI) * 0.5;
-            ys[1] = ys[0] - ImSin(zs[0] / float(ImPlot3DMarker_COUNT) * 2 * M_PI) * 0.5;
+            xs[1] = xs[0] + ImCos(zs[0] / float(ImPlot3DMarker_COUNT) * 2 * IM_PI) * 0.5;
+            ys[1] = ys[0] - ImSin(zs[0] / float(ImPlot3DMarker_COUNT) * 2 * IM_PI) * 0.5;
 
             ImGui::PushID(m);
             ImPlot3D::SetNextMarkerStyle(m, mk_size, ImVec4(0, 0, 0, 0), mk_weight);
@@ -191,11 +191,11 @@ void DemoMarkersAndText() {
             zs[1]--;
         }
 
-        // ImPlot3D::PlotText("Filled Markers", 2.5f, 6.0f);
-        // ImPlot3D::PlotText("Open Markers", 7.5f, 6.0f);
+        ImPlot3D::PlotText("Filled Markers", 0.0f, 0.0f, 6.0f);
+        ImPlot3D::PlotText("Open Markers", 1.0f, 1.0f, 6.0f);
 
         // ImPlot3D::PushStyleColor(ImPlot3DCol_InlayText, ImVec4(1, 0, 1, 1));
-        // ImPlot3D::PlotText("Vertical Text", 5.0f, 6.0f, ImVec2(0, 0), ImPlot3DTextFlags_Vertical);
+        ImPlot3D::PlotText("Vertical Text", 0.5f, 0.5f, 6.0f, IM_PI / 2, ImVec2(0, 0));
         // ImPlot3D::PopStyleColor();
 
         ImPlot3D::EndPlot();

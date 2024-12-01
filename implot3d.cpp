@@ -94,7 +94,7 @@ void SetCurrentContext(ImPlot3DContext* ctx) { GImPlot3D = ctx; }
 // [SECTION] Text Utils
 //-----------------------------------------------------------------------------
 
-void AddTextRotated(ImDrawList* draw_list, ImVec2 pos, float angle, ImU32 col, const char* text_begin, const char* text_end = nullptr) {
+void AddTextRotated(ImDrawList* draw_list, ImVec2 pos, float angle, ImU32 col, const char* text_begin, const char* text_end) {
     if (!text_end)
         text_end = text_begin + strlen(text_begin);
 
@@ -1229,6 +1229,7 @@ void StyleColorsAuto(ImPlot3DStyle* dst) {
     colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_TitleText] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_InlayText] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_FrameBg] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_PlotBg] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_PlotBorder] = IMPLOT3D_AUTO_COL;
@@ -1247,6 +1248,7 @@ void StyleColorsDark(ImPlot3DStyle* dst) {
     colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_TitleText] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    colors[ImPlot3DCol_InlayText] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     colors[ImPlot3DCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 0.07f);
     colors[ImPlot3DCol_PlotBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.50f);
     colors[ImPlot3DCol_PlotBorder] = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
@@ -1265,6 +1267,7 @@ void StyleColorsLight(ImPlot3DStyle* dst) {
     colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_TitleText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+    colors[ImPlot3DCol_InlayText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     colors[ImPlot3DCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     colors[ImPlot3DCol_PlotBg] = ImVec4(0.42f, 0.57f, 1.00f, 0.13f);
     colors[ImPlot3DCol_PlotBorder] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
@@ -1283,6 +1286,7 @@ void StyleColorsClassic(ImPlot3DStyle* dst) {
     colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_TitleText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+    colors[ImPlot3DCol_InlayText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
     colors[ImPlot3DCol_FrameBg] = ImVec4(0.43f, 0.43f, 0.43f, 0.39f);
     colors[ImPlot3DCol_PlotBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.35f);
     colors[ImPlot3DCol_PlotBorder] = ImVec4(0.50f, 0.50f, 0.50f, 0.50f);
@@ -1506,6 +1510,7 @@ ImVec4 GetAutoColor(ImPlot3DCol idx) {
         case ImPlot3DCol_MarkerOutline: return IMPLOT3D_AUTO_COL; // Plot dependent
         case ImPlot3DCol_MarkerFill: return IMPLOT3D_AUTO_COL;    // Plot dependent
         case ImPlot3DCol_TitleText: return ImGui::GetStyleColorVec4(ImGuiCol_Text);
+        case ImPlot3DCol_InlayText: return ImGui::GetStyleColorVec4(ImGuiCol_Text);
         case ImPlot3DCol_FrameBg: return ImGui::GetStyleColorVec4(ImGuiCol_FrameBg);
         case ImPlot3DCol_PlotBg: return ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
         case ImPlot3DCol_PlotBorder: return ImGui::GetStyleColorVec4(ImGuiCol_Border);
@@ -1524,6 +1529,7 @@ const char* GetStyleColorName(ImPlot3DCol idx) {
         "MarkerOutline",
         "MarkerFill",
         "TitleText",
+        "InlayText",
         "FrameBg",
         "PlotBg",
         "PlotBorder",

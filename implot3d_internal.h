@@ -534,6 +534,9 @@ IMPLOT3D_API ImPlot3DItem* GetItem(const char* label_id);
 // Get the current item
 IMPLOT3D_API ImPlot3DItem* GetCurrentItem();
 
+// TODO move to another place
+IMPLOT3D_API void AddTextRotated(ImDrawList* draw_list, ImVec2 pos, float angle, ImU32 col, const char* text_begin, const char* text_end = nullptr);
+
 //-----------------------------------------------------------------------------
 // [SECTION] Plot Utils
 //-----------------------------------------------------------------------------

@@ -107,6 +107,7 @@ enum ImPlot3DCol_ {
     ImPlot3DCol_MarkerFill,    // Marker fill color
     // Plot colors
     ImPlot3DCol_TitleText,  // Title color
+    ImPlot3DCol_InlayText,  // Color for texts appearing inside of plots
     ImPlot3DCol_FrameBg,    // Frame background color
     ImPlot3DCol_PlotBg,     // Plot area background color
     ImPlot3DCol_PlotBorder, // Plot area border color
@@ -320,6 +321,9 @@ IMPLOT3D_API void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags fla
 IMPLOT3D_TMP void PlotScatter(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DScatterFlags flags = 0, int offset = 0, int stride = sizeof(T));
 
 IMPLOT3D_TMP void PlotLine(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DLineFlags flags = 0, int offset = 0, int stride = sizeof(T));
+
+// Plots a centered text label at point x,y,z. It is possible to set the text angle in radians and offset in pixels
+IMPLOT3D_API void PlotText(const char* text, float x, float y, float z, float angle = 0.0f, const ImVec2& pix_offset = ImVec2(0, 0));
 
 //-----------------------------------------------------------------------------
 // [SECTION] Plot Utils
