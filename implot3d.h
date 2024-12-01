@@ -14,6 +14,7 @@
 // Table of Contents:
 // [SECTION] Macros and Defines
 // [SECTION] Forward declarations and basic types
+// [SECTION] Flags & Enumerations
 // [SECTION] Context
 // [SECTION] Begin/End Plot
 // [SECTION] Setup
@@ -23,7 +24,6 @@
 // [SECTION] Styles
 // [SECTION] Demo
 // [SECTION] Debugging
-// [SECTION] Flags & Enumerations
 // [SECTION] ImPlot3DPoint
 // [SECTION] ImPlot3DRay
 // [SECTION] ImPlot3DPlane
@@ -64,6 +64,7 @@ struct ImPlot3DRange;
 struct ImPlot3DQuat;
 
 // Enums
+typedef int ImPlot3DCond;     // -> ImPlot3DCond_              // Enum: Condition for flags
 typedef int ImPlot3DCol;      // -> ImPlot3DCol_               // Enum: Styling colors
 typedef int ImPlot3DStyleVar; // -> ImPlot3DStyleVar_          // Enum: Style variables
 typedef int ImPlot3DMarker;   // -> ImPlot3DMarker_            // Enum: Marker styles
@@ -78,6 +79,166 @@ typedef int ImPlot3DScatterFlags; // -> ImPlot3DScatterFlags_  // Flags: Scatter
 typedef int ImPlot3DLineFlags;    // -> ImPlot3DLineFlags_     // Flags: Line plot flags
 typedef int ImPlot3DLegendFlags;  // -> ImPlot3DLegendFlags_   // Flags: Legend flags
 typedef int ImPlot3DAxisFlags;    // -> ImPlot3DAxisFlags_     // Flags: Axis flags
+
+//-----------------------------------------------------------------------------
+// [SECTION] Flags & Enumerations
+//-----------------------------------------------------------------------------
+
+// Flags for ImPlot3D::BeginPlot()
+enum ImPlot3DFlags_ {
+    ImPlot3DFlags_None = 0,          // Default
+    ImPlot3DFlags_NoTitle = 1 << 0,  // Hide plot title
+    ImPlot3DFlags_NoLegend = 1 << 1, // Hide plot legend
+    ImPlot3DFlags_NoClip = 1 << 2,   // Disable 3D box clipping
+    ImPlot3DFlags_CanvasOnly = ImPlot3DFlags_NoTitle | ImPlot3DFlags_NoLegend,
+};
+
+// Represents a condition for SetupAxisLimits etc. (same as ImGuiCond, but we only support a subset of those enums)
+enum ImPlot3DCond_ {
+    ImPlot3DCond_None = ImGuiCond_None,     // No condition (always set the variable), same as _Always
+    ImPlot3DCond_Always = ImGuiCond_Always, // No condition (always set the variable)
+    ImPlot3DCond_Once = ImGuiCond_Once,     // Set the variable once per runtime session (only the first call will succeed)
+};
+
+enum ImPlot3DCol_ {
+    // Item colors
+    ImPlot3DCol_Line = 0,      // Line color
+    ImPlot3DCol_MarkerOutline, // Marker outline color
+    ImPlot3DCol_MarkerFill,    // Marker fill color
+    // Plot colors
+    ImPlot3DCol_TitleText,  // Title color
+    ImPlot3DCol_FrameBg,    // Frame background color
+    ImPlot3DCol_PlotBg,     // Plot area background color
+    ImPlot3DCol_PlotBorder, // Plot area border color
+    // Legend colors
+    ImPlot3DCol_LegendBg,     // Legend background color
+    ImPlot3DCol_LegendBorder, // Legend border color
+    ImPlot3DCol_LegendText,   // Legend text color
+    // Axis colors
+    ImPlot3DCol_AxisText, // Axis label and tick lables color
+    ImPlot3DCol_AxisGrid, // Axis grid color
+    ImPlot3DCol_COUNT,
+};
+
+// Plot styling variables
+enum ImPlot3DStyleVar_ {
+    // Item style
+    ImPlot3DStyleVar_LineWeight,   // float, plot item line weight in pixels
+    ImPlot3DStyleVar_Marker,       // int,   marker specification
+    ImPlot3DStyleVar_MarkerSize,   // float, marker size in pixels (roughly the marker's "radius")
+    ImPlot3DStyleVar_MarkerWeight, // float, plot outline weight of markers in pixels
+    ImPlot3DStyleVar_FillAlpha,    // float, alpha modifier applied to all plot item fills
+    // Plot style
+    ImPlot3DStyleVar_PlotDefaultSize, // ImVec2, default size used when ImVec2(0,0) is passed to BeginPlot
+    ImPlot3DStyleVar_PlotMinSize,     // ImVec2, minimum size plot frame can be when shrunk
+    ImPlot3DStyleVar_PlotPadding,     // ImVec2, padding between widget frame and plot area, labels, or outside legends (i.e. main padding)
+    ImPlot3DStyleVar_LabelPadding,    // ImVec2, padding between axes labels, tick labels, and plot edge
+    // Legend style
+    ImPlot3DStyleVar_LegendPadding,      // ImVec2, legend padding from plot edges
+    ImPlot3DStyleVar_LegendInnerPadding, // ImVec2, legend inner padding from legend edges
+    ImPlot3DStyleVar_LegendSpacing,      // ImVec2, spacing between legend entries
+    ImPlot3DStyleVar_COUNT
+};
+
+enum ImPlot3DMarker_ {
+    ImPlot3DMarker_None = -1, // No marker
+    ImPlot3DMarker_Circle,    // Circle marker (default)
+    ImPlot3DMarker_Square,    // Square maker
+    ImPlot3DMarker_Diamond,   // Diamond marker
+    ImPlot3DMarker_Up,        // Upward-pointing triangle marker
+    ImPlot3DMarker_Down,      // Downward-pointing triangle marker
+    ImPlot3DMarker_Left,      // Leftward-pointing triangle marker
+    ImPlot3DMarker_Right,     // Rightward-pointing triangle marker
+    ImPlot3DMarker_Cross,     // Cross marker (not fillable)
+    ImPlot3DMarker_Plus,      // Plus marker (not fillable)
+    ImPlot3DMarker_Asterisk,  // Asterisk marker (not fillable)
+    ImPlot3DMarker_COUNT
+};
+
+// Flags for items
+enum ImPlot3DItemFlags_ {
+    ImPlot3DItemFlags_None = 0,          // Default
+    ImPlot3DItemFlags_NoLegend = 1 << 0, // The item won't have a legend entry displayed
+    ImPlot3DItemFlags_NoFit = 1 << 1,    // The item won't be considered for plot fits
+};
+
+// Flags for PlotScatter
+enum ImPlot3DScatterFlags_ {
+    ImPlot3DScatterFlags_None = 0, // Default
+    ImPlot3DScatterFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
+    ImPlot3DScatterFlags_NoFit = ImPlot3DItemFlags_NoFit,
+};
+
+// Flags for PlotLine
+enum ImPlot3DLineFlags_ {
+    ImPlot3DLineFlags_None = 0, // Default
+    ImPlot3DLineFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
+    ImPlot3DLineFlags_NoFit = ImPlot3DItemFlags_NoFit,
+    ImPlot3DLineFlags_Segments = 1 << 10, // A line segment will be rendered from every two consecutive points
+    ImPlot3DLineFlags_Loop = 1 << 11,     // The last and first point will be connected to form a closed loop
+    ImPlot3DLineFlags_SkipNaN = 1 << 12,  // NaNs values will be skipped instead of rendered as missing data
+};
+
+// Flags for legends
+enum ImPlot3DLegendFlags_ {
+    ImPlot3DLegendFlags_None = 0,                 // Default
+    ImPlot3DLegendFlags_NoButtons = 1 << 0,       // Legend icons will not function as hide/show buttons
+    ImPlot3DLegendFlags_NoHighlightItem = 1 << 1, // Plot items will not be highlighted when their legend entry is hovered
+    ImPlot3DLegendFlags_Horizontal = 1 << 2,      // Legend entries will be displayed horizontally
+};
+
+// Used to position legend on a plot
+enum ImPlot3DLocation_ {
+    ImPlot3DLocation_Center = 0,                                                 // Center-center
+    ImPlot3DLocation_North = 1 << 0,                                             // Top-center
+    ImPlot3DLocation_South = 1 << 1,                                             // Bottom-center
+    ImPlot3DLocation_West = 1 << 2,                                              // Center-left
+    ImPlot3DLocation_East = 1 << 3,                                              // Center-right
+    ImPlot3DLocation_NorthWest = ImPlot3DLocation_North | ImPlot3DLocation_West, // Top-left
+    ImPlot3DLocation_NorthEast = ImPlot3DLocation_North | ImPlot3DLocation_East, // Top-right
+    ImPlot3DLocation_SouthWest = ImPlot3DLocation_South | ImPlot3DLocation_West, // Bottom-left
+    ImPlot3DLocation_SouthEast = ImPlot3DLocation_South | ImPlot3DLocation_East  // Bottom-right
+};
+
+// Flags for axis
+enum ImPlot3DAxisFlags_ {
+    ImPlot3DAxisFlags_None = 0,              // Default
+    ImPlot3DAxisFlags_NoLabel = 1 << 0,      // No axis label will be displayed
+    ImPlot3DAxisFlags_NoTickLabels = 1 << 1, // No tick labels will be displayed
+    ImPlot3DAxisFlags_NoGridLines = 1 << 2,  // No grid lines will be displayed
+    ImPlot3DAxisFlags_LockMin = 1 << 3,      // The axis minimum value will be locked when panning/zooming
+    ImPlot3DAxisFlags_LockMax = 1 << 4,      // The axis maximum value will be locked when panning/zooming
+    ImPlot3DAxisFlags_Lock = ImPlot3DAxisFlags_LockMin | ImPlot3DAxisFlags_LockMax,
+    ImPlot3DAxisFlags_NoDecorations = ImPlot3DAxisFlags_NoLabel | ImPlot3DAxisFlags_NoGridLines | ImPlot3DAxisFlags_NoTickLabels,
+};
+
+// Axis indices
+enum ImAxis3D_ {
+    ImAxis3D_X = 0,
+    ImAxis3D_Y,
+    ImAxis3D_Z,
+    ImAxis3D_COUNT,
+};
+
+// Colormaps
+enum ImPlot3DColormap_ {
+    ImPlot3DColormap_Deep = 0,      // Same as seaborn "deep"
+    ImPlot3DColormap_Dark = 1,      // Same as matplotlib "Set1"
+    ImPlot3DColormap_Pastel = 2,    // Same as matplotlib "Pastel1"
+    ImPlot3DColormap_Paired = 3,    // Same as matplotlib "Paired"
+    ImPlot3DColormap_Viridis = 4,   // Same as matplotlib "viridis"
+    ImPlot3DColormap_Plasma = 5,    // Same as matplotlib "plasma"
+    ImPlot3DColormap_Hot = 6,       // Same as matplotlib/MATLAB "hot"
+    ImPlot3DColormap_Cool = 7,      // Same as matplotlib/MATLAB "cool"
+    ImPlot3DColormap_Pink = 8,      // Same as matplotlib/MATLAB "pink"
+    ImPlot3DColormap_Jet = 9,       // Same as matplotlib/MATLAB "jet"
+    ImPlot3DColormap_Twilight = 10, // Same as matplotlib "twilight"
+    ImPlot3DColormap_RdBu = 11,     // Same as matplotlib "RdBu"
+    ImPlot3DColormap_BrBG = 12,     // Same as matplotlib "BrGB"
+    ImPlot3DColormap_PiYG = 13,     // Same as matplotlib "PiYG"
+    ImPlot3DColormap_Spectral = 14, // Same as matplotlib "Spectral"
+    ImPlot3DColormap_Greys = 15,    // White/black
+};
 
 namespace ImPlot3D {
 
@@ -141,6 +302,8 @@ IMPLOT3D_API void EndPlot(); // Only call if BeginPlot() returns true!
 
 // Enables an axis or sets the label and/or flags for an existing axis. Leave #label = nullptr for no label
 IMPLOT3D_API void SetupAxis(ImAxis3D axis, const char* label = nullptr, ImPlot3DAxisFlags flags = 0);
+
+IMPLOT3D_API void SetupAxisLimits(ImAxis3D axis, double v_min, double v_max, ImPlot3DCond cond = ImPlot3DCond_Once);
 
 // Sets the label and/or flags for primary X/Y/Z axes (shorthand for three calls to SetupAxis)
 IMPLOT3D_API void SetupAxes(const char* x_label, const char* y_label, const char* z_label, ImPlot3DAxisFlags x_flags = 0, ImPlot3DAxisFlags y_flags = 0, ImPlot3DAxisFlags z_flags = 0);
@@ -258,155 +421,6 @@ IMPLOT3D_API void ShowDemoWindow(bool* p_open = nullptr);
 IMPLOT3D_API void ShowStyleEditor(ImPlot3DStyle* ref = nullptr);
 
 } // namespace ImPlot3D
-
-//-----------------------------------------------------------------------------
-// [SECTION] Flags & Enumerations
-//-----------------------------------------------------------------------------
-
-// Flags for ImPlot3D::BeginPlot()
-enum ImPlot3DFlags_ {
-    ImPlot3DFlags_None = 0,          // Default
-    ImPlot3DFlags_NoTitle = 1 << 0,  // Hide plot title
-    ImPlot3DFlags_NoLegend = 1 << 1, // Hide plot legend
-    ImPlot3DFlags_NoClip = 1 << 2,   // Disable 3D box clipping
-    ImPlot3DFlags_CanvasOnly = ImPlot3DFlags_NoTitle | ImPlot3DFlags_NoLegend,
-};
-
-enum ImPlot3DCol_ {
-    // Item colors
-    ImPlot3DCol_Line = 0,      // Line color
-    ImPlot3DCol_MarkerOutline, // Marker outline color
-    ImPlot3DCol_MarkerFill,    // Marker fill color
-    // Plot colors
-    ImPlot3DCol_TitleText,  // Title color
-    ImPlot3DCol_FrameBg,    // Frame background color
-    ImPlot3DCol_PlotBg,     // Plot area background color
-    ImPlot3DCol_PlotBorder, // Plot area border color
-    // Legend colors
-    ImPlot3DCol_LegendBg,     // Legend background color
-    ImPlot3DCol_LegendBorder, // Legend border color
-    ImPlot3DCol_LegendText,   // Legend text color
-    // Axis colors
-    ImPlot3DCol_AxisText, // Axis label and tick lables color
-    ImPlot3DCol_AxisGrid, // Axis grid color
-    ImPlot3DCol_COUNT,
-};
-
-// Plot styling variables
-enum ImPlot3DStyleVar_ {
-    // Item style
-    ImPlot3DStyleVar_LineWeight,   // float, plot item line weight in pixels
-    ImPlot3DStyleVar_Marker,       // int,   marker specification
-    ImPlot3DStyleVar_MarkerSize,   // float, marker size in pixels (roughly the marker's "radius")
-    ImPlot3DStyleVar_MarkerWeight, // float, plot outline weight of markers in pixels
-    ImPlot3DStyleVar_FillAlpha,    // float, alpha modifier applied to all plot item fills
-    // Plot style
-    ImPlot3DStyleVar_PlotDefaultSize, // ImVec2, default size used when ImVec2(0,0) is passed to BeginPlot
-    ImPlot3DStyleVar_PlotMinSize,     // ImVec2, minimum size plot frame can be when shrunk
-    ImPlot3DStyleVar_PlotPadding,     // ImVec2, padding between widget frame and plot area, labels, or outside legends (i.e. main padding)
-    ImPlot3DStyleVar_LabelPadding,    // ImVec2, padding between axes labels, tick labels, and plot edge
-    // Legend style
-    ImPlot3DStyleVar_LegendPadding,      // ImVec2, legend padding from plot edges
-    ImPlot3DStyleVar_LegendInnerPadding, // ImVec2, legend inner padding from legend edges
-    ImPlot3DStyleVar_LegendSpacing,      // ImVec2, spacing between legend entries
-    ImPlot3DStyleVar_COUNT
-};
-
-enum ImPlot3DMarker_ {
-    ImPlot3DMarker_None = -1, // No marker
-    ImPlot3DMarker_Circle,    // Circle marker (default)
-    ImPlot3DMarker_Square,    // Square maker
-    ImPlot3DMarker_Diamond,   // Diamond marker
-    ImPlot3DMarker_Up,        // Upward-pointing triangle marker
-    ImPlot3DMarker_Down,      // Downward-pointing triangle marker
-    ImPlot3DMarker_Left,      // Leftward-pointing triangle marker
-    ImPlot3DMarker_Right,     // Rightward-pointing triangle marker
-    ImPlot3DMarker_Cross,     // Cross marker (not fillable)
-    ImPlot3DMarker_Plus,      // Plus marker (not fillable)
-    ImPlot3DMarker_Asterisk,  // Asterisk marker (not fillable)
-    ImPlot3DMarker_COUNT
-};
-
-// Flags for items
-enum ImPlot3DItemFlags_ {
-    ImPlot3DItemFlags_None = 0,          // Default
-    ImPlot3DItemFlags_NoLegend = 1 << 0, // The item won't have a legend entry displayed
-    ImPlot3DItemFlags_NoFit = 1 << 1,    // The item won't be considered for plot fits
-};
-
-// Flags for PlotScatter
-enum ImPlot3DScatterFlags_ {
-    ImPlot3DScatterFlags_None = 0, // Default
-    ImPlot3DScatterFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
-    ImPlot3DScatterFlags_NoFit = ImPlot3DItemFlags_NoFit,
-};
-
-// Flags for PlotLine
-enum ImPlot3DLineFlags_ {
-    ImPlot3DLineFlags_None = 0, // Default
-    ImPlot3DLineFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
-    ImPlot3DLineFlags_NoFit = ImPlot3DItemFlags_NoFit,
-    ImPlot3DLineFlags_Segments = 1 << 10, // A line segment will be rendered from every two consecutive points
-    ImPlot3DLineFlags_Loop = 1 << 11,     // The last and first point will be connected to form a closed loop
-    ImPlot3DLineFlags_SkipNaN = 1 << 12,  // NaNs values will be skipped instead of rendered as missing data
-};
-
-// Flags for legends
-enum ImPlot3DLegendFlags_ {
-    ImPlot3DLegendFlags_None = 0,                 // Default
-    ImPlot3DLegendFlags_NoButtons = 1 << 0,       // Legend icons will not function as hide/show buttons
-    ImPlot3DLegendFlags_NoHighlightItem = 1 << 1, // Plot items will not be highlighted when their legend entry is hovered
-    ImPlot3DLegendFlags_Horizontal = 1 << 2,      // Legend entries will be displayed horizontally
-};
-
-// Used to position legend on a plot
-enum ImPlot3DLocation_ {
-    ImPlot3DLocation_Center = 0,                                                 // Center-center
-    ImPlot3DLocation_North = 1 << 0,                                             // Top-center
-    ImPlot3DLocation_South = 1 << 1,                                             // Bottom-center
-    ImPlot3DLocation_West = 1 << 2,                                              // Center-left
-    ImPlot3DLocation_East = 1 << 3,                                              // Center-right
-    ImPlot3DLocation_NorthWest = ImPlot3DLocation_North | ImPlot3DLocation_West, // Top-left
-    ImPlot3DLocation_NorthEast = ImPlot3DLocation_North | ImPlot3DLocation_East, // Top-right
-    ImPlot3DLocation_SouthWest = ImPlot3DLocation_South | ImPlot3DLocation_West, // Bottom-left
-    ImPlot3DLocation_SouthEast = ImPlot3DLocation_South | ImPlot3DLocation_East  // Bottom-right
-};
-
-// Flags for axis
-enum ImPlot3DAxisFlags_ {
-    ImPlot3DAxisFlags_None = 0,              // Default
-    ImPlot3DAxisFlags_NoLabel = 1 << 0,      // No axis label will be displayed
-    ImPlot3DAxisFlags_NoTickLabels = 1 << 1, // No tick labels will be displayed
-    ImPlot3DAxisFlags_NoGridLines = 1 << 2,  // No grid lines will be displayed
-};
-
-// Axis indices
-enum ImAxis3D_ {
-    ImAxis3D_X = 0,
-    ImAxis3D_Y,
-    ImAxis3D_Z,
-    ImAxis3D_COUNT,
-};
-
-// Colormaps
-enum ImPlot3DColormap_ {
-    ImPlot3DColormap_Deep = 0,      // Same as seaborn "deep"
-    ImPlot3DColormap_Dark = 1,      // Same as matplotlib "Set1"
-    ImPlot3DColormap_Pastel = 2,    // Same as matplotlib "Pastel1"
-    ImPlot3DColormap_Paired = 3,    // Same as matplotlib "Paired"
-    ImPlot3DColormap_Viridis = 4,   // Same as matplotlib "viridis"
-    ImPlot3DColormap_Plasma = 5,    // Same as matplotlib "plasma"
-    ImPlot3DColormap_Hot = 6,       // Same as matplotlib/MATLAB "hot"
-    ImPlot3DColormap_Cool = 7,      // Same as matplotlib/MATLAB "cool"
-    ImPlot3DColormap_Pink = 8,      // Same as matplotlib/MATLAB "pink"
-    ImPlot3DColormap_Jet = 9,       // Same as matplotlib/MATLAB "jet"
-    ImPlot3DColormap_Twilight = 10, // Same as matplotlib "twilight"
-    ImPlot3DColormap_RdBu = 11,     // Same as matplotlib "RdBu"
-    ImPlot3DColormap_BrBG = 12,     // Same as matplotlib "BrGB"
-    ImPlot3DColormap_PiYG = 13,     // Same as matplotlib "PiYG"
-    ImPlot3DColormap_Spectral = 14, // Same as matplotlib "Spectral"
-    ImPlot3DColormap_Greys = 15,    // White/black
-};
 
 //-----------------------------------------------------------------------------
 // [SECTION] ImPlot3DPoint

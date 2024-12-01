@@ -768,6 +768,7 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     // Populate plot ID/flags
     plot.ID = ID;
     plot.Flags = flags;
+    plot.JustCreated = just_created;
     if (just_created) {
         plot.Rotation = init_rotation;
         for (int i = 0; i < 3; i++)
@@ -856,6 +857,18 @@ void SetupAxis(ImAxis3D idx, const char* label, ImPlot3DAxisFlags flags) {
     plot.SetAxisLabel(axis, label);
 }
 
+void SetupAxisLimits(ImAxis3D idx, double min_lim, double max_lim, ImPlot3DCond cond) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
+                         "SetupAxisLimits() needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!"); // get plot and axis
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    ImPlot3DAxis& axis = plot.Axes[idx];
+    if (plot.JustCreated || cond == ImPlot3DCond_Always) {
+        axis.SetRange(min_lim, max_lim);
+        axis.RangeCond = cond;
+    }
+}
+
 void SetupAxes(const char* x_label, const char* y_label, const char* z_label, ImPlot3DAxisFlags x_flags, ImPlot3DAxisFlags y_flags, ImPlot3DAxisFlags z_flags) {
     SetupAxis(ImAxis3D_X, x_label, x_flags);
     SetupAxis(ImAxis3D_Y, y_label, y_flags);
@@ -913,6 +926,18 @@ ImVec2 GetPlotSize() {
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "GetPlotSize() needs to be called between BeginPlot() and EndPlot()!");
     SetupLock();
     return gp.CurrentPlot->PlotRect.GetSize();
+}
+
+ImVec2 GetFramePos() {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "GetFramePos() needs to be called between BeginPlot() and EndPlot()!");
+    return gp.CurrentPlot->FrameRect.Min;
+}
+
+ImVec2 GetFrameSize() {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "GetFrameSize() needs to be called between BeginPlot() and EndPlot()!");
+    return gp.CurrentPlot->FrameRect.GetSize();
 }
 
 ImPlot3DPoint PlotToNDC(const ImPlot3DPoint& point) {
@@ -1757,14 +1782,16 @@ void ImPlot3DAxis::ExtendFit(float value) {
 }
 
 void ImPlot3DAxis::ApplyFit() {
-    Range.Min = FitExtents.Min;
-    Range.Max = FitExtents.Max;
-    FitExtents.Min = HUGE_VAL;
-    FitExtents.Max = -HUGE_VAL;
+    if (!IsLockedMin() && !ImNanOrInf(FitExtents.Min))
+        Range.Min = FitExtents.Min;
+    if (!IsLockedMax() && !ImNanOrInf(FitExtents.Max))
+        Range.Max = FitExtents.Max;
     if (ImAlmostEqual(Range.Min, Range.Max)) {
         Range.Max += 0.5;
         Range.Min -= 0.5;
     }
+    FitExtents.Min = HUGE_VAL;
+    FitExtents.Max = -HUGE_VAL;
 }
 
 float ImPlot3DAxis::PlotToNDC(float value) const {
@@ -1802,9 +1829,9 @@ ImPlot3DPoint ImPlot3DPlot::RangeCenter() const {
 }
 
 void ImPlot3DPlot::SetRange(const ImPlot3DPoint& min, const ImPlot3DPoint& max) {
-    Axes[0].Range = ImPlot3DRange(min.x, max.x);
-    Axes[1].Range = ImPlot3DRange(min.y, max.y);
-    Axes[2].Range = ImPlot3DRange(min.z, max.z);
+    Axes[0].SetRange(min.x, max.x);
+    Axes[1].SetRange(min.y, max.y);
+    Axes[2].SetRange(min.z, max.z);
 }
 
 void ImPlot3DPlot::SetAxisLabel(ImPlot3DAxis& axis, const char* label) {

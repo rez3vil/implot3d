@@ -384,6 +384,7 @@ struct ImPlot3DTicker {
 struct ImPlot3DAxis {
     ImPlot3DAxisFlags Flags;
     ImPlot3DRange Range;
+    ImPlot3DCond RangeCond;
     int LabelOffset;
     // Ticks
     ImPlot3DTicker Ticker;
@@ -397,8 +398,11 @@ struct ImPlot3DAxis {
     // Constructor
     ImPlot3DAxis() {
         Flags = ImPlot3DAxisFlags_None;
+        // Range
         Range.Min = 0.0f;
         Range.Max = 1.0f;
+        RangeCond = ImPlot3DCond_None;
+        // Label
         LabelOffset = -1;
         // Ticks
         Formatter = nullptr;
@@ -409,6 +413,16 @@ struct ImPlot3DAxis {
         FitExtents.Min = HUGE_VAL;
         FitExtents.Max = -HUGE_VAL;
     }
+
+    inline void SetRange(double v1, double v2) {
+        Range.Min = ImMin(v1, v2);
+        Range.Max = ImMax(v1, v2);
+    }
+
+    inline bool IsRangeLocked() const { return RangeCond == ImPlot3DCond_Always; }
+    inline bool IsLockedMin() const { return IsRangeLocked() || ImHasFlag(Flags, ImPlot3DAxisFlags_LockMin); }
+    inline bool IsLockedMax() const { return IsRangeLocked() || ImHasFlag(Flags, ImPlot3DAxisFlags_LockMax); }
+    inline bool IsLocked() const { return IsLockedMin() && IsLockedMax(); }
 
     bool HasLabel() const;
     void ExtendFit(float value);
@@ -422,6 +436,7 @@ struct ImPlot3DPlot {
     ImGuiID ID;
     ImPlot3DFlags Flags;
     ImGuiTextBuffer TextBuffer;
+    bool JustCreated;
     // Bounding rectangles
     ImRect FrameRect;  // Outermost bounding rectangle that encapsulates whole the plot/title/padding/etc
     ImRect CanvasRect; // Frame rectangle reduced by padding
@@ -441,6 +456,7 @@ struct ImPlot3DPlot {
 
     ImPlot3DPlot() {
         Flags = ImPlot3DFlags_None;
+        JustCreated = true;
         Rotation = ImPlot3DQuat(0.0f, 0.0f, 0.0f, 1.0f);
         for (int i = 0; i < 3; i++)
             Axes[i] = ImPlot3DAxis();
@@ -524,6 +540,9 @@ IMPLOT3D_API ImPlot3DItem* GetCurrentItem();
 
 // Gets the current plot from the current ImPlot3DContext
 IMPLOT3D_API ImPlot3DPlot* GetCurrentPlot();
+
+IMPLOT3D_API ImVec2 GetFramePos();  // Get the current frame position (top-left) in pixels
+IMPLOT3D_API ImVec2 GetFrameSize(); // Get the current frame size in pixels
 
 // Convert a position in the current plot's coordinate system to the current plot's normalized device coordinate system (NDC)
 // When the cube aspect ratio is [1,1,1], the NDC varies from [-0.5, 0.5] in each axis

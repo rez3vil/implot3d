@@ -116,24 +116,30 @@ void DemoScatterPlots() {
 void DemoRealtimePlots() {
     ImGui::BulletText("Move your mouse to change the data!");
     static ScrollingBuffer sdata1, sdata2, sdata3;
-
-    // Pool mouse data every 10 ms
+    static ImPlot3DAxisFlags flags = ImPlot3DAxisFlags_NoTickLabels;
     static float t = 0.0f;
     static float last_t = -1.0f;
-    t += ImGui::GetIO().DeltaTime;
-    if (t - last_t > 0.01f) {
-        last_t = t;
-        ImVec2 mouse = ImGui::GetMousePos();
-        sdata1.AddPoint(t);
-        sdata2.AddPoint(ImClamp(mouse.x, 0.0f, 1e4f));
-        sdata3.AddPoint(ImClamp(mouse.y, 0.0f, 1e4f));
-    }
-
-    static ImPlot3DAxisFlags flags = ImPlot3DAxisFlags_NoTickLabels;
 
     if (ImPlot3D::BeginPlot("Scrolling Plot", ImVec2(-1, 400))) {
+        // Pool mouse data every 10 ms
+        t += ImGui::GetIO().DeltaTime;
+        if (t - last_t > 0.01f) {
+            last_t = t;
+            ImVec2 mouse = ImGui::GetMousePos();
+            if (ImAbs(mouse.x) < 1e4f && ImAbs(mouse.y) < 1e4f) {
+                ImVec2 plot_center = ImPlot3D::GetFramePos();
+                plot_center.x += ImPlot3D::GetFrameSize().x / 2;
+                plot_center.y += ImPlot3D::GetFrameSize().y / 2;
+                sdata1.AddPoint(t);
+                sdata2.AddPoint(mouse.x - plot_center.x);
+                sdata3.AddPoint(mouse.y - plot_center.y);
+            }
+        }
+
         ImPlot3D::SetupAxes("Time", "Mouse X", "Mouse Y", flags, flags, flags);
-        // ImPlot3D::SetupAxisLimits(ImAxis_X1, t - history, t, ImGuiCond_Always);
+        ImPlot3D::SetupAxisLimits(ImAxis3D_X, t - 10.0f, t, ImPlot3DCond_Always);
+        ImPlot3D::SetupAxisLimits(ImAxis3D_Y, -400, 400, ImPlot3DCond_Once);
+        ImPlot3D::SetupAxisLimits(ImAxis3D_Z, -400, 400, ImPlot3DCond_Once);
         ImPlot3D::PlotLine("Mouse", &sdata1.Data[0], &sdata2.Data[0], &sdata3.Data[0], sdata1.Data.size(), 0, sdata1.Offset, sizeof(float));
         ImPlot3D::EndPlot();
     }
