@@ -824,7 +824,6 @@ void EndPlot() {
     // Handle data fitting
     if (plot.FitThisFrame) {
         plot.FitThisFrame = false;
-        plot.Rotation = init_rotation;
         for (int i = 0; i < 3; i++) {
             if (plot.Axes[i].FitThisFrame) {
                 plot.Axes[i].FitThisFrame = false;
@@ -1074,8 +1073,8 @@ void HandleInput(ImPlot3DPlot& plot) {
     ImGui::SetItemAllowOverlap(); // Handled by ButtonBehavior()
 #endif
 
-    // Handle double click
-    if (plot_clicked && ImGui::IsMouseDoubleClicked(0)) {
+    // Handle translation/zoom fit with double click
+    if (plot_clicked && ImGui::IsMouseDoubleClicked(0) || ImGui::IsMouseDoubleClicked(2)) {
         plot.FitThisFrame = true;
         for (int i = 0; i < 3; i++)
             plot.Axes[i].FitThisFrame = true;
@@ -1098,6 +1097,10 @@ void HandleInput(ImPlot3DPlot& plot) {
         // Adjust plot range to translate the plot
         plot.SetRange(plot.RangeMin() - delta_plot, plot.RangeMax() - delta_plot);
     }
+
+    // Handle reset rotation with left mouse double click
+    if (plot.Held && ImGui::IsMouseDoubleClicked(1))
+        plot.Rotation = init_rotation;
 
     // Handle rotation with left mouse dragging
     if (plot.Held && ImGui::IsMouseDown(1)) {
