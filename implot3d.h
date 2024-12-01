@@ -579,6 +579,9 @@ struct ImPlot3DQuat {
 
     ImPlot3DQuat(float _angle, const ImPlot3DPoint& _axis);
 
+    // Set quaternion from two vectors
+    static ImPlot3DQuat FromTwoVectors(const ImPlot3DPoint& v0, const ImPlot3DPoint& v1);
+
     // Get quaternion length
     float Length() const;
 

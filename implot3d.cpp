@@ -371,8 +371,8 @@ static const int face_edges[6][4] = {
     {4, 5, 6, 7},   // Z-max face
 };
 
-// Lookup table for axis_corners based on active_faces
-static const int axis_corners_lookup[8][3][2] = {
+// Lookup table for axis_corners based on active_faces (3D plot)
+static const int axis_corners_lookup_3d[8][3][2] = {
     // Index 0: active_faces = {0, 0, 0}
     {{3, 2}, {1, 2}, {1, 5}},
     // Index 1: active_faces = {0, 0, 1}
@@ -458,7 +458,7 @@ int GetMouseOverAxis(const ImPlot3DPlot& plot, const bool* active_faces, const I
 
 void RenderPlotBackground(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImVec2* corners_pix, const bool* active_faces) {
     const ImVec4 col_bg = GetStyleColorVec4(ImPlot3DCol_PlotBg);
-    const ImVec4 col_bg_hov = col_bg + ImVec4(0.02, 0.02, 0.02, 0.0);
+    const ImVec4 col_bg_hov = col_bg + ImVec4(0.03, 0.03, 0.03, 0.0);
     int hovered_plane = GetMouseOverPlane(plot, active_faces, corners_pix);
     if (GetMouseOverAxis(plot, active_faces, corners_pix) != -1)
         hovered_plane = -1;
@@ -579,6 +579,10 @@ void RenderTickLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImP
         int idx0 = axis_corners[a][0];
         int idx1 = axis_corners[a][1];
 
+        // If normal to the 2D plot, ignore the ticks
+        if (idx0 == idx1)
+            continue;
+
         // Start and end points of the axis in plot space
         ImPlot3DPoint axis_start = corners[idx0];
         ImPlot3DPoint axis_end = corners[idx1];
@@ -666,6 +670,10 @@ void RenderAxisLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImP
         int idx0 = axis_corners[a][0];
         int idx1 = axis_corners[a][1];
 
+        // If normal to the 2D plot, ignore axis label
+        if (idx0 == idx1)
+            continue;
+
         // Position at the end of the axis
         ImPlot3DPoint label_pos = (corners[idx0] + corners[idx1]) * 0.5f;
         // Add offset
@@ -690,16 +698,30 @@ void RenderAxisLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImP
 }
 
 // Function to compute active faces based on the rotation
-void ComputeActiveFaces(bool* active_faces, const ImPlot3DQuat& rotation) {
+void ComputeActiveFaces(bool* active_faces, const ImPlot3DQuat& rotation, bool* is_2d = nullptr) {
+    if (is_2d)
+        *is_2d = false;
+
     ImPlot3DPoint rot_face_n[3] = {
         rotation * ImPlot3DPoint(1.0f, 0.0f, 0.0f),
         rotation * ImPlot3DPoint(0.0f, 1.0f, 0.0f),
         rotation * ImPlot3DPoint(0.0f, 0.0f, 1.0f),
     };
 
-    active_faces[0] = rot_face_n[0].z < 0;
-    active_faces[1] = rot_face_n[1].z < 0;
-    active_faces[2] = rot_face_n[2].z < 0;
+    int num_aligned = 0;
+    for (int i = 0; i < 3; ++i) {
+        // Determine the active face based on the Z component
+        if (fabs(rot_face_n[i].z) < 1e-5f) {
+            // If aligned with the plane, choose the min face for bottom/left
+            active_faces[i] = rot_face_n[i].x + rot_face_n[i].y < 0.0f;
+            num_aligned++;
+        } else {
+            // Otherwise, determine based on the Z component
+            active_faces[i] = rot_face_n[i].z < 0.0f;
+        }
+    }
+    if (is_2d && num_aligned >= 2)
+        *is_2d = true;
 }
 
 // Function to compute the box corners in plot space
@@ -731,7 +753,8 @@ void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
 
     // Compute active faces
     bool active_faces[3];
-    ComputeActiveFaces(active_faces, rotation);
+    bool is_2d = false;
+    ComputeActiveFaces(active_faces, rotation, &is_2d);
 
     // Compute box corners in plot space
     ImPlot3DPoint corners[8];
@@ -743,10 +766,18 @@ void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
 
     // Compute axes start and end corners (given current rotation)
     int axis_corners[3][2];
-    int index = (active_faces[0] << 2) | (active_faces[1] << 1) | (active_faces[2]);
-    for (int a = 0; a < 3; a++) {
-        axis_corners[a][0] = axis_corners_lookup[index][a][0];
-        axis_corners[a][1] = axis_corners_lookup[index][a][1];
+    if (is_2d) {
+        // TODO
+        for (int a = 0; a < 3; a++) {
+            axis_corners[a][0] = -1;
+            axis_corners[a][1] = -1;
+        }
+    } else {
+        int index = (active_faces[0] << 2) | (active_faces[1] << 1) | (active_faces[2]);
+        for (int a = 0; a < 3; a++) {
+            axis_corners[a][0] = axis_corners_lookup_3d[index][a][0];
+            axis_corners[a][1] = axis_corners_lookup_3d[index][a][1];
+        }
     }
 
     // Render components
@@ -1180,8 +1211,10 @@ void HandleInput(ImPlot3DPlot& plot) {
     if (hovered_axis != -1)
         hovered_plane = -1;
 
+    // TODO transform_axis should not change while the user is performing a transformation
+
     // Check which axes should be transformed (fit/zoom/translate)
-    bool transform_axis[3] = {false, false, false};
+    static bool transform_axis[3] = {false, false, false};
     if (hovered_axis != -1) {
         transform_axis[hovered_axis] = true;
     } else if (hovered_plane != -1) {
@@ -1203,7 +1236,6 @@ void HandleInput(ImPlot3DPlot& plot) {
     // Handle translation with right mouse button
     if (plot.Held && ImGui::IsMouseDown(0)) {
         ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
-
         // Compute delta_pixels in 3D (invert y-axis)
         ImPlot3DPoint delta_pixels(delta.x, -delta.y, 0.0f);
 
@@ -1215,12 +1247,63 @@ void HandleInput(ImPlot3DPlot& plot) {
         ImPlot3DPoint delta_plot = delta_NDC * (plot.RangeMax() - plot.RangeMin());
 
         // Adjust plot range to translate the plot
-        plot.SetRange(plot.RangeMin() - delta_plot, plot.RangeMax() - delta_plot);
+        for (int i = 0; i < 3; i++) {
+            if (transform_axis[i])
+                plot.Axes[i].SetRange(plot.Axes[i].Range.Min - delta_plot[i], plot.Axes[i].Range.Max - delta_plot[i]);
+        }
     }
 
     // Handle reset rotation with left mouse double click
-    if (plot.Held && ImGui::IsMouseDoubleClicked(1))
-        plot.Rotation = init_rotation;
+    if (plot.Held && ImGui::IsMouseDoubleClicked(1)) {
+        if (hovered_plane == -1) {
+            plot.Rotation = init_rotation;
+        } else {
+            // Compute plane normal
+            ImPlot3DPoint axis_normal = ImPlot3DPoint(0.0f, 0.0f, 0.0f);
+            axis_normal[hovered_plane] = active_faces[hovered_plane] ? -1.0f : 1.0f;
+
+            // Compute rotation to align the plane normal with the z-axis
+            ImPlot3DQuat align_normal = ImPlot3DQuat::FromTwoVectors(plot.Rotation * axis_normal, ImPlot3DPoint(0.0f, 0.0f, 1.0f));
+            plot.Rotation = align_normal * plot.Rotation;
+
+            if (hovered_plane != 2) {
+                // Compute rotation to point z-axis up
+                ImPlot3DQuat align_up = ImPlot3DQuat::FromTwoVectors(plot.Rotation * ImPlot3DPoint(0.0f, 0.0f, 1.0f), ImPlot3DPoint(0.0f, 1.0f, 0.0f));
+                plot.Rotation = align_up * plot.Rotation;
+            } else {
+                // Find the axis most aligned with the up direction
+                ImPlot3DPoint up(0.0f, 1.0f, 0.0f);
+                ImPlot3DPoint x_axis = plot.Rotation * ImPlot3DPoint(1.0f, 0.0f, 0.0f);
+                ImPlot3DPoint y_axis = plot.Rotation * ImPlot3DPoint(0.0f, 1.0f, 0.0f);
+                ImPlot3DPoint neg_x_axis = plot.Rotation * ImPlot3DPoint(-1.0f, 0.0f, 0.0f);
+                ImPlot3DPoint neg_y_axis = plot.Rotation * ImPlot3DPoint(0.0f, -1.0f, 0.0f);
+
+                struct AxisAlignment {
+                    ImPlot3DPoint axis;
+                    float dot;
+                };
+
+                AxisAlignment candidates[] = {
+                    {x_axis, x_axis.Dot(up)},
+                    {y_axis, y_axis.Dot(up)},
+                    {neg_x_axis, neg_x_axis.Dot(up)},
+                    {neg_y_axis, neg_y_axis.Dot(up)},
+                };
+
+                // Find the candidate with the maximum dot product
+                AxisAlignment* best_candidate = &candidates[0];
+                for (int i = 1; i < 4; ++i) {
+                    if (candidates[i].dot > best_candidate->dot) {
+                        best_candidate = &candidates[i];
+                    }
+                }
+
+                // Compute the rotation to align the best candidate with the up direction
+                ImPlot3DQuat align_up = ImPlot3DQuat::FromTwoVectors(best_candidate->axis, up);
+                plot.Rotation = align_up * plot.Rotation;
+            }
+        }
+    }
 
     // Handle rotation with left mouse dragging
     if (plot.Held && ImGui::IsMouseDown(1)) {
@@ -1931,6 +2014,55 @@ ImPlot3DQuat::ImPlot3DQuat(float _angle, const ImPlot3DPoint& _axis) {
     y = s * _axis.y;
     z = s * _axis.z;
     w = std::cos(half_angle);
+}
+
+ImPlot3DQuat ImPlot3DQuat::FromTwoVectors(const ImPlot3DPoint& v0, const ImPlot3DPoint& v1) {
+    ImPlot3DQuat q;
+
+    // Compute the dot product and lengths of the vectors
+    float dot = v0.Dot(v1);
+    float length_v0 = v0.Length();
+    float length_v1 = v1.Length();
+
+    // Normalize the dot product
+    float normalized_dot = dot / (length_v0 * length_v1);
+
+    // Handle edge cases: if vectors are very close or identical
+    const float epsilon = 1e-6f;
+    if (std::fabs(normalized_dot - 1.0f) < epsilon) {
+        // v0 and v1 are nearly identical; return an identity quaternion
+        q.x = 0.0f;
+        q.y = 0.0f;
+        q.z = 0.0f;
+        q.w = 1.0f;
+        return q;
+    }
+
+    // Handle edge case: if vectors are opposite
+    if (std::fabs(normalized_dot + 1.0f) < epsilon) {
+        // v0 and v1 are opposite; choose an arbitrary orthogonal axis
+        ImPlot3DPoint arbitrary_axis = std::fabs(v0.x) > std::fabs(v0.z) ? ImPlot3DPoint(-v0.y, v0.x, 0.0f)
+                                                                         : ImPlot3DPoint(0.0f, -v0.z, v0.y);
+        arbitrary_axis.Normalize();
+        q.x = arbitrary_axis.x;
+        q.y = arbitrary_axis.y;
+        q.z = arbitrary_axis.z;
+        q.w = 0.0f;
+        return q;
+    }
+
+    // General case
+    ImPlot3DPoint axis = v0.Cross(v1);
+    axis.Normalize();
+    float angle = std::acos(normalized_dot);
+    float half_angle = angle * 0.5f;
+    float s = std::sin(half_angle);
+    q.x = s * axis.x;
+    q.y = s * axis.y;
+    q.z = s * axis.z;
+    q.w = std::cos(half_angle);
+
+    return q;
 }
 
 float ImPlot3DQuat::Length() const {
