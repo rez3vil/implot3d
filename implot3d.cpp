@@ -444,44 +444,46 @@ void RenderPlotGrid(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlo
         ImPlot3DPoint v_vec = p3 - p0;
 
         // Render grid lines along u axis (axis_u)
-        for (int t = 0; t < axis_u.Ticker.TickCount(); ++t) {
-            const ImPlot3DTick& tick = axis_u.Ticker.Ticks[t];
+        if (!ImHasFlag(axis_u.Flags, ImPlot3DAxisFlags_NoGridLines))
+            for (int t = 0; t < axis_u.Ticker.TickCount(); ++t) {
+                const ImPlot3DTick& tick = axis_u.Ticker.Ticks[t];
 
-            // Compute position along u
-            float t_u = (tick.PlotPos - axis_u.Range.Min) / (axis_u.Range.Max - axis_u.Range.Min);
-            ImPlot3DPoint p_start = p0 + u_vec * t_u;
-            ImPlot3DPoint p_end = p3 + u_vec * t_u;
+                // Compute position along u
+                float t_u = (tick.PlotPos - axis_u.Range.Min) / (axis_u.Range.Max - axis_u.Range.Min);
+                ImPlot3DPoint p_start = p0 + u_vec * t_u;
+                ImPlot3DPoint p_end = p3 + u_vec * t_u;
 
-            // Convert to pixel coordinates
-            ImVec2 p_start_pix = PlotToPixels(p_start);
-            ImVec2 p_end_pix = PlotToPixels(p_end);
+                // Convert to pixel coordinates
+                ImVec2 p_start_pix = PlotToPixels(p_start);
+                ImVec2 p_end_pix = PlotToPixels(p_end);
 
-            // Get color
-            ImU32 col_line = tick.Major ? col_grid_major : col_grid_minor;
+                // Get color
+                ImU32 col_line = tick.Major ? col_grid_major : col_grid_minor;
 
-            // Draw the grid line
-            draw_list->AddLine(p_start_pix, p_end_pix, col_line);
-        }
+                // Draw the grid line
+                draw_list->AddLine(p_start_pix, p_end_pix, col_line);
+            }
 
         // Render grid lines along v axis (axis_v)
-        for (int t = 0; t < axis_v.Ticker.TickCount(); ++t) {
-            const ImPlot3DTick& tick = axis_v.Ticker.Ticks[t];
+        if (!ImHasFlag(axis_v.Flags, ImPlot3DAxisFlags_NoGridLines))
+            for (int t = 0; t < axis_v.Ticker.TickCount(); ++t) {
+                const ImPlot3DTick& tick = axis_v.Ticker.Ticks[t];
 
-            // Compute position along v
-            float t_v = (tick.PlotPos - axis_v.Range.Min) / (axis_v.Range.Max - axis_v.Range.Min);
-            ImPlot3DPoint p_start = p0 + v_vec * t_v;
-            ImPlot3DPoint p_end = p1 + v_vec * t_v;
+                // Compute position along v
+                float t_v = (tick.PlotPos - axis_v.Range.Min) / (axis_v.Range.Max - axis_v.Range.Min);
+                ImPlot3DPoint p_start = p0 + v_vec * t_v;
+                ImPlot3DPoint p_end = p1 + v_vec * t_v;
 
-            // Convert to pixel coordinates
-            ImVec2 p_start_pix = PlotToPixels(p_start);
-            ImVec2 p_end_pix = PlotToPixels(p_end);
+                // Convert to pixel coordinates
+                ImVec2 p_start_pix = PlotToPixels(p_start);
+                ImVec2 p_end_pix = PlotToPixels(p_end);
 
-            // Get color
-            ImU32 col_line = tick.Major ? col_grid_major : col_grid_minor;
+                // Get color
+                ImU32 col_line = tick.Major ? col_grid_major : col_grid_minor;
 
-            // Draw the grid line
-            draw_list->AddLine(p_start_pix, p_end_pix, col_line);
-        }
+                // Draw the grid line
+                draw_list->AddLine(p_start_pix, p_end_pix, col_line);
+            }
     }
 }
 
@@ -491,6 +493,8 @@ void RenderTickLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImP
 
     for (int a = 0; a < 3; a++) {
         const ImPlot3DAxis& axis = plot.Axes[a];
+        if (ImHasFlag(axis.Flags, ImPlot3DAxisFlags_NoTickLabels))
+            continue;
 
         // Corner indices for this axis
         int idx0 = axis_corners[a][0];
