@@ -242,6 +242,14 @@ ImPlot3DItem* RegisterOrGetItem(const char* label_id, ImPlot3DItemFlags flags, b
     return item;
 }
 
+void BustItemCache() {
+    ImPlot3DContext& gp = *GImPlot3D;
+    for (int p = 0; p < gp.Plots.GetBufSize(); ++p) {
+        ImPlot3DPlot& plot = *gp.Plots.GetByIndex(p);
+        plot.Items.Reset();
+    }
+}
+
 void SetNextLineStyle(const ImVec4& col, float weight) {
     ImPlot3DContext& gp = *GImPlot3D;
     ImPlot3DNextItemData& n = gp.NextItemData;

@@ -907,6 +907,11 @@ ImPlot3DPlot* GetCurrentPlot() {
     return GImPlot3D->CurrentPlot;
 }
 
+void BustPlotCache() {
+    ImPlot3DContext& gp = *GImPlot3D;
+    gp.Plots.Clear();
+}
+
 ImVec2 PlotToPixels(const ImPlot3DPoint& point) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PlotToPixels() needs to be called between BeginPlot() and EndPlot()!");
@@ -1472,6 +1477,13 @@ ImU32 NextColormapColorU32() {
 
 ImVec4 NextColormapColor() {
     return ImGui::ColorConvertU32ToFloat4(NextColormapColorU32());
+}
+
+int GetColormapSize(ImPlot3DColormap cmap) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    cmap = cmap == IMPLOT3D_AUTO ? gp.Style.Colormap : cmap;
+    IM_ASSERT_USER_ERROR(cmap >= 0 && cmap < gp.ColormapData.Count, "Invalid colormap index!");
+    return gp.ColormapData.GetKeyCount(cmap);
 }
 
 ImU32 GetColormapColorU32(int idx, ImPlot3DColormap cmap) {

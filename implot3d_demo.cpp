@@ -402,7 +402,75 @@ bool ShowStyleSelector(const char* label) {
     return false;
 }
 
+void RenderColorBar(const ImU32* colors, int size, ImDrawList& DrawList, const ImRect& bounds, bool vert, bool reversed, bool continuous) {
+    const int n = continuous ? size - 1 : size;
+    ImU32 col1, col2;
+    if (vert) {
+        const float step = bounds.GetHeight() / n;
+        ImRect rect(bounds.Min.x, bounds.Min.y, bounds.Max.x, bounds.Min.y + step);
+        for (int i = 0; i < n; ++i) {
+            if (reversed) {
+                col1 = colors[size - i - 1];
+                col2 = continuous ? colors[size - i - 2] : col1;
+            } else {
+                col1 = colors[i];
+                col2 = continuous ? colors[i + 1] : col1;
+            }
+            DrawList.AddRectFilledMultiColor(rect.Min, rect.Max, col1, col1, col2, col2);
+            rect.TranslateY(step);
+        }
+    } else {
+        const float step = bounds.GetWidth() / n;
+        ImRect rect(bounds.Min.x, bounds.Min.y, bounds.Min.x + step, bounds.Max.y);
+        for (int i = 0; i < n; ++i) {
+            if (reversed) {
+                col1 = colors[size - i - 1];
+                col2 = continuous ? colors[size - i - 2] : col1;
+            } else {
+                col1 = colors[i];
+                col2 = continuous ? colors[i + 1] : col1;
+            }
+            DrawList.AddRectFilledMultiColor(rect.Min, rect.Max, col1, col2, col2, col1);
+            rect.TranslateX(step);
+        }
+    }
+}
+
+static inline ImU32 CalcTextColor(const ImVec4& bg) { return (bg.x * 0.299f + bg.y * 0.587f + bg.z * 0.114f) > 0.5f ? IM_COL32_BLACK : IM_COL32_WHITE; }
+static inline ImU32 CalcTextColor(ImU32 bg) { return CalcTextColor(ImGui::ColorConvertU32ToFloat4(bg)); }
+
+bool ColormapButton(const char* label, const ImVec2& size_arg, ImPlot3DColormap cmap) {
+    ImGuiContext& G = *GImGui;
+    const ImGuiStyle& style = G.Style;
+    ImGuiWindow* Window = G.CurrentWindow;
+    if (Window->SkipItems)
+        return false;
+    ImPlot3DContext& gp = *GImPlot3D;
+    cmap = cmap == IMPLOT3D_AUTO ? gp.Style.Colormap : cmap;
+    IM_ASSERT_USER_ERROR(cmap >= 0 && cmap < gp.ColormapData.Count, "Invalid colormap index!");
+    const ImU32* keys = gp.ColormapData.GetKeys(cmap);
+    const int count = gp.ColormapData.GetKeyCount(cmap);
+    const bool qual = gp.ColormapData.IsQual(cmap);
+    const ImVec2 pos = ImGui::GetCurrentWindow()->DC.CursorPos;
+    const ImVec2 label_size = ImGui::CalcTextSize(label, nullptr, true);
+    ImVec2 size = ImGui::CalcItemSize(size_arg, label_size.x + style.FramePadding.x * 2.0f, label_size.y + style.FramePadding.y * 2.0f);
+    const ImRect rect = ImRect(pos.x, pos.y, pos.x + size.x, pos.y + size.y);
+    RenderColorBar(keys, count, *ImGui::GetWindowDrawList(), rect, false, false, !qual);
+    const ImU32 text = CalcTextColor(gp.ColormapData.LerpTable(cmap, G.Style.ButtonTextAlign.x));
+    ImGui::PushStyleColor(ImGuiCol_Button, IM_COL32_BLACK_TRANS);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1, 1, 1, 0.1f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1, 1, 1, 0.2f));
+    ImGui::PushStyleColor(ImGuiCol_Text, text);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
+    const bool pressed = ImGui::Button(label, size);
+    ImGui::PopStyleColor(4);
+    ImGui::PopStyleVar(1);
+    return pressed;
+}
+
 void ShowStyleEditor(ImPlot3DStyle* ref) {
+    ImPlot3DContext& gp = *GImPlot3D;
+
     // Handle style internal storage
     ImPlot3DStyle& style = GetStyle();
     static ImPlot3DStyle ref_saved_style;
@@ -450,7 +518,7 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
     ImGui::Separator();
 
     if (ImGui::BeginTabBar("##Tabs", ImGuiTabBarFlags_None)) {
-        if (ImGui::BeginTabItem("Sizes")) {
+        if (ImGui::BeginTabItem("Variables")) {
             ImGui::Text("Item Styling");
             ImGui::SliderFloat("LineWeight", &style.LineWeight, 0.0f, 5.0f, "%.1f");
             ImGui::SliderFloat("MarkerSize", &style.MarkerSize, 2.0f, 10.0f, "%.1f");
@@ -560,6 +628,108 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
             }
             ImGui::EndTabItem();
         }
+
+        if (ImGui::BeginTabItem("Colormaps")) {
+            static int output_dest = 0;
+            if (ImGui::Button("Export", ImVec2(75, 0))) {
+                if (output_dest == 0)
+                    ImGui::LogToClipboard();
+                else
+                    ImGui::LogToTTY();
+                int size = GetColormapSize();
+                const char* name = GetColormapName(gp.Style.Colormap);
+                ImGui::LogText("static const ImU32 %s_Data[%d] = {\n", name, size);
+                for (int i = 0; i < size; ++i) {
+                    ImU32 col = GetColormapColorU32(i, gp.Style.Colormap);
+                    ImGui::LogText("    %u%s\n", col, i == size - 1 ? "" : ",");
+                }
+                ImGui::LogText("};\nImPlotColormap %s = ImPlot::AddColormap(\"%s\", %s_Data, %d);", name, name, name, size);
+                ImGui::LogFinish();
+            }
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(120);
+            ImGui::Combo("##output_type", &output_dest, "To Clipboard\0To TTY\0");
+            ImGui::SameLine();
+            static bool edit = false;
+            ImGui::Checkbox("Edit Mode", &edit);
+
+            // built-in/added
+            ImGui::Separator();
+            for (int i = 0; i < gp.ColormapData.Count; ++i) {
+                ImGui::PushID(i);
+                int size = gp.ColormapData.GetKeyCount(i);
+                bool selected = i == gp.Style.Colormap;
+
+                const char* name = GetColormapName(i);
+                if (!selected)
+                    ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.25f);
+                if (ImGui::Button(name, ImVec2(100, 0))) {
+                    gp.Style.Colormap = i;
+                    BustItemCache();
+                }
+                if (!selected)
+                    ImGui::PopStyleVar();
+                ImGui::SameLine();
+                ImGui::BeginGroup();
+                if (edit) {
+                    for (int c = 0; c < size; ++c) {
+                        ImGui::PushID(c);
+                        ImVec4 col4 = ImGui::ColorConvertU32ToFloat4(gp.ColormapData.GetKeyColor(i, c));
+                        if (ImGui::ColorEdit4("", &col4.x, ImGuiColorEditFlags_NoInputs)) {
+                            ImU32 col32 = ImGui::ColorConvertFloat4ToU32(col4);
+                            gp.ColormapData.SetKeyColor(i, c, col32);
+                            BustItemCache();
+                        }
+                        if ((c + 1) % 12 != 0 && c != size - 1)
+                            ImGui::SameLine();
+                        ImGui::PopID();
+                    }
+                } else {
+                    if (ColormapButton("##", ImVec2(-1, 0), i))
+                        edit = true;
+                }
+                ImGui::EndGroup();
+                ImGui::PopID();
+            }
+
+            static ImVector<ImVec4> custom;
+            if (custom.Size == 0) {
+                custom.push_back(ImVec4(1, 0, 0, 1));
+                custom.push_back(ImVec4(0, 1, 0, 1));
+                custom.push_back(ImVec4(0, 0, 1, 1));
+            }
+            ImGui::Separator();
+            ImGui::BeginGroup();
+            static char name[16] = "MyColormap";
+
+            if (ImGui::Button("+", ImVec2((100 - ImGui::GetStyle().ItemSpacing.x) / 2, 0)))
+                custom.push_back(ImVec4(0, 0, 0, 1));
+            ImGui::SameLine();
+            if (ImGui::Button("-", ImVec2((100 - ImGui::GetStyle().ItemSpacing.x) / 2, 0)) && custom.Size > 2)
+                custom.pop_back();
+            ImGui::SetNextItemWidth(100);
+            ImGui::InputText("##Name", name, 16, ImGuiInputTextFlags_CharsNoBlank);
+            static bool qual = true;
+            ImGui::Checkbox("Qualitative", &qual);
+            if (ImGui::Button("Add", ImVec2(100, 0)) && gp.ColormapData.GetIndex(name) == -1)
+                AddColormap(name, custom.Data, custom.Size, qual);
+
+            ImGui::EndGroup();
+            ImGui::SameLine();
+            ImGui::BeginGroup();
+            for (int c = 0; c < custom.Size; ++c) {
+                ImGui::PushID(c);
+                if (ImGui::ColorEdit4("##Col1", &custom[c].x, ImGuiColorEditFlags_NoInputs)) {
+                }
+                if ((c + 1) % 12 != 0)
+                    ImGui::SameLine();
+                ImGui::PopID();
+            }
+            ImGui::EndGroup();
+
+            ImGui::EndTabItem();
+        }
+
         ImGui::EndTabBar();
     }
 }

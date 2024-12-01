@@ -531,10 +531,9 @@ IMPLOT3D_API void EndItem();
 
 // Register or get an existing item from the current plot
 IMPLOT3D_API ImPlot3DItem* RegisterOrGetItem(const char* label_id, ImPlot3DItemFlags flags, bool* just_created = nullptr);
-// Get a plot item from the current plot
-IMPLOT3D_API ImPlot3DItem* GetItem(const char* label_id);
-// Get the current item
-IMPLOT3D_API ImPlot3DItem* GetCurrentItem();
+
+// Busts the cache for every item for every plot in the current context
+IMPLOT3D_API void BustItemCache();
 
 // TODO move to another place
 IMPLOT3D_API void AddTextRotated(ImDrawList* draw_list, ImVec2 pos, float angle, ImU32 col, const char* text_begin, const char* text_end = nullptr);
@@ -545,6 +544,9 @@ IMPLOT3D_API void AddTextRotated(ImDrawList* draw_list, ImVec2 pos, float angle,
 
 // Gets the current plot from the current ImPlot3DContext
 IMPLOT3D_API ImPlot3DPlot* GetCurrentPlot();
+
+// Busts the cache for every plot in the current context
+IMPLOT3D_API void BustPlotCache();
 
 IMPLOT3D_API ImVec2 GetFramePos();  // Get the current frame position (top-left) in pixels
 IMPLOT3D_API ImVec2 GetFrameSize(); // Get the current frame size in pixels
