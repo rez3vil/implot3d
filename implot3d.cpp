@@ -411,7 +411,7 @@ int GetMouseOverPlane(const ImPlot3DPlot& plot, const bool* active_faces, const 
     return -1; // Not over any active plane
 }
 
-int GetMouseOverAxis(const ImPlot3DPlot& plot, const ImVec2* corners_pix, int* edge_out = nullptr) {
+int GetMouseOverAxis(const ImPlot3DPlot& plot, const bool* active_faces, const ImVec2* corners_pix, int* edge_out = nullptr) {
     const float axis_proximity_threshold = 10.0f; // Distance in pixels to consider the mouse "close" to an axis
 
     ImGuiIO& io = ImGui::GetIO();
@@ -419,8 +419,20 @@ int GetMouseOverAxis(const ImPlot3DPlot& plot, const ImVec2* corners_pix, int* e
     if (edge_out)
         *edge_out = -1;
 
+    bool visible_edges[12];
+    for (int i = 0; i < 12; i++)
+        visible_edges[i] = false;
+    for (int a = 0; a < 3; a++) {
+        int face_idx = a + 3 * active_faces[a];
+        for (size_t i = 0; i < 4; i++)
+            visible_edges[face_edges[face_idx][i]] = true;
+    }
+
     // Check each edge for proximity to the mouse
     for (int edge = 0; edge < 12; edge++) {
+        if (!visible_edges[edge])
+            continue;
+
         ImVec2 p0 = corners_pix[edges[edge][0]];
         ImVec2 p1 = corners_pix[edges[edge][1]];
 
@@ -432,9 +444,9 @@ int GetMouseOverAxis(const ImPlot3DPlot& plot, const ImVec2* corners_pix, int* e
                 *edge_out = edge;
 
             // Determine which axis the edge belongs to
-            if (edge < 4 || (edge >= 8 && edge < 10))
+            if (edge == 0 || edge == 2 || edge == 4 || edge == 6)
                 return 0; // X-axis
-            else if (edge >= 4 && edge < 8)
+            else if (edge == 1 || edge == 3 || edge == 5 || edge == 7)
                 return 1; // Y-axis
             else
                 return 2; // Z-axis
@@ -448,7 +460,7 @@ void RenderPlotBackground(ImDrawList* draw_list, const ImPlot3DPlot& plot, const
     const ImVec4 col_bg = GetStyleColorVec4(ImPlot3DCol_PlotBg);
     const ImVec4 col_bg_hov = col_bg + ImVec4(0.02, 0.02, 0.02, 0.0);
     int hovered_plane = GetMouseOverPlane(plot, active_faces, corners_pix);
-    if (GetMouseOverAxis(plot, corners_pix) != -1)
+    if (GetMouseOverAxis(plot, active_faces, corners_pix) != -1)
         hovered_plane = -1;
     for (int a = 0; a < 3; a++) {
         int idx[4]; // Corner indices
@@ -463,14 +475,17 @@ void RenderPlotBorder(ImDrawList* draw_list, const ImVec2* corners_pix, const bo
     ImGuiIO& io = ImGui::GetIO();
     ImVec2 mouse_pos = io.MousePos;
     int hovered_edge = -1;
-    GetMouseOverAxis(*GImPlot3D->CurrentPlot, corners_pix, &hovered_edge);
+    GetMouseOverAxis(*GImPlot3D->CurrentPlot, active_faces, corners_pix, &hovered_edge);
 
-    bool render_edge[12] = {false};
+    bool render_edge[12];
+    for (int i = 0; i < 12; i++)
+        render_edge[i] = false;
     for (int a = 0; a < 3; a++) {
         int face_idx = a + 3 * active_faces[a];
         for (size_t i = 0; i < 4; i++)
             render_edge[face_edges[face_idx][i]] = true;
     }
+
     ImU32 col_bd = GetStyleColorU32(ImPlot3DCol_PlotBorder);
     for (int i = 0; i < 12; i++) {
         if (render_edge[i]) {
@@ -674,6 +689,38 @@ void RenderAxisLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImP
     }
 }
 
+// Function to compute active faces based on the rotation
+void ComputeActiveFaces(bool* active_faces, const ImPlot3DQuat& rotation) {
+    ImPlot3DPoint rot_face_n[3] = {
+        rotation * ImPlot3DPoint(1.0f, 0.0f, 0.0f),
+        rotation * ImPlot3DPoint(0.0f, 1.0f, 0.0f),
+        rotation * ImPlot3DPoint(0.0f, 0.0f, 1.0f),
+    };
+
+    active_faces[0] = rot_face_n[0].z < 0;
+    active_faces[1] = rot_face_n[1].z < 0;
+    active_faces[2] = rot_face_n[2].z < 0;
+}
+
+// Function to compute the box corners in plot space
+void ComputeBoxCorners(ImPlot3DPoint* corners, const ImPlot3DPoint& range_min, const ImPlot3DPoint& range_max) {
+    corners[0] = ImPlot3DPoint(range_min.x, range_min.y, range_min.z); // 0
+    corners[1] = ImPlot3DPoint(range_max.x, range_min.y, range_min.z); // 1
+    corners[2] = ImPlot3DPoint(range_max.x, range_max.y, range_min.z); // 2
+    corners[3] = ImPlot3DPoint(range_min.x, range_max.y, range_min.z); // 3
+    corners[4] = ImPlot3DPoint(range_min.x, range_min.y, range_max.z); // 4
+    corners[5] = ImPlot3DPoint(range_max.x, range_min.y, range_max.z); // 5
+    corners[6] = ImPlot3DPoint(range_max.x, range_max.y, range_max.z); // 6
+    corners[7] = ImPlot3DPoint(range_min.x, range_max.y, range_max.z); // 7
+}
+
+// Function to compute the box corners in pixel space
+void ComputeBoxCornersPix(ImVec2* corners_pix, const ImPlot3DPoint* corners) {
+    for (int i = 0; i < 8; i++) {
+        corners_pix[i] = PlotToPixels(corners[i]);
+    }
+}
+
 void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
     // Get plot parameters
     const ImRect& plot_area = plot.PlotRect;
@@ -682,36 +729,17 @@ void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
     ImPlot3DPoint range_max = plot.RangeMax();
     ImPlot3DPoint range_center = plot.RangeCenter();
 
-    // Compute zoom and center
-    float zoom = ImMin(plot_area.GetWidth(), plot_area.GetHeight()) / 1.8f;
-    ImVec2 center = plot_area.GetCenter();
+    // Compute active faces
+    bool active_faces[3];
+    ComputeActiveFaces(active_faces, rotation);
 
-    // Define rotated plot box face normals
-    ImPlot3DPoint rot_face_n[3] = {
-        rotation * ImPlot3DPoint(1.0f, 0.0f, 0.0f),
-        rotation * ImPlot3DPoint(0.0f, 1.0f, 0.0f),
-        rotation * ImPlot3DPoint(0.0f, 0.0f, 1.0f),
-    };
+    // Compute box corners in plot space
+    ImPlot3DPoint corners[8];
+    ComputeBoxCorners(corners, range_min, range_max);
 
-    // Active faces to be plotted (visible from the viewer's perspective)
-    bool active_faces[3] = {rot_face_n[0].z < 0, rot_face_n[1].z < 0, rot_face_n[2].z < 0};
-
-    // Box corners in plot space
-    ImPlot3DPoint corners[8] = {
-        ImPlot3DPoint(range_min.x, range_min.y, range_min.z), // 0
-        ImPlot3DPoint(range_max.x, range_min.y, range_min.z), // 1
-        ImPlot3DPoint(range_max.x, range_max.y, range_min.z), // 2
-        ImPlot3DPoint(range_min.x, range_max.y, range_min.z), // 3
-        ImPlot3DPoint(range_min.x, range_min.y, range_max.z), // 4
-        ImPlot3DPoint(range_max.x, range_min.y, range_max.z), // 5
-        ImPlot3DPoint(range_max.x, range_max.y, range_max.z), // 6
-        ImPlot3DPoint(range_min.x, range_max.y, range_max.z), // 7
-    };
-
-    // Box corners in pixel space
+    // Compute box corners in pixel space
     ImVec2 corners_pix[8];
-    for (int i = 0; i < 8; i++)
-        corners_pix[i] = PlotToPixels(corners[i]);
+    ComputeBoxCornersPix(corners_pix, corners);
 
     // Compute axes start and end corners (given current rotation)
     int axis_corners[3][2];
@@ -1137,11 +1165,39 @@ void HandleInput(ImPlot3DPlot& plot) {
     ImGui::SetItemAllowOverlap(); // Handled by ButtonBehavior()
 #endif
 
+    // Check if any axis/plane is hovered
+    const ImPlot3DQuat& rotation = plot.Rotation;
+    ImPlot3DPoint range_min = plot.RangeMin();
+    ImPlot3DPoint range_max = plot.RangeMax();
+    bool active_faces[3];
+    ComputeActiveFaces(active_faces, rotation);
+    ImPlot3DPoint corners[8];
+    ComputeBoxCorners(corners, range_min, range_max);
+    ImVec2 corners_pix[8];
+    ComputeBoxCornersPix(corners_pix, corners);
+    int hovered_plane = GetMouseOverPlane(plot, active_faces, corners_pix);
+    int hovered_axis = GetMouseOverAxis(plot, active_faces, corners_pix);
+    if (hovered_axis != -1)
+        hovered_plane = -1;
+
+    // Check which axes should be transformed (fit/zoom/translate)
+    bool transform_axis[3] = {false, false, false};
+    if (hovered_axis != -1) {
+        transform_axis[hovered_axis] = true;
+    } else if (hovered_plane != -1) {
+        transform_axis[(hovered_plane + 1) % 3] = true;
+        transform_axis[(hovered_plane + 2) % 3] = true;
+    } else {
+        transform_axis[0] = true;
+        transform_axis[1] = true;
+        transform_axis[2] = true;
+    }
+
     // Handle translation/zoom fit with double click
     if (plot_clicked && ImGui::IsMouseDoubleClicked(0) || ImGui::IsMouseDoubleClicked(2)) {
         plot.FitThisFrame = true;
         for (int i = 0; i < 3; i++)
-            plot.Axes[i].FitThisFrame = true;
+            plot.Axes[i].FitThisFrame = transform_axis[i];
     }
 
     // Handle translation with right mouse button
@@ -1187,10 +1243,14 @@ void HandleInput(ImPlot3DPlot& plot) {
     if (plot.Hovered && (ImGui::IsMouseDown(2) || IO.MouseWheel != 0)) {
         float delta = ImGui::IsMouseDown(2) ? (-0.01f * IO.MouseDelta.y) : (-0.1f * IO.MouseWheel);
         float zoom = 1.0f + delta;
-        ImPlot3DPoint center = (plot.RangeMin() + plot.RangeMax()) * 0.5f;
-        ImPlot3DPoint size = plot.RangeMax() - plot.RangeMin();
-        size *= zoom;
-        plot.SetRange(center - size * 0.5f, center + size * 0.5f);
+        for (int i = 0; i < 3; i++) {
+            ImPlot3DAxis& axis = plot.Axes[i];
+            float center = (axis.Range.Min + axis.Range.Max) * 0.5f;
+            float size = axis.Range.Max - axis.Range.Min;
+            size *= zoom;
+            if (transform_axis[i])
+                plot.Axes[i].SetRange(center - size * 0.5f, center + size * 0.5f);
+        }
     }
 }
 
@@ -1233,9 +1293,6 @@ void SetupLock() {
     plot.CanvasRect = ImRect(plot.FrameRect.Min + gp.Style.PlotPadding, plot.FrameRect.Max - gp.Style.PlotPadding);
     plot.PlotRect = plot.CanvasRect;
 
-    // Handle user input
-    HandleInput(plot);
-
     // Compute ticks
     for (int i = 0; i < 3; i++) {
         ImPlot3DAxis& axis = plot.Axes[i];
@@ -1250,6 +1307,9 @@ void SetupLock() {
         AddTextCentered(draw_list, top_center, col, plot.TextBuffer.c_str());
         plot.PlotRect.Min.y += ImGui::GetTextLineHeight() + gp.Style.LabelPadding.y;
     }
+
+    // Handle user input
+    HandleInput(plot);
 
     // Render plot box
     RenderPlotBox(draw_list, plot);
