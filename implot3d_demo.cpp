@@ -14,6 +14,7 @@
 // Table of Contents:
 // [SECTION] Helpers
 // [SECTION] Plots
+// [SECTION] Custom
 // [SECTION] Demo Window
 // [SECTION] Style Editor
 
@@ -225,6 +226,43 @@ void DemoNaNValues() {
 }
 
 //-----------------------------------------------------------------------------
+// [SECTION] Custom
+//-----------------------------------------------------------------------------
+
+void DemoCustomRendering() {
+    if (ImPlot3D::BeginPlot("##CustomRend")) {
+        ImPlot3D::SetupAxesLimits(-0.1f, 1.1f, -0.1f, 1.1f, -0.1f, 1.1f);
+
+        // Draw circle
+        ImVec2 cntr = ImPlot3D::PlotToPixels(ImPlot3DPoint(0.5f, 0.5f, 0.5f));
+        ImPlot3D::GetPlotDrawList()->AddCircleFilled(cntr, 20, IM_COL32(255, 255, 0, 255), 20);
+
+        // Draw box
+        ImPlot3DPoint corners[8] = {
+            ImPlot3DPoint(0, 0, 0),
+            ImPlot3DPoint(1, 0, 0),
+            ImPlot3DPoint(1, 1, 0),
+            ImPlot3DPoint(0, 1, 0),
+            ImPlot3DPoint(0, 0, 1),
+            ImPlot3DPoint(1, 0, 1),
+            ImPlot3DPoint(1, 1, 1),
+            ImPlot3DPoint(0, 1, 1),
+        };
+        ImVec2 corners_px[8];
+        for (int i = 0; i < 8; i++)
+            corners_px[i] = ImPlot3D::PlotToPixels(corners[i]);
+
+        ImU32 col = IM_COL32(128, 0, 255, 255);
+        for (int i = 0; i < 4; i++) {
+            ImPlot3D::GetPlotDrawList()->AddLine(corners_px[i], corners_px[(i + 1) % 4], col);
+            ImPlot3D::GetPlotDrawList()->AddLine(corners_px[i + 4], corners_px[(i + 1) % 4 + 4], col);
+            ImPlot3D::GetPlotDrawList()->AddLine(corners_px[i], corners_px[i + 4], col);
+        }
+        ImPlot3D::EndPlot();
+    }
+}
+
+//-----------------------------------------------------------------------------
 // [SECTION] Demo Window
 //-----------------------------------------------------------------------------
 
@@ -294,6 +332,10 @@ void ShowDemoWindow(bool* p_open) {
             DemoHeader("Realtime Plots", DemoRealtimePlots);
             DemoHeader("Markers and Text", DemoMarkersAndText);
             DemoHeader("NaN Values", DemoNaNValues);
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Custom")) {
+            DemoHeader("Custom Rendering", DemoCustomRendering);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Help")) {
