@@ -202,6 +202,28 @@ void DemoMarkersAndText() {
     }
 }
 
+void DemoNaNValues() {
+    static bool include_nan = true;
+    static ImPlot3DLineFlags flags = 0;
+
+    float data1[5] = {0.0f, 0.25f, 0.5f, 0.75f, 1.0f};
+    float data2[5] = {0.0f, 0.25f, 0.5f, 0.75f, 1.0f};
+    float data3[5] = {0.0f, 0.25f, 0.5f, 0.75f, 1.0f};
+
+    if (include_nan)
+        data1[2] = NAN;
+
+    ImGui::Checkbox("Include NaN", &include_nan);
+    ImGui::SameLine();
+    ImGui::CheckboxFlags("Skip NaN", (unsigned int*)&flags, ImPlot3DLineFlags_SkipNaN);
+
+    if (ImPlot3D::BeginPlot("##NaNValues")) {
+        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square);
+        ImPlot3D::PlotLine("Line", data1, data2, data3, 5, flags);
+        ImPlot3D::EndPlot();
+    }
+}
+
 //-----------------------------------------------------------------------------
 // [SECTION] Demo Window
 //-----------------------------------------------------------------------------
@@ -271,6 +293,7 @@ void ShowDemoWindow(bool* p_open) {
             DemoHeader("Scatter Plots", DemoScatterPlots);
             DemoHeader("Realtime Plots", DemoRealtimePlots);
             DemoHeader("Markers and Text", DemoMarkersAndText);
+            DemoHeader("NaN Values", DemoNaNValues);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Help")) {
