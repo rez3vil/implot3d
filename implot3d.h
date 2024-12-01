@@ -358,6 +358,12 @@ IMPLOT3D_API void StyleColorsDark(ImPlot3DStyle* dst = nullptr);    // Set color
 IMPLOT3D_API void StyleColorsLight(ImPlot3DStyle* dst = nullptr);   // Set colors with light style
 IMPLOT3D_API void StyleColorsClassic(ImPlot3DStyle* dst = nullptr); // Set colors with classic style
 
+// Temporarily modify a style color. Don't forget to call PopStyleColor!
+IMPLOT3D_API void PushStyleColor(ImPlot3DCol idx, ImU32 col);
+IMPLOT3D_API void PushStyleColor(ImPlot3DCol idx, const ImVec4& col);
+// Undo temporary style color modification(s). Undo multiple pushes at once by increasing count
+IMPLOT3D_API void PopStyleColor(int count = 1);
+
 // Temporarily modify a style variable of float type. Don't forget to call PopStyleVar!
 IMPLOT3D_API void PushStyleVar(ImPlot3DStyleVar idx, float val);
 // Temporarily modify a style variable of int type. Don't forget to call PopStyleVar!

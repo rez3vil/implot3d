@@ -481,6 +481,7 @@ struct ImPlot3DContext {
     ImPlot3DItemGroup* CurrentItems;
     ImPlot3DNextItemData NextItemData;
     ImPlot3DStyle Style;
+    ImVector<ImGuiColorMod> ColorModifiers;
     ImVector<ImGuiStyleMod> StyleModifiers;
     ImPlot3DColormapData ColormapData;
 };

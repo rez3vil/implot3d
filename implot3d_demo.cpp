@@ -194,9 +194,9 @@ void DemoMarkersAndText() {
         ImPlot3D::PlotText("Filled Markers", 0.0f, 0.0f, 6.0f);
         ImPlot3D::PlotText("Open Markers", 1.0f, 1.0f, 6.0f);
 
-        // ImPlot3D::PushStyleColor(ImPlot3DCol_InlayText, ImVec4(1, 0, 1, 1));
-        ImPlot3D::PlotText("Vertical Text", 0.5f, 0.5f, 6.0f, IM_PI / 2, ImVec2(0, 0));
-        // ImPlot3D::PopStyleColor();
+        ImPlot3D::PushStyleColor(ImPlot3DCol_InlayText, ImVec4(1, 0, 1, 1));
+        ImPlot3D::PlotText("Rotated Text", 0.5f, 0.5f, 6.0f, IM_PI / 4, ImVec2(0, 0));
+        ImPlot3D::PopStyleColor();
 
         ImPlot3D::EndPlot();
     }

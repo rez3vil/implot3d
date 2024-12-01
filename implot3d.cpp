@@ -1297,6 +1297,35 @@ void StyleColorsClassic(ImPlot3DStyle* dst) {
     colors[ImPlot3DCol_AxisGrid] = ImVec4(0.90f, 0.90f, 0.90f, 0.25f);
 }
 
+void PushStyleColor(ImPlot3DCol idx, ImU32 col) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    ImGuiColorMod backup;
+    backup.Col = (ImGuiCol)idx;
+    backup.BackupValue = gp.Style.Colors[idx];
+    gp.ColorModifiers.push_back(backup);
+    gp.Style.Colors[idx] = ImGui::ColorConvertU32ToFloat4(col);
+}
+
+void PushStyleColor(ImPlot3DCol idx, const ImVec4& col) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    ImGuiColorMod backup;
+    backup.Col = (ImGuiCol)idx;
+    backup.BackupValue = gp.Style.Colors[idx];
+    gp.ColorModifiers.push_back(backup);
+    gp.Style.Colors[idx] = col;
+}
+
+void PopStyleColor(int count) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(count <= gp.ColorModifiers.Size, "You can't pop more modifiers than have been pushed!");
+    while (count > 0) {
+        ImGuiColorMod& backup = gp.ColorModifiers.back();
+        gp.Style.Colors[backup.Col] = backup.BackupValue;
+        gp.ColorModifiers.pop_back();
+        count--;
+    }
+}
+
 void PushStyleVar(ImPlot3DStyleVar idx, float val) {
     ImPlot3DContext& gp = *GImPlot3D;
     const ImPlot3DStyleVarInfo* var_info = GetPlotStyleVarInfo(idx);
