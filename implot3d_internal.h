@@ -483,6 +483,7 @@ struct ImPlot3DContext {
     ImPlot3DStyle Style;
     ImVector<ImGuiColorMod> ColorModifiers;
     ImVector<ImGuiStyleMod> StyleModifiers;
+    ImVector<ImPlot3DColormap> ColormapModifiers;
     ImPlot3DColormapData ColormapData;
 };
 

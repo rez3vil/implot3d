@@ -1436,6 +1436,31 @@ ImPlot3DColormap GetColormapIndex(const char* name) {
     return gp.ColormapData.GetIndex(name);
 }
 
+void PushColormap(ImPlot3DColormap colormap) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(colormap >= 0 && colormap < gp.ColormapData.Count, "The colormap index is invalid!");
+    gp.ColormapModifiers.push_back(gp.Style.Colormap);
+    gp.Style.Colormap = colormap;
+}
+
+void PushColormap(const char* name) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    ImPlot3DColormap idx = gp.ColormapData.GetIndex(name);
+    IM_ASSERT_USER_ERROR(idx != -1, "The colormap name is invalid!");
+    PushColormap(idx);
+}
+
+void PopColormap(int count) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(count <= gp.ColormapModifiers.Size, "You can't pop more modifiers than have been pushed!");
+    while (count > 0) {
+        const ImPlot3DColormap& backup = gp.ColormapModifiers.back();
+        gp.Style.Colormap = backup;
+        gp.ColormapModifiers.pop_back();
+        count--;
+    }
+}
+
 ImU32 NextColormapColorU32() {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentItems != nullptr, "NextColormapColor() needs to be called between BeginPlot() and EndPlot()!");

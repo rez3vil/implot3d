@@ -244,7 +244,7 @@ void DemoNaNValues() {
 //-----------------------------------------------------------------------------
 
 void DemoCustomStyles() {
-    // ImPlot3D::PushColormap(ImPlot3DColormap_Deep);
+    ImPlot3D::PushColormap(ImPlot3DColormap_Deep);
     // normally you wouldn't change the entire style each frame
     ImPlot3DStyle backup = ImPlot3D::GetStyle();
     MyImPlot3D::StyleSeaborn();
@@ -262,7 +262,7 @@ void DemoCustomStyles() {
         ImPlot3D::EndPlot();
     }
     ImPlot3D::GetStyle() = backup;
-    // ImPlot3D::PopColormap();
+    ImPlot3D::PopColormap();
 }
 
 void DemoCustomRendering() {

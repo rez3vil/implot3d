@@ -411,6 +411,13 @@ IMPLOT3D_API const char* GetColormapName(ImPlot3DColormap cmap);
 // Returns an index number for a colormap given a valid string name. Returns -1 if name is invalid
 IMPLOT3D_API ImPlot3DColormap GetColormapIndex(const char* name);
 
+// Temporarily switch to one of the built-in (i.e. ImPlot3DColormap_XXX) or user-added colormaps (i.e. a return value of AddColormap). Don't forget to call PopColormap!
+IMPLOT3D_API void PushColormap(ImPlot3DColormap cmap);
+// Push a colormap by string name. Use built-in names such as "Default", "Deep", "Jet", etc. or a string you provided to AddColormap. Don't forget to call PopColormap!
+IMPLOT3D_API void PushColormap(const char* name);
+// Undo temporary colormap modification(s). Undo multiple pushes at once by increasing count
+IMPLOT3D_API void PopColormap(int count = 1);
+
 // Returns the next color from the current colormap and advances the colormap for the current plot
 // Can also be used with no return value to skip colors if desired. You need to call it between Begin/EndPlot!
 IMPLOT3D_API ImVec4 NextColormapColor();
