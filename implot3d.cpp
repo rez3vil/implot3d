@@ -866,6 +866,7 @@ void SetupAxisLimits(ImAxis3D idx, double min_lim, double max_lim, ImPlot3DCond 
     if (plot.JustCreated || cond == ImPlot3DCond_Always) {
         axis.SetRange(min_lim, max_lim);
         axis.RangeCond = cond;
+        axis.FitThisFrame = false;
     }
 }
 
@@ -873,6 +874,14 @@ void SetupAxes(const char* x_label, const char* y_label, const char* z_label, Im
     SetupAxis(ImAxis3D_X, x_label, x_flags);
     SetupAxis(ImAxis3D_Y, y_label, y_flags);
     SetupAxis(ImAxis3D_Z, z_label, z_flags);
+}
+
+void SetupAxesLimits(double x_min, double x_max, double y_min, double y_max, double z_min, double z_max, ImPlot3DCond cond) {
+    SetupAxisLimits(ImAxis3D_X, x_min, x_max, cond);
+    SetupAxisLimits(ImAxis3D_Y, y_min, y_max, cond);
+    SetupAxisLimits(ImAxis3D_Z, z_min, z_max, cond);
+    if (cond == ImPlot3DCond_Once)
+        GImPlot3D->CurrentPlot->FitThisFrame = false;
 }
 
 void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags) {

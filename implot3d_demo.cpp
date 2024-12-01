@@ -145,6 +145,63 @@ void DemoRealtimePlots() {
     }
 }
 
+void DemoMarkersAndText() {
+    static float mk_size = ImPlot3D::GetStyle().MarkerSize;
+    static float mk_weight = ImPlot3D::GetStyle().MarkerWeight;
+    ImGui::DragFloat("Marker Size", &mk_size, 0.1f, 2.0f, 10.0f, "%.2f px");
+    ImGui::DragFloat("Marker Weight", &mk_weight, 0.05f, 0.5f, 3.0f, "%.2f px");
+
+    if (ImPlot3D::BeginPlot("##MarkerStyles", ImVec2(-1, 0), ImPlot3DFlags_CanvasOnly)) {
+
+        ImPlot3D::SetupAxes(nullptr, nullptr, nullptr, ImPlot3DAxisFlags_NoDecorations, ImPlot3DAxisFlags_NoDecorations, ImPlot3DAxisFlags_NoDecorations);
+        ImPlot3D::SetupAxesLimits(-0.5, 1.5, -0.5, 1.5, 0, ImPlot3DMarker_COUNT + 1);
+
+        float xs[2] = {0, 0};
+        float ys[2] = {0, 0};
+        float zs[2] = {ImPlot3DMarker_COUNT, ImPlot3DMarker_COUNT + 1};
+
+        // Filled markers
+        for (int m = 0; m < ImPlot3DMarker_COUNT; ++m) {
+            xs[1] = xs[0] + ImCos(zs[0] / float(ImPlot3DMarker_COUNT) * 2 * M_PI) * 0.5;
+            ys[1] = ys[0] + ImSin(zs[0] / float(ImPlot3DMarker_COUNT) * 2 * M_PI) * 0.5;
+
+            ImGui::PushID(m);
+            ImPlot3D::SetNextMarkerStyle(m, mk_size, IMPLOT3D_AUTO_COL, mk_weight);
+            ImPlot3D::PlotLine("##Filled", xs, ys, zs, 2);
+            ImGui::PopID();
+            zs[0]--;
+            zs[1]--;
+        }
+
+        xs[0] = 1;
+        ys[0] = 1;
+        zs[0] = ImPlot3DMarker_COUNT;
+        zs[1] = zs[0] + 1;
+
+        // Open markers
+        for (int m = 0; m < ImPlot3DMarker_COUNT; ++m) {
+            xs[1] = xs[0] + ImCos(zs[0] / float(ImPlot3DMarker_COUNT) * 2 * M_PI) * 0.5;
+            ys[1] = ys[0] - ImSin(zs[0] / float(ImPlot3DMarker_COUNT) * 2 * M_PI) * 0.5;
+
+            ImGui::PushID(m);
+            ImPlot3D::SetNextMarkerStyle(m, mk_size, ImVec4(0, 0, 0, 0), mk_weight);
+            ImPlot3D::PlotLine("##Open", xs, ys, zs, 2);
+            ImGui::PopID();
+            zs[0]--;
+            zs[1]--;
+        }
+
+        // ImPlot3D::PlotText("Filled Markers", 2.5f, 6.0f);
+        // ImPlot3D::PlotText("Open Markers", 7.5f, 6.0f);
+
+        // ImPlot3D::PushStyleColor(ImPlot3DCol_InlayText, ImVec4(1, 0, 1, 1));
+        // ImPlot3D::PlotText("Vertical Text", 5.0f, 6.0f, ImVec2(0, 0), ImPlot3DTextFlags_Vertical);
+        // ImPlot3D::PopStyleColor();
+
+        ImPlot3D::EndPlot();
+    }
+}
+
 //-----------------------------------------------------------------------------
 // [SECTION] Demo Window
 //-----------------------------------------------------------------------------
@@ -213,6 +270,7 @@ void ShowDemoWindow(bool* p_open) {
             DemoHeader("Line Plots", DemoLinePlots);
             DemoHeader("Scatter Plots", DemoScatterPlots);
             DemoHeader("Realtime Plots", DemoRealtimePlots);
+            DemoHeader("Markers and Text", DemoMarkersAndText);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Help")) {

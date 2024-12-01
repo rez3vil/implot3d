@@ -238,8 +238,6 @@ ImPlot3DItem* RegisterOrGetItem(const char* label_id, ImPlot3DItemFlags flags, b
         Items.Legend.Indices.push_back(idx);
         item->NameOffset = Items.Legend.Labels.size();
         Items.Legend.Labels.append(label_id, label_id + strlen(label_id) + 1);
-    } else {
-        item->Show = false;
     }
     return item;
 }
