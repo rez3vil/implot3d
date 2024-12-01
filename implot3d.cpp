@@ -1163,9 +1163,6 @@ void SetupLock() {
         axis.Locator(axis.Ticker, axis.Range, axis.Formatter, axis.FormatterData);
     }
 
-    // Render plot box
-    RenderPlotBox(draw_list, plot);
-
     // Render title
     if (!plot.TextBuffer.empty()) {
         ImU32 col = GetStyleColorU32(ImPlot3DCol_TitleText);
@@ -1173,6 +1170,9 @@ void SetupLock() {
         AddTextCentered(draw_list, top_center, col, plot.TextBuffer.c_str());
         plot.PlotRect.Min.y += ImGui::GetTextLineHeight() + gp.Style.LabelPadding.y;
     }
+
+    // Render plot box
+    RenderPlotBox(draw_list, plot);
 
     ImGui::PopClipRect();
 }
