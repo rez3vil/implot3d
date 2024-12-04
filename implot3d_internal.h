@@ -394,6 +394,8 @@ struct ImPlot3DAxis {
     // Fit data
     bool FitThisFrame;
     ImPlot3DRange FitExtents;
+    // User input
+    bool Held;
 
     // Constructor
     ImPlot3DAxis() {
@@ -412,6 +414,8 @@ struct ImPlot3DAxis {
         FitThisFrame = true;
         FitExtents.Min = HUGE_VAL;
         FitExtents.Max = -HUGE_VAL;
+        // User input
+        Held = false;
     }
 
     inline void SetRange(double v1, double v2) {
@@ -448,6 +452,8 @@ struct ImPlot3DPlot {
     bool SetupLocked;
     bool Hovered;
     bool Held;
+    int HeldEdgeIdx;  ///< Index of the edge being held
+    int HeldPlaneIdx; ///< Index of the plane being held
     // Fit data
     bool FitThisFrame;
     // Items
@@ -462,6 +468,8 @@ struct ImPlot3DPlot {
             Axes[i] = ImPlot3DAxis();
         SetupLocked = false;
         Hovered = Held = false;
+        HeldEdgeIdx = -1;
+        HeldPlaneIdx = -1;
         FitThisFrame = true;
         CurrentItem = nullptr;
     }

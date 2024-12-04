@@ -391,9 +391,11 @@ static const int axis_corners_lookup_3d[8][3][2] = {
     {{4, 5}, {4, 7}, {3, 7}},
 };
 
-int GetMouseOverPlane(const ImPlot3DPlot& plot, const bool* active_faces, const ImVec2* corners_pix) {
+int GetMouseOverPlane(const ImPlot3DPlot& plot, const bool* active_faces, const ImVec2* corners_pix, int* plane_out = nullptr) {
     ImGuiIO& io = ImGui::GetIO();
     ImVec2 mouse_pos = io.MousePos;
+    if (plane_out)
+        *plane_out = -1;
 
     // Check each active face
     for (int a = 0; a < 3; a++) {
@@ -404,8 +406,11 @@ int GetMouseOverPlane(const ImPlot3DPlot& plot, const bool* active_faces, const 
         ImVec2 p3 = corners_pix[faces[face_idx][3]];
 
         // Check if the mouse is inside the face's quad (using a triangle check)
-        if (ImTriangleContainsPoint(p0, p1, p2, mouse_pos) || ImTriangleContainsPoint(p2, p3, p0, mouse_pos))
+        if (ImTriangleContainsPoint(p0, p1, p2, mouse_pos) || ImTriangleContainsPoint(p2, p3, p0, mouse_pos)) {
+            if (plane_out)
+                *plane_out = a;
             return a; // Return the plane index: 0 -> YZ, 1 -> XZ, 2 -> XY
+        }
     }
 
     return -1; // Not over any active plane
@@ -459,9 +464,18 @@ int GetMouseOverAxis(const ImPlot3DPlot& plot, const bool* active_faces, const I
 void RenderPlotBackground(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImVec2* corners_pix, const bool* active_faces) {
     const ImVec4 col_bg = GetStyleColorVec4(ImPlot3DCol_PlotBg);
     const ImVec4 col_bg_hov = col_bg + ImVec4(0.03, 0.03, 0.03, 0.0);
-    int hovered_plane = GetMouseOverPlane(plot, active_faces, corners_pix);
-    if (GetMouseOverAxis(plot, active_faces, corners_pix) != -1)
-        hovered_plane = -1;
+
+    int hovered_plane = -1;
+    if (!plot.Held) {
+        // If the mouse is not held, highlight plane hovering when mouse over it
+        hovered_plane = GetMouseOverPlane(plot, active_faces, corners_pix);
+        if (GetMouseOverAxis(plot, active_faces, corners_pix) != -1)
+            hovered_plane = -1;
+    } else {
+        // If the mouse is held, highlight the held plane
+        hovered_plane = plot.HeldPlaneIdx;
+    }
+
     for (int a = 0; a < 3; a++) {
         int idx[4]; // Corner indices
         for (int i = 0; i < 4; i++)
@@ -471,11 +485,14 @@ void RenderPlotBackground(ImDrawList* draw_list, const ImPlot3DPlot& plot, const
     }
 }
 
-void RenderPlotBorder(ImDrawList* draw_list, const ImVec2* corners_pix, const bool* active_faces) {
+void RenderPlotBorder(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImVec2* corners_pix, const bool* active_faces) {
     ImGuiIO& io = ImGui::GetIO();
-    ImVec2 mouse_pos = io.MousePos;
+
     int hovered_edge = -1;
-    GetMouseOverAxis(*GImPlot3D->CurrentPlot, active_faces, corners_pix, &hovered_edge);
+    if (!plot.Held)
+        GetMouseOverAxis(plot, active_faces, corners_pix, &hovered_edge);
+    else
+        hovered_edge = plot.HeldEdgeIdx;
 
     bool render_edge[12];
     for (int i = 0; i < 12; i++)
@@ -782,7 +799,7 @@ void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
 
     // Render components
     RenderPlotBackground(draw_list, plot, corners_pix, active_faces);
-    RenderPlotBorder(draw_list, corners_pix, active_faces);
+    RenderPlotBorder(draw_list, plot, corners_pix, active_faces);
     RenderPlotGrid(draw_list, plot, corners, active_faces);
     RenderTickLabels(draw_list, plot, corners, corners_pix, axis_corners);
     RenderAxisLabels(draw_list, plot, corners, corners_pix, axis_corners);
@@ -1206,24 +1223,41 @@ void HandleInput(ImPlot3DPlot& plot) {
     ComputeBoxCorners(corners, range_min, range_max);
     ImVec2 corners_pix[8];
     ComputeBoxCornersPix(corners_pix, corners);
-    int hovered_plane = GetMouseOverPlane(plot, active_faces, corners_pix);
-    int hovered_axis = GetMouseOverAxis(plot, active_faces, corners_pix);
-    if (hovered_axis != -1)
+    int hovered_plane_idx = -1;
+    int hovered_plane = GetMouseOverPlane(plot, active_faces, corners_pix, &hovered_plane_idx);
+    int hovered_edge_idx = -1;
+    int hovered_axis = GetMouseOverAxis(plot, active_faces, corners_pix, &hovered_edge_idx);
+    if (hovered_axis != -1) {
+        hovered_plane_idx = -1;
         hovered_plane = -1;
+    }
 
-    // TODO transform_axis should not change while the user is performing a transformation
+    // If the user is no longer pressing the translation/zoom buttons, set axes as not held
+    if (!ImGui::IsMouseDown(0) && !ImGui::IsMouseDown(2)) {
+        for (int i = 0; i < 3; i++)
+            plot.Axes[i].Held = false;
+    }
+
+    // Reset held edge/plane indices (it will be set if mouse button is down)
+    if (!plot.Held) {
+        plot.HeldEdgeIdx = -1;
+        plot.HeldPlaneIdx = -1;
+    }
 
     // Check which axes should be transformed (fit/zoom/translate)
+    bool any_axis_held = plot.Axes[0].Held || plot.Axes[1].Held || plot.Axes[2].Held;
     static bool transform_axis[3] = {false, false, false};
-    if (hovered_axis != -1) {
-        transform_axis[hovered_axis] = true;
-    } else if (hovered_plane != -1) {
-        transform_axis[(hovered_plane + 1) % 3] = true;
-        transform_axis[(hovered_plane + 2) % 3] = true;
-    } else {
-        transform_axis[0] = true;
-        transform_axis[1] = true;
-        transform_axis[2] = true;
+    if (!any_axis_held) {
+        // Only update the transformation axes if the user is not already performing a transformation
+        transform_axis[0] = transform_axis[1] = transform_axis[2] = false;
+        if (hovered_axis != -1) {
+            transform_axis[hovered_axis] = true;
+        } else if (hovered_plane != -1) {
+            transform_axis[(hovered_plane + 1) % 3] = true;
+            transform_axis[(hovered_plane + 2) % 3] = true;
+        } else {
+            transform_axis[0] = transform_axis[1] = transform_axis[2] = true;
+        }
     }
 
     // Handle translation/zoom fit with double click
@@ -1248,8 +1282,15 @@ void HandleInput(ImPlot3DPlot& plot) {
 
         // Adjust plot range to translate the plot
         for (int i = 0; i < 3; i++) {
-            if (transform_axis[i])
+            if (transform_axis[i]) {
                 plot.Axes[i].SetRange(plot.Axes[i].Range.Min - delta_plot[i], plot.Axes[i].Range.Max - delta_plot[i]);
+                plot.Axes[i].Held = true;
+            }
+            // If no axis was held before (user started translating in this frame), set the held edge/plane indices
+            if (!any_axis_held) {
+                plot.HeldEdgeIdx = hovered_edge_idx;
+                plot.HeldPlaneIdx = hovered_plane_idx;
+            }
         }
     }
 
@@ -1331,8 +1372,15 @@ void HandleInput(ImPlot3DPlot& plot) {
             float center = (axis.Range.Min + axis.Range.Max) * 0.5f;
             float size = axis.Range.Max - axis.Range.Min;
             size *= zoom;
-            if (transform_axis[i])
+            if (transform_axis[i]) {
                 plot.Axes[i].SetRange(center - size * 0.5f, center + size * 0.5f);
+                plot.Axes[i].Held = true;
+            }
+            // If no axis was held before (user started zoom in this frame), set the held edge/plane indices
+            if (!any_axis_held) {
+                plot.HeldEdgeIdx = hovered_edge_idx;
+                plot.HeldPlaneIdx = hovered_plane_idx;
+            }
         }
     }
 }
