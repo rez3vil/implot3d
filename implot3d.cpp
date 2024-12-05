@@ -416,8 +416,8 @@ int GetMouseOverPlane(const ImPlot3DPlot& plot, const bool* active_faces, const 
     return -1; // Not over any active plane
 }
 
-int GetMouseOverAxis(const ImPlot3DPlot& plot, const bool* active_faces, const ImVec2* corners_pix, int* edge_out = nullptr) {
-    const float axis_proximity_threshold = 10.0f; // Distance in pixels to consider the mouse "close" to an axis
+int GetMouseOverAxis(const ImPlot3DPlot& plot, const bool* active_faces, const ImVec2* corners_pix, const int plane_2d, int* edge_out = nullptr) {
+    const float axis_proximity_threshold = 15.0f; // Distance in pixels to consider the mouse "close" to an axis
 
     ImGuiIO& io = ImGui::GetIO();
     ImVec2 mouse_pos = io.MousePos;
@@ -429,6 +429,8 @@ int GetMouseOverAxis(const ImPlot3DPlot& plot, const bool* active_faces, const I
         visible_edges[i] = false;
     for (int a = 0; a < 3; a++) {
         int face_idx = a + 3 * active_faces[a];
+        if (plane_2d != -1 && a != plane_2d)
+            continue;
         for (size_t i = 0; i < 4; i++)
             visible_edges[face_edges[face_idx][i]] = true;
     }
@@ -461,7 +463,7 @@ int GetMouseOverAxis(const ImPlot3DPlot& plot, const bool* active_faces, const I
     return -1; // Not over any axis
 }
 
-void RenderPlotBackground(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImVec2* corners_pix, const bool* active_faces) {
+void RenderPlotBackground(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImVec2* corners_pix, const bool* active_faces, const int plane_2d) {
     const ImVec4 col_bg = GetStyleColorVec4(ImPlot3DCol_PlotBg);
     const ImVec4 col_bg_hov = col_bg + ImVec4(0.03, 0.03, 0.03, 0.0);
 
@@ -469,7 +471,7 @@ void RenderPlotBackground(ImDrawList* draw_list, const ImPlot3DPlot& plot, const
     if (!plot.Held) {
         // If the mouse is not held, highlight plane hovering when mouse over it
         hovered_plane = GetMouseOverPlane(plot, active_faces, corners_pix);
-        if (GetMouseOverAxis(plot, active_faces, corners_pix) != -1)
+        if (GetMouseOverAxis(plot, active_faces, corners_pix, plane_2d) != -1)
             hovered_plane = -1;
     } else {
         // If the mouse is held, highlight the held plane
@@ -485,12 +487,12 @@ void RenderPlotBackground(ImDrawList* draw_list, const ImPlot3DPlot& plot, const
     }
 }
 
-void RenderPlotBorder(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImVec2* corners_pix, const bool* active_faces) {
+void RenderPlotBorder(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImVec2* corners_pix, const bool* active_faces, const int plane_2d) {
     ImGuiIO& io = ImGui::GetIO();
 
     int hovered_edge = -1;
     if (!plot.Held)
-        GetMouseOverAxis(plot, active_faces, corners_pix, &hovered_edge);
+        GetMouseOverAxis(plot, active_faces, corners_pix, plane_2d, &hovered_edge);
     else
         hovered_edge = plot.HeldEdgeIdx;
 
@@ -499,6 +501,8 @@ void RenderPlotBorder(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImV
         render_edge[i] = false;
     for (int a = 0; a < 3; a++) {
         int face_idx = a + 3 * active_faces[a];
+        if (plane_2d != -1 && a != plane_2d)
+            continue;
         for (size_t i = 0; i < 4; i++)
             render_edge[face_edges[face_idx][i]] = true;
     }
@@ -514,11 +518,13 @@ void RenderPlotBorder(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImV
     }
 }
 
-void RenderPlotGrid(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DPoint* corners, const bool* active_faces) {
+void RenderPlotGrid(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DPoint* corners, const bool* active_faces, const int plane_2d) {
     ImVec4 col_grid = GetStyleColorVec4(ImPlot3DCol_AxisGrid);
     ImU32 col_grid_minor = ImGui::GetColorU32(col_grid * ImVec4(1, 1, 1, 0.3f));
     ImU32 col_grid_major = ImGui::GetColorU32(col_grid * ImVec4(1, 1, 1, 0.6f));
     for (int face = 0; face < 3; face++) {
+        if (plane_2d != -1 && face != plane_2d)
+            continue;
         int face_idx = face + 3 * active_faces[face];
         const ImPlot3DAxis& axis_u = plot.Axes[(face + 1) % 3];
         const ImPlot3DAxis& axis_v = plot.Axes[(face + 2) % 3];
@@ -715,9 +721,11 @@ void RenderAxisLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImP
 }
 
 // Function to compute active faces based on the rotation
-void ComputeActiveFaces(bool* active_faces, const ImPlot3DQuat& rotation, bool* is_2d = nullptr) {
-    if (is_2d)
-        *is_2d = false;
+// If the plot is close to 2D, plane_2d is set to the plane index (0 -> YZ, 1 -> XZ, 2 -> XY)
+// plane_2d is set to -1 otherwise
+void ComputeActiveFaces(bool* active_faces, const ImPlot3DQuat& rotation, int* plane_2d = nullptr) {
+    if (plane_2d)
+        *plane_2d = -1;
 
     ImPlot3DPoint rot_face_n[3] = {
         rotation * ImPlot3DPoint(1.0f, 0.0f, 0.0f),
@@ -725,20 +733,24 @@ void ComputeActiveFaces(bool* active_faces, const ImPlot3DQuat& rotation, bool* 
         rotation * ImPlot3DPoint(0.0f, 0.0f, 1.0f),
     };
 
-    int num_aligned = 0;
+    int num_deg = 0; // Check number of planes that are degenerate (seen as a line)
     for (int i = 0; i < 3; ++i) {
         // Determine the active face based on the Z component
-        if (fabs(rot_face_n[i].z) < 1e-5f) {
+        if (fabs(rot_face_n[i].z) < 0.025) {
             // If aligned with the plane, choose the min face for bottom/left
             active_faces[i] = rot_face_n[i].x + rot_face_n[i].y < 0.0f;
-            num_aligned++;
+            num_deg++;
         } else {
             // Otherwise, determine based on the Z component
             active_faces[i] = rot_face_n[i].z < 0.0f;
+            // Set this plane as possible 2d plane
+            if (plane_2d)
+                *plane_2d = i;
         }
     }
-    if (is_2d && num_aligned >= 2)
-        *is_2d = true;
+    // Only return 2d plane if there are exactly 2 degenerate planes
+    if (num_deg != 2 && plane_2d)
+        *plane_2d = -1;
 }
 
 // Function to compute the box corners in plot space
@@ -770,8 +782,9 @@ void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
 
     // Compute active faces
     bool active_faces[3];
-    bool is_2d = false;
-    ComputeActiveFaces(active_faces, rotation, &is_2d);
+    int plane_2d = -1;
+    ComputeActiveFaces(active_faces, rotation, &plane_2d);
+    bool is_2d = plane_2d != -1;
 
     // Compute box corners in plot space
     ImPlot3DPoint corners[8];
@@ -784,10 +797,77 @@ void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
     // Compute axes start and end corners (given current rotation)
     int axis_corners[3][2];
     if (is_2d) {
-        // TODO
-        for (int a = 0; a < 3; a++) {
-            axis_corners[a][0] = -1;
-            axis_corners[a][1] = -1;
+        int face = plane_2d + 3 * active_faces[plane_2d]; // Face of the 2D plot
+        int common_edges[2] = {-1, -1};                   // Edges shared by the 3 faces
+
+        // Find the common edges between the 3 faces
+        for (int i = 0; i < 4; i++) {
+            int edge = face_edges[face][i];
+            for (int j = 0; j < 2; j++) {
+                int axis = (plane_2d + 1 + j) % 3;
+                int face_idx = axis + active_faces[axis] * 3;
+                for (int k = 0; k < 4; k++) {
+                    if (face_edges[face_idx][k] == edge) {
+                        common_edges[j] = edge;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Get corners from 2 edges (origin is the corner in common)
+        int origin_corner = -1;
+        int x_corner = -1;
+        int y_corner = -1;
+        for (int i = 0; i < 2; i++)
+            for (int j = 0; j < 2; j++)
+                if (edges[common_edges[0]][i] == edges[common_edges[1]][j]) {
+                    origin_corner = edges[common_edges[0]][i];
+                    x_corner = edges[common_edges[0]][!i];
+                    y_corner = edges[common_edges[1]][!j];
+                }
+
+        // Swap x and y if they are flipped
+        ImVec2 x_vec = corners_pix[x_corner] - corners_pix[origin_corner];
+        ImVec2 y_vec = corners_pix[y_corner] - corners_pix[origin_corner];
+        if (y_vec.x > x_vec.x)
+            ImSwap(x_corner, y_corner);
+
+        // Check which 3d axis the 2d axis refers to
+        ImPlot3DPoint origin_3d = corners[origin_corner];
+        ImPlot3DPoint x_3d = (corners[x_corner] - origin_3d).Normalized();
+        ImPlot3DPoint y_3d = (corners[y_corner] - origin_3d).Normalized();
+        int x_axis = -1;
+        bool x_inverted = false;
+        int y_axis = -1;
+        bool y_inverted = false;
+        for (int i = 0; i < 2; i++) {
+            int axis_i = (plane_2d + 1 + i) % 3;
+            if (y_axis != -1 || (ImAbs(x_3d[axis_i]) > 1e-8f && x_axis == -1)) {
+                x_axis = axis_i;
+                x_inverted = x_3d[axis_i] < 0.0f;
+            } else {
+                y_axis = axis_i;
+                y_inverted = y_3d[axis_i] < 0.0f;
+            }
+        }
+
+        // Set the 3d axis corners based on the 2d axis corners
+        axis_corners[plane_2d][0] = -1;
+        axis_corners[plane_2d][1] = -1;
+        if (x_inverted) {
+            axis_corners[x_axis][0] = x_corner;
+            axis_corners[x_axis][1] = origin_corner;
+        } else {
+            axis_corners[x_axis][0] = origin_corner;
+            axis_corners[x_axis][1] = x_corner;
+        }
+        if (y_inverted) {
+            axis_corners[y_axis][0] = y_corner;
+            axis_corners[y_axis][1] = origin_corner;
+        } else {
+            axis_corners[y_axis][0] = origin_corner;
+            axis_corners[y_axis][1] = y_corner;
         }
     } else {
         int index = (active_faces[0] << 2) | (active_faces[1] << 1) | (active_faces[2]);
@@ -798,9 +878,9 @@ void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
     }
 
     // Render components
-    RenderPlotBackground(draw_list, plot, corners_pix, active_faces);
-    RenderPlotBorder(draw_list, plot, corners_pix, active_faces);
-    RenderPlotGrid(draw_list, plot, corners, active_faces);
+    RenderPlotBackground(draw_list, plot, corners_pix, active_faces, plane_2d);
+    RenderPlotBorder(draw_list, plot, corners_pix, active_faces, plane_2d);
+    RenderPlotGrid(draw_list, plot, corners, active_faces, plane_2d);
     RenderTickLabels(draw_list, plot, corners, corners_pix, axis_corners);
     RenderAxisLabels(draw_list, plot, corners, corners_pix, axis_corners);
 }
@@ -1218,7 +1298,8 @@ void HandleInput(ImPlot3DPlot& plot) {
     ImPlot3DPoint range_min = plot.RangeMin();
     ImPlot3DPoint range_max = plot.RangeMax();
     bool active_faces[3];
-    ComputeActiveFaces(active_faces, rotation);
+    int plane_2d = -1;
+    ComputeActiveFaces(active_faces, rotation, &plane_2d);
     ImPlot3DPoint corners[8];
     ComputeBoxCorners(corners, range_min, range_max);
     ImVec2 corners_pix[8];
@@ -1226,7 +1307,7 @@ void HandleInput(ImPlot3DPlot& plot) {
     int hovered_plane_idx = -1;
     int hovered_plane = GetMouseOverPlane(plot, active_faces, corners_pix, &hovered_plane_idx);
     int hovered_edge_idx = -1;
-    int hovered_axis = GetMouseOverAxis(plot, active_faces, corners_pix, &hovered_edge_idx);
+    int hovered_axis = GetMouseOverAxis(plot, active_faces, corners_pix, plane_2d, &hovered_edge_idx);
     if (hovered_axis != -1) {
         hovered_plane_idx = -1;
         hovered_plane = -1;
