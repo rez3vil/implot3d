@@ -1457,54 +1457,34 @@ void HandleInput(ImPlot3DPlot& plot) {
                     plot.HeldPlaneIdx = hovered_plane_idx;
                 }
             }
-        } else {
+        } else if (transform_axis[0] || transform_axis[1] || transform_axis[2]) {
             // Translate along plane/axis
 
-            // Hovered_plane_idx corresponds to a face of the box
-            int face_idx = hovered_plane_idx;
-
-            ImPlot3DPoint normal(0, 0, 0);
-            switch (face_idx) {
-                case 0: normal = ImPlot3DPoint(-1, 0, 0); break; // X-min
-                case 1: normal = ImPlot3DPoint(0, -1, 0); break; // Y-min
-                case 2: normal = ImPlot3DPoint(0, 0, -1); break; // Z-min
-                case 3: normal = ImPlot3DPoint(1, 0, 0); break;  // X-max
-                case 4: normal = ImPlot3DPoint(0, 1, 0); break;  // Y-max
-                case 5: normal = ImPlot3DPoint(0, 0, 1); break;  // Z-max
-            }
-
             // Mouse delta in pixels
-            ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
+            ImVec2 mouse_pos = ImGui::GetMousePos();
+            ImVec2 mouse_delta(IO.MouseDelta.x, IO.MouseDelta.y);
 
-            // Convert delta to a 3D pixel vector (invert y-axis)
-            ImPlot3DPoint delta_pixels(delta.x, -delta.y, 0.0f);
+            ImPlane3D plane = ImPlane3D_XY;
+            if (transform_axis[1] && transform_axis[2])
+                plane = ImPlane3D_YZ;
+            else if (transform_axis[0] && transform_axis[2])
+                plane = ImPlane3D_XZ;
 
-            // Convert delta to NDC space
-            float zoom = ImMin(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
-            ImPlot3DPoint delta_NDC = plot.Rotation.Inverse() * (delta_pixels / zoom);
+            ImPlot3DPoint mouse_plot = PixelsToPlotPlane(mouse_pos, plane, false);
+            ImPlot3DPoint mouse_delta_plot = PixelsToPlotPlane(mouse_delta, plane, false);
+            ImPlot3DPoint delta_plot = mouse_delta_plot - mouse_plot;
 
-            // Convert delta to plot space
-            ImPlot3DPoint delta_plot = delta_NDC * (plot.RangeMax() - plot.RangeMin());
-
-            // Project delta_plot onto the plane by removing the component along the plane's normal
-            // normal is already in plot space and matches the plane
-            normal.Normalize();
-            float dot = delta_plot.Dot(normal);
-            delta_plot -= normal * dot;
-
-            // Adjust plot range to translate the plot
+            // Apply translation to the selected axes
             for (int i = 0; i < 3; i++) {
                 if (transform_axis[i]) {
                     plot.Axes[i].SetRange(plot.Axes[i].Range.Min - delta_plot[i],
                                           plot.Axes[i].Range.Max - delta_plot[i]);
                     plot.Axes[i].Held = true;
                 }
-            }
-
-            // If no axis was held before (user started translating this frame), set the held edge/plane indices
-            if (!any_axis_held) {
-                plot.HeldEdgeIdx = hovered_edge_idx;
-                plot.HeldPlaneIdx = hovered_plane_idx;
+                if (!any_axis_held) {
+                    plot.HeldEdgeIdx = hovered_edge_idx;
+                    plot.HeldPlaneIdx = hovered_plane_idx;
+                }
             }
         }
     }
