@@ -1159,6 +1159,86 @@ ImPlot3DRay PixelsToPlotRay(double x, double y) {
     return PixelsToPlotRay(ImVec2(x, y));
 }
 
+ImPlot3DPoint PixelsToPlotPlane(const ImVec2& pix, ImPlane3D plane, bool mask) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PixelsToPlotPlane() needs to be called between BeginPlot() and EndPlot()!");
+
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    ImPlot3DRay ray = PixelsToNDCRay(pix);
+    const ImPlot3DPoint& O = ray.Origin;
+    const ImPlot3DPoint& D = ray.Direction;
+
+    // Helper lambda to check intersection with a given coordinate and return intersection point if valid.
+    auto IntersectPlane = [&](float coord) -> ImPlot3DPoint {
+        // Solve for t in O[axis] + D[axis]*t = coord
+        float denom = 0.0f;
+        float numer = 0.0f;
+        if (plane == ImPlane3D_YZ) {
+            denom = D.x;
+            numer = coord - O.x;
+        } else if (plane == ImPlane3D_XZ) {
+            denom = D.y;
+            numer = coord - O.y;
+        } else if (plane == ImPlane3D_XY) {
+            denom = D.z;
+            numer = coord - O.z;
+        }
+
+        if (ImAbs(denom) < 1e-12f) {
+            // Ray is parallel or nearly parallel to the plane
+            return ImPlot3DPoint(NAN, NAN, NAN);
+        }
+
+        float t = numer / denom;
+        if (t < 0.0f) {
+            // Intersection behind the ray origin
+            return ImPlot3DPoint(NAN, NAN, NAN);
+        }
+
+        return O + D * t;
+    };
+
+    // Helper lambda to check if point P is within the plot box
+    auto InRange = [&](const ImPlot3DPoint& P) {
+        return P.x >= -0.5 && P.x <= 0.5 &&
+               P.y >= -0.5 && P.y <= 0.5 &&
+               P.z >= -0.5 && P.z <= 0.5;
+    };
+
+    // Compute which plane to intersect with
+    bool active_faces[3];
+    ComputeActiveFaces(active_faces, plot.Rotation);
+
+    // Calculate intersection point with the planes
+    ImPlot3DPoint P = IntersectPlane(active_faces[plane] ? 0.5 : -0.5);
+    if (P.IsNaN())
+        return P;
+
+    // Handle mask (if one of the intersections is out of range, set it to NAN)
+    if (mask) {
+        switch (plane) {
+            case ImPlane3D_YZ:
+                if (!InRange(ImPlot3DPoint(0.0, P.y, P.z)))
+                    return ImPlot3DPoint(NAN, NAN, NAN);
+                break;
+            case ImPlane3D_XZ:
+                if (!InRange(ImPlot3DPoint(P.x, 0.0, P.z)))
+                    return ImPlot3DPoint(NAN, NAN, NAN);
+                break;
+            case ImPlane3D_XY:
+                if (!InRange(ImPlot3DPoint(P.x, P.y, 0.0)))
+                    return ImPlot3DPoint(NAN, NAN, NAN);
+                break;
+        }
+    }
+
+    return NDCToPlot(P);
+}
+
+ImPlot3DPoint PixelsToPlotPlane(double x, double y, ImPlane3D plane, bool mask) {
+    return PixelsToPlotPlane(ImVec2(x, y), plane, mask);
+}
+
 ImVec2 GetPlotPos() {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "GetPlotPos() needs to be called between BeginPlot() and EndPlot()!");
@@ -1240,8 +1320,8 @@ ImPlot3DRay PixelsToNDCRay(const ImVec2& pix) {
     float y = -(pix.y - center.y) / zoom; // Invert y-axis
 
     // Define near and far points in NDC space along the z-axis
-    ImPlot3DPoint ndc_near = plot.Rotation.Inverse() * ImPlot3DPoint(x, y, -0.5f);
-    ImPlot3DPoint ndc_far = plot.Rotation.Inverse() * ImPlot3DPoint(x, y, 0.5f);
+    ImPlot3DPoint ndc_near = plot.Rotation.Inverse() * ImPlot3DPoint(x, y, -10.0f);
+    ImPlot3DPoint ndc_far = plot.Rotation.Inverse() * ImPlot3DPoint(x, y, 10.0f);
 
     // Create the ray in NDC space
     ImPlot3DRay ndc_ray;
@@ -1351,23 +1431,77 @@ void HandleInput(ImPlot3DPlot& plot) {
     // Handle translation with right mouse button
     if (plot.Held && ImGui::IsMouseDown(0)) {
         ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
-        // Compute delta_pixels in 3D (invert y-axis)
-        ImPlot3DPoint delta_pixels(delta.x, -delta.y, 0.0f);
 
-        // Convert delta to NDC space
-        float zoom = ImMin(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
-        ImPlot3DPoint delta_NDC = plot.Rotation.Inverse() * (delta_pixels / zoom);
+        if (transform_axis[0] && transform_axis[1] && transform_axis[2]) {
+            // Perform unconstrained translation (translate on the viewer plane)
 
-        // Convert delta to plot space
-        ImPlot3DPoint delta_plot = delta_NDC * (plot.RangeMax() - plot.RangeMin());
+            // Compute delta_pixels in 3D (invert y-axis)
+            ImPlot3DPoint delta_pixels(delta.x, -delta.y, 0.0f);
 
-        // Adjust plot range to translate the plot
-        for (int i = 0; i < 3; i++) {
-            if (transform_axis[i]) {
-                plot.Axes[i].SetRange(plot.Axes[i].Range.Min - delta_plot[i], plot.Axes[i].Range.Max - delta_plot[i]);
-                plot.Axes[i].Held = true;
+            // Convert delta to NDC space
+            float zoom = ImMin(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
+            ImPlot3DPoint delta_NDC = plot.Rotation.Inverse() * (delta_pixels / zoom);
+
+            // Convert delta to plot space
+            ImPlot3DPoint delta_plot = delta_NDC * (plot.RangeMax() - plot.RangeMin());
+
+            // Adjust plot range to translate the plot
+            for (int i = 0; i < 3; i++) {
+                if (transform_axis[i]) {
+                    plot.Axes[i].SetRange(plot.Axes[i].Range.Min - delta_plot[i], plot.Axes[i].Range.Max - delta_plot[i]);
+                    plot.Axes[i].Held = true;
+                }
+                // If no axis was held before (user started translating in this frame), set the held edge/plane indices
+                if (!any_axis_held) {
+                    plot.HeldEdgeIdx = hovered_edge_idx;
+                    plot.HeldPlaneIdx = hovered_plane_idx;
+                }
             }
-            // If no axis was held before (user started translating in this frame), set the held edge/plane indices
+        } else {
+            // Translate along plane/axis
+
+            // Hovered_plane_idx corresponds to a face of the box
+            int face_idx = hovered_plane_idx;
+
+            ImPlot3DPoint normal(0, 0, 0);
+            switch (face_idx) {
+                case 0: normal = ImPlot3DPoint(-1, 0, 0); break; // X-min
+                case 1: normal = ImPlot3DPoint(0, -1, 0); break; // Y-min
+                case 2: normal = ImPlot3DPoint(0, 0, -1); break; // Z-min
+                case 3: normal = ImPlot3DPoint(1, 0, 0); break;  // X-max
+                case 4: normal = ImPlot3DPoint(0, 1, 0); break;  // Y-max
+                case 5: normal = ImPlot3DPoint(0, 0, 1); break;  // Z-max
+            }
+
+            // Mouse delta in pixels
+            ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
+
+            // Convert delta to a 3D pixel vector (invert y-axis)
+            ImPlot3DPoint delta_pixels(delta.x, -delta.y, 0.0f);
+
+            // Convert delta to NDC space
+            float zoom = ImMin(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
+            ImPlot3DPoint delta_NDC = plot.Rotation.Inverse() * (delta_pixels / zoom);
+
+            // Convert delta to plot space
+            ImPlot3DPoint delta_plot = delta_NDC * (plot.RangeMax() - plot.RangeMin());
+
+            // Project delta_plot onto the plane by removing the component along the plane's normal
+            // normal is already in plot space and matches the plane
+            normal.Normalize();
+            float dot = delta_plot.Dot(normal);
+            delta_plot -= normal * dot;
+
+            // Adjust plot range to translate the plot
+            for (int i = 0; i < 3; i++) {
+                if (transform_axis[i]) {
+                    plot.Axes[i].SetRange(plot.Axes[i].Range.Min - delta_plot[i],
+                                          plot.Axes[i].Range.Max - delta_plot[i]);
+                    plot.Axes[i].Held = true;
+                }
+            }
+
+            // If no axis was held before (user started translating this frame), set the held edge/plane indices
             if (!any_axis_held) {
                 plot.HeldEdgeIdx = hovered_edge_idx;
                 plot.HeldPlaneIdx = hovered_plane_idx;
@@ -2021,7 +2155,9 @@ ImPlot3DPoint ImPlot3DPoint::Cross(const ImPlot3DPoint& rhs) const {
     return ImPlot3DPoint(y * rhs.z - z * rhs.y, z * rhs.x - x * rhs.z, x * rhs.y - y * rhs.x);
 }
 
-float ImPlot3DPoint::Length() const { return std::sqrt(x * x + y * y + z * z); }
+float ImPlot3DPoint::Length() const { return ImSqrt(x * x + y * y + z * z); }
+
+float ImPlot3DPoint::LengthSquared() const { return x * x + y * y + z * z; }
 
 void ImPlot3DPoint::Normalize() {
     float l = Length();
@@ -2038,6 +2174,11 @@ ImPlot3DPoint ImPlot3DPoint::Normalized() const {
 ImPlot3DPoint operator*(float lhs, const ImPlot3DPoint& rhs) {
     return ImPlot3DPoint(lhs * rhs.x, lhs * rhs.y, lhs * rhs.z);
 }
+
+bool ImPlot3DPoint::IsNaN() const {
+    return ImNan(x) || ImNan(y) || ImNan(z);
+}
+
 //-----------------------------------------------------------------------------
 // [SECTION] ImPlot3DBox
 //-----------------------------------------------------------------------------

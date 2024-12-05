@@ -70,6 +70,7 @@ typedef int ImPlot3DStyleVar; // -> ImPlot3DStyleVar_          // Enum: Style va
 typedef int ImPlot3DMarker;   // -> ImPlot3DMarker_            // Enum: Marker styles
 typedef int ImPlot3DLocation; // -> ImPlot3DLocation_          // Enum: Locations
 typedef int ImAxis3D;         // -> ImAxis3D_                  // Enum: Axis indices
+typedef int ImPlane3D;        // -> ImPlane3D_                  // Enum: Plane indices
 typedef int ImPlot3DColormap; // -> ImPlot3DColormap_          // Enum: Colormaps
 
 // Flags
@@ -221,6 +222,14 @@ enum ImAxis3D_ {
     ImAxis3D_COUNT,
 };
 
+// Plane indices
+enum ImPlane3D_ {
+    ImPlane3D_YZ = 0,
+    ImPlane3D_XZ,
+    ImPlane3D_XY,
+    ImPlane3D_COUNT,
+};
+
 // Colormaps
 enum ImPlot3DColormap_ {
     ImPlot3DColormap_Deep = 0,      // Same as seaborn "deep"
@@ -335,6 +344,9 @@ IMPLOT3D_API ImVec2 PlotToPixels(double x, double y, double z);
 // Convert a pixel coordinate to a ray in the current plot's coordinate system
 IMPLOT3D_API ImPlot3DRay PixelsToPlotRay(const ImVec2& pix);
 IMPLOT3D_API ImPlot3DRay PixelsToPlotRay(double x, double y);
+// Convert a pixel coordinate to a point in an axis plane in the current plot's coordinate system
+IMPLOT3D_API ImPlot3DPoint PixelsToPlotPlane(const ImVec2& pix, ImPlane3D plane, bool mask = true);
+IMPLOT3D_API ImPlot3DPoint PixelsToPlotPlane(double x, double y, ImPlane3D plane, bool mask = true);
 
 IMPLOT3D_API ImVec2 GetPlotPos();  // Get the current plot position (top-left) in pixels
 IMPLOT3D_API ImVec2 GetPlotSize(); // Get the current plot size in pixels
@@ -494,6 +506,9 @@ struct ImPlot3DPoint {
     // Get vector length
     float Length() const;
 
+    // Get vector squared length
+    float LengthSquared() const;
+
     // Normalize to unit length
     void Normalize();
 
@@ -502,6 +517,9 @@ struct ImPlot3DPoint {
 
     // Friend binary operators to allow commutative behavior
     friend ImPlot3DPoint operator*(float lhs, const ImPlot3DPoint& rhs);
+
+    // Check if the point is NaN
+    bool IsNaN() const;
 
 #ifdef IMPLOT3D_POINT_CLASS_EXTRA
     IMPLOT3D_POINT_CLASS_EXTRA // Define additional constructors and implicit cast operators in imconfig.h to convert back and forth between your math types and ImPlot3DPoint
