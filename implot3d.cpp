@@ -1471,7 +1471,7 @@ void HandleInput(ImPlot3DPlot& plot) {
                 plane = ImPlane3D_XZ;
 
             ImPlot3DPoint mouse_plot = PixelsToPlotPlane(mouse_pos, plane, false);
-            ImPlot3DPoint mouse_delta_plot = PixelsToPlotPlane(mouse_delta, plane, false);
+            ImPlot3DPoint mouse_delta_plot = PixelsToPlotPlane(mouse_pos + mouse_delta, plane, false);
             ImPlot3DPoint delta_plot = mouse_delta_plot - mouse_plot;
 
             // Apply translation to the selected axes
