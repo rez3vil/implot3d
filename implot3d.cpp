@@ -1491,28 +1491,33 @@ void HandleInput(ImPlot3DPlot& plot) {
 
     // Handle reset rotation with left mouse double click
     if (plot.Held && ImGui::IsMouseDoubleClicked(1)) {
+        // Set rotation animation time
+        plot.AnimationTime = 0.2f;
+        plot.RotationAnimationEnd = plot.Rotation;
+
+        // Calculate rotation to align the z-axis with the camera direction
         if (hovered_plane == -1) {
-            plot.Rotation = init_rotation;
+            plot.RotationAnimationEnd = init_rotation;
         } else {
             // Compute plane normal
             ImPlot3DPoint axis_normal = ImPlot3DPoint(0.0f, 0.0f, 0.0f);
             axis_normal[hovered_plane] = active_faces[hovered_plane] ? -1.0f : 1.0f;
 
             // Compute rotation to align the plane normal with the z-axis
-            ImPlot3DQuat align_normal = ImPlot3DQuat::FromTwoVectors(plot.Rotation * axis_normal, ImPlot3DPoint(0.0f, 0.0f, 1.0f));
-            plot.Rotation = align_normal * plot.Rotation;
+            ImPlot3DQuat align_normal = ImPlot3DQuat::FromTwoVectors(plot.RotationAnimationEnd * axis_normal, ImPlot3DPoint(0.0f, 0.0f, 1.0f));
+            plot.RotationAnimationEnd = align_normal * plot.RotationAnimationEnd;
 
             if (hovered_plane != 2) {
                 // Compute rotation to point z-axis up
-                ImPlot3DQuat align_up = ImPlot3DQuat::FromTwoVectors(plot.Rotation * ImPlot3DPoint(0.0f, 0.0f, 1.0f), ImPlot3DPoint(0.0f, 1.0f, 0.0f));
-                plot.Rotation = align_up * plot.Rotation;
+                ImPlot3DQuat align_up = ImPlot3DQuat::FromTwoVectors(plot.RotationAnimationEnd * ImPlot3DPoint(0.0f, 0.0f, 1.0f), ImPlot3DPoint(0.0f, 1.0f, 0.0f));
+                plot.RotationAnimationEnd = align_up * plot.RotationAnimationEnd;
             } else {
                 // Find the axis most aligned with the up direction
                 ImPlot3DPoint up(0.0f, 1.0f, 0.0f);
-                ImPlot3DPoint x_axis = plot.Rotation * ImPlot3DPoint(1.0f, 0.0f, 0.0f);
-                ImPlot3DPoint y_axis = plot.Rotation * ImPlot3DPoint(0.0f, 1.0f, 0.0f);
-                ImPlot3DPoint neg_x_axis = plot.Rotation * ImPlot3DPoint(-1.0f, 0.0f, 0.0f);
-                ImPlot3DPoint neg_y_axis = plot.Rotation * ImPlot3DPoint(0.0f, -1.0f, 0.0f);
+                ImPlot3DPoint x_axis = plot.RotationAnimationEnd * ImPlot3DPoint(1.0f, 0.0f, 0.0f);
+                ImPlot3DPoint y_axis = plot.RotationAnimationEnd * ImPlot3DPoint(0.0f, 1.0f, 0.0f);
+                ImPlot3DPoint neg_x_axis = plot.RotationAnimationEnd * ImPlot3DPoint(-1.0f, 0.0f, 0.0f);
+                ImPlot3DPoint neg_y_axis = plot.RotationAnimationEnd * ImPlot3DPoint(0.0f, -1.0f, 0.0f);
 
                 struct AxisAlignment {
                     ImPlot3DPoint axis;
@@ -1536,7 +1541,7 @@ void HandleInput(ImPlot3DPlot& plot) {
 
                 // Compute the rotation to align the best candidate with the up direction
                 ImPlot3DQuat align_up = ImPlot3DQuat::FromTwoVectors(best_candidate->axis, up);
-                plot.Rotation = align_up * plot.Rotation;
+                plot.RotationAnimationEnd = align_up * plot.RotationAnimationEnd;
             }
         }
     }
@@ -1632,6 +1637,16 @@ void SetupLock() {
         ImVec2 top_center = ImVec2(plot.FrameRect.GetCenter().x, plot.CanvasRect.Min.y);
         AddTextCentered(draw_list, top_center, col, plot.TextBuffer.c_str());
         plot.PlotRect.Min.y += ImGui::GetTextLineHeight() + gp.Style.LabelPadding.y;
+    }
+
+    // Handle animation
+    if (plot.AnimationTime > 0.0f) {
+        float dt = ImGui::GetIO().DeltaTime;
+        float t = ImClamp(dt / plot.AnimationTime, 0.0f, 1.0f);
+        plot.AnimationTime -= dt;
+        if (plot.AnimationTime < 0.0f)
+            plot.AnimationTime = 0.0f;
+        plot.Rotation = ImPlot3DQuat::Slerp(plot.Rotation, plot.RotationAnimationEnd, t);
     }
 
     // Handle user input
@@ -2368,6 +2383,47 @@ bool ImPlot3DQuat::operator==(const ImPlot3DQuat& rhs) const {
 
 bool ImPlot3DQuat::operator!=(const ImPlot3DQuat& rhs) const {
     return !(*this == rhs);
+}
+
+ImPlot3DQuat ImPlot3DQuat::Slerp(const ImPlot3DQuat& q1, const ImPlot3DQuat& q2, float t) {
+    // Clamp t to [0, 1]
+    t = ImClamp(t, 0.0f, 1.0f);
+
+    // Compute the dot product (cosine of the angle between quaternions)
+    float dot = q1.x * q2.x + q1.y * q2.y + q1.z * q2.z + q1.w * q2.w;
+
+    // If the dot product is negative, negate one quaternion to take the shorter path
+    ImPlot3DQuat q2_ = q2;
+    if (dot < 0.0f) {
+        q2_ = ImPlot3DQuat(-q2.x, -q2.y, -q2.z, -q2.w);
+        dot = -dot;
+    }
+
+    // If the quaternions are very close, use linear interpolation to avoid numerical instability
+    if (dot > 0.9995f) {
+        return ImPlot3DQuat(
+                   q1.x + t * (q2_.x - q1.x),
+                   q1.y + t * (q2_.y - q1.y),
+                   q1.z + t * (q2_.z - q1.z),
+                   q1.w + t * (q2_.w - q1.w))
+            .Normalized();
+    }
+
+    // Compute the angle and the interpolation factors
+    float theta_0 = std::acos(dot);        // Angle between input quaternions
+    float theta = theta_0 * t;             // Interpolated angle
+    float sin_theta = std::sin(theta);     // Sine of interpolated angle
+    float sin_theta_0 = std::sin(theta_0); // Sine of original angle
+
+    float s1 = std::cos(theta) - dot * sin_theta / sin_theta_0;
+    float s2 = sin_theta / sin_theta_0;
+
+    // Interpolate and return the result
+    return ImPlot3DQuat(
+        s1 * q1.x + s2 * q2_.x,
+        s1 * q1.y + s2 * q2_.y,
+        s1 * q1.z + s2 * q2_.z,
+        s1 * q1.w + s2 * q2_.w);
 }
 
 //-----------------------------------------------------------------------------

@@ -445,9 +445,12 @@ struct ImPlot3DPlot {
     ImRect FrameRect;  // Outermost bounding rectangle that encapsulates whole the plot/title/padding/etc
     ImRect CanvasRect; // Frame rectangle reduced by padding
     ImRect PlotRect;   // Bounding rectangle for the actual plot area
-    // Rotation and range
+    // Rotation & Axes
     ImPlot3DQuat Rotation;
     ImPlot3DAxis Axes[3];
+    // Animation
+    float AnimationTime;               // Remaining animation time
+    ImPlot3DQuat RotationAnimationEnd; // End rotation for animation
     // User input
     bool SetupLocked;
     bool Hovered;
@@ -466,6 +469,8 @@ struct ImPlot3DPlot {
         Rotation = ImPlot3DQuat(0.0f, 0.0f, 0.0f, 1.0f);
         for (int i = 0; i < 3; i++)
             Axes[i] = ImPlot3DAxis();
+        AnimationTime = 0.0f;
+        RotationAnimationEnd = Rotation;
         SetupLocked = false;
         Hovered = Held = false;
         HeldEdgeIdx = -1;
