@@ -1470,11 +1470,15 @@ void HandleInput(ImPlot3DPlot& plot) {
             ImVec2 mouse_pos = ImGui::GetMousePos();
             ImVec2 mouse_delta(IO.MouseDelta.x, IO.MouseDelta.y);
 
+            // TODO Choose best plane given transform_axis and current view
+            // For now it crashes when transforming only one axis in the 2D view
             ImPlane3D plane = ImPlane3D_XY;
             if (transform_axis[1] && transform_axis[2])
                 plane = ImPlane3D_YZ;
             else if (transform_axis[0] && transform_axis[2])
                 plane = ImPlane3D_XZ;
+            else if (transform_axis[2])
+                plane = ImPlane3D_YZ;
 
             ImPlot3DPoint mouse_plot = PixelsToPlotPlane(mouse_pos, plane, false);
             ImPlot3DPoint mouse_delta_plot = PixelsToPlotPlane(mouse_pos + mouse_delta, plane, false);
