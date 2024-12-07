@@ -129,13 +129,14 @@ struct ImDrawList3D {
 };
 
 struct ImPlot3DNextItemData {
-    ImVec4 Colors[3]; // ImPlot3DCol_Line, ImPlot3DCol_MarkerOutline, ImPlot3DCol_MarkerFill,
+    ImVec4 Colors[4]; // ImPlot3DCol_Line, ImPlot3DCol_Fill, ImPlot3DCol_MarkerOutline, ImPlot3DCol_MarkerFill,
     float LineWeight;
     ImPlot3DMarker Marker;
     float MarkerSize;
     float MarkerWeight;
     float FillAlpha;
     bool RenderLine;
+    bool RenderFill;
     bool RenderMarkerLine;
     bool RenderMarkerFill;
     bool Hidden;
@@ -143,7 +144,7 @@ struct ImPlot3DNextItemData {
     ImPlot3DNextItemData() { Reset(); }
 
     void Reset() {
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 4; i++)
             Colors[i] = IMPLOT3D_AUTO_COL;
         LineWeight = IMPLOT3D_AUTO;
         Marker = IMPLOT3D_AUTO;
@@ -151,6 +152,7 @@ struct ImPlot3DNextItemData {
         MarkerWeight = IMPLOT3D_AUTO;
         FillAlpha = IMPLOT3D_AUTO;
         RenderLine = false;
+        RenderFill = false;
         RenderMarkerLine = true;
         RenderMarkerFill = true;
         Hidden = false;

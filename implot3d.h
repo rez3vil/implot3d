@@ -74,12 +74,13 @@ typedef int ImPlane3D;        // -> ImPlane3D_                  // Enum: Plane i
 typedef int ImPlot3DColormap; // -> ImPlot3DColormap_          // Enum: Colormaps
 
 // Flags
-typedef int ImPlot3DFlags;        // -> ImPlot3DFlags_         // Flags: for BeginPlot()
-typedef int ImPlot3DItemFlags;    // -> ImPlot3DItemFlags_     // Flags: Item flags
-typedef int ImPlot3DScatterFlags; // -> ImPlot3DScatterFlags_  // Flags: Scatter plot flags
-typedef int ImPlot3DLineFlags;    // -> ImPlot3DLineFlags_     // Flags: Line plot flags
-typedef int ImPlot3DLegendFlags;  // -> ImPlot3DLegendFlags_   // Flags: Legend flags
-typedef int ImPlot3DAxisFlags;    // -> ImPlot3DAxisFlags_     // Flags: Axis flags
+typedef int ImPlot3DFlags;         // -> ImPlot3DFlags_         // Flags: for BeginPlot()
+typedef int ImPlot3DItemFlags;     // -> ImPlot3DItemFlags_     // Flags: Item flags
+typedef int ImPlot3DScatterFlags;  // -> ImPlot3DScatterFlags_  // Flags: Scatter plot flags
+typedef int ImPlot3DLineFlags;     // -> ImPlot3DLineFlags_     // Flags: Line plot flags
+typedef int ImPlot3DTriangleFlags; // -> ImPlot3DTriangleFlags_ // Flags: Triangle plot flags
+typedef int ImPlot3DLegendFlags;   // -> ImPlot3DLegendFlags_   // Flags: Legend flags
+typedef int ImPlot3DAxisFlags;     // -> ImPlot3DAxisFlags_     // Flags: Axis flags
 
 //-----------------------------------------------------------------------------
 // [SECTION] Flags & Enumerations
@@ -104,6 +105,7 @@ enum ImPlot3DCond_ {
 enum ImPlot3DCol_ {
     // Item colors
     ImPlot3DCol_Line = 0,      // Line color
+    ImPlot3DCol_Fill,          // Fill color
     ImPlot3DCol_MarkerOutline, // Marker outline color
     ImPlot3DCol_MarkerFill,    // Marker fill color
     // Plot colors
@@ -179,6 +181,13 @@ enum ImPlot3DLineFlags_ {
     ImPlot3DLineFlags_Segments = 1 << 10, // A line segment will be rendered from every two consecutive points
     ImPlot3DLineFlags_Loop = 1 << 11,     // The last and first point will be connected to form a closed loop
     ImPlot3DLineFlags_SkipNaN = 1 << 12,  // NaNs values will be skipped instead of rendered as missing data
+};
+
+// Flags for PlotTriangles
+enum ImPlot3DTriangleFlags_ {
+    ImPlot3DTriangleFlags_None = 0, // Default
+    ImPlot3DTriangleFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
+    ImPlot3DTriangleFlags_NoFit = ImPlot3DItemFlags_NoFit,
 };
 
 // Flags for legends
@@ -331,6 +340,8 @@ IMPLOT3D_TMP void PlotScatter(const char* label_id, const T* xs, const T* ys, co
 
 IMPLOT3D_TMP void PlotLine(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DLineFlags flags = 0, int offset = 0, int stride = sizeof(T));
 
+IMPLOT3D_TMP void PlotTriangle(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DTriangleFlags flags = 0, int offset = 0, int stride = sizeof(T));
+
 // Plots a centered text label at point x,y,z. It is possible to set the text angle in radians and offset in pixels
 IMPLOT3D_API void PlotText(const char* text, float x, float y, float z, float angle = 0.0f, const ImVec2& pix_offset = ImVec2(0, 0));
 
@@ -387,6 +398,8 @@ IMPLOT3D_API void PopStyleVar(int count = 1);
 
 // Set the line color and weight for the next item only
 IMPLOT3D_API void SetNextLineStyle(const ImVec4& col = IMPLOT3D_AUTO_COL, float weight = IMPLOT3D_AUTO);
+// Set the fill color for the next item only
+IMPLOT3D_API void SetNextFillStyle(const ImVec4& col = IMPLOT3D_AUTO_COL, float alpha_mod = IMPLOT3D_AUTO);
 // Set the marker style for the next item only
 IMPLOT3D_API void SetNextMarkerStyle(ImPlot3DMarker marker = IMPLOT3D_AUTO, float size = IMPLOT3D_AUTO, const ImVec4& fill = IMPLOT3D_AUTO_COL, float weight = IMPLOT3D_AUTO, const ImVec4& outline = IMPLOT3D_AUTO_COL);
 

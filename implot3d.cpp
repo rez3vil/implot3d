@@ -1721,6 +1721,7 @@ void StyleColorsAuto(ImPlot3DStyle* dst) {
     ImVec4* colors = style->Colors;
 
     colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_Fill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_TitleText] = IMPLOT3D_AUTO_COL;
@@ -1740,6 +1741,7 @@ void StyleColorsDark(ImPlot3DStyle* dst) {
     ImVec4* colors = style->Colors;
 
     colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_Fill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_TitleText] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
@@ -1759,6 +1761,7 @@ void StyleColorsLight(ImPlot3DStyle* dst) {
     ImVec4* colors = style->Colors;
 
     colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_Fill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_TitleText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
@@ -1778,6 +1781,7 @@ void StyleColorsClassic(ImPlot3DStyle* dst) {
     ImVec4* colors = style->Colors;
 
     colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_Fill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_TitleText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
@@ -2063,6 +2067,7 @@ bool IsColorAuto(ImPlot3DCol idx) {
 ImVec4 GetAutoColor(ImPlot3DCol idx) {
     switch (idx) {
         case ImPlot3DCol_Line: return IMPLOT3D_AUTO_COL;          // Plot dependent
+        case ImPlot3DCol_Fill: return IMPLOT3D_AUTO_COL;          // Plot dependent
         case ImPlot3DCol_MarkerOutline: return IMPLOT3D_AUTO_COL; // Plot dependent
         case ImPlot3DCol_MarkerFill: return IMPLOT3D_AUTO_COL;    // Plot dependent
         case ImPlot3DCol_TitleText: return ImGui::GetStyleColorVec4(ImGuiCol_Text);
@@ -2082,6 +2087,7 @@ ImVec4 GetAutoColor(ImPlot3DCol idx) {
 const char* GetStyleColorName(ImPlot3DCol idx) {
     static const char* color_names[ImPlot3DCol_COUNT] = {
         "Line",
+        "Fill",
         "MarkerOutline",
         "MarkerFill",
         "TitleText",

@@ -24,6 +24,8 @@
 // [SECTION] Markers
 // [SECTION] PlotScatter
 // [SECTION] PlotLine
+// [SECTION] PlotTriangle
+// [SECTION] PlotText
 
 //-----------------------------------------------------------------------------
 // [SECTION] Includes
@@ -162,6 +164,7 @@ bool BeginItem(const char* label_id, ImPlot3DItemFlags flags, ImPlot3DCol recolo
     // Set next item color
     ImVec4 item_color = ImGui::ColorConvertU32ToFloat4(item->Color);
     n.Colors[ImPlot3DCol_Line] = IsColorAuto(n.Colors[ImPlot3DCol_Line]) ? (IsColorAuto(ImPlot3DCol_Line) ? item_color : gp.Style.Colors[ImPlot3DCol_Line]) : n.Colors[ImPlot3DCol_Line];
+    n.Colors[ImPlot3DCol_Fill] = IsColorAuto(n.Colors[ImPlot3DCol_Fill]) ? (IsColorAuto(ImPlot3DCol_Fill) ? item_color : gp.Style.Colors[ImPlot3DCol_Fill]) : n.Colors[ImPlot3DCol_Fill];
     n.Colors[ImPlot3DCol_MarkerOutline] = IsColorAuto(n.Colors[ImPlot3DCol_MarkerOutline]) ? (IsColorAuto(ImPlot3DCol_MarkerOutline) ? n.Colors[ImPlot3DCol_Line] : gp.Style.Colors[ImPlot3DCol_MarkerOutline]) : n.Colors[ImPlot3DCol_MarkerOutline];
     n.Colors[ImPlot3DCol_MarkerFill] = IsColorAuto(n.Colors[ImPlot3DCol_MarkerFill]) ? (IsColorAuto(ImPlot3DCol_MarkerFill) ? n.Colors[ImPlot3DCol_Line] : gp.Style.Colors[ImPlot3DCol_MarkerFill]) : n.Colors[ImPlot3DCol_MarkerFill];
 
@@ -173,10 +176,12 @@ bool BeginItem(const char* label_id, ImPlot3DItemFlags flags, ImPlot3DCol recolo
     n.FillAlpha = n.FillAlpha < 0 ? gp.Style.FillAlpha : n.FillAlpha;
 
     // Apply alpha modifiers
+    n.Colors[ImPlot3DCol_Fill].w *= n.FillAlpha;
     n.Colors[ImPlot3DCol_MarkerFill].w *= n.FillAlpha;
 
     // Set render flags
     n.RenderLine = n.Colors[ImPlot3DCol_Line].w > 0 && n.LineWeight > 0;
+    n.RenderFill = n.Colors[ImPlot3DCol_Fill].w > 0;
     n.RenderMarkerFill = n.Colors[ImPlot3DCol_MarkerFill].w > 0;
     n.RenderMarkerLine = n.Colors[ImPlot3DCol_MarkerOutline].w > 0 && n.MarkerWeight > 0;
 
@@ -247,6 +252,13 @@ void SetNextLineStyle(const ImVec4& col, float weight) {
     ImPlot3DNextItemData& n = gp.NextItemData;
     n.Colors[ImPlot3DCol_Line] = col;
     n.LineWeight = weight;
+}
+
+void SetNextFillStyle(const ImVec4& col, float alpha) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    ImPlot3DNextItemData& n = gp.NextItemData;
+    gp.NextItemData.Colors[ImPlot3DCol_Fill] = col;
+    gp.NextItemData.FillAlpha = alpha;
 }
 
 void SetNextMarkerStyle(ImPlot3DMarker marker, float size, const ImVec4& fill, float weight, const ImVec4& outline) {
@@ -539,6 +551,66 @@ struct RendererLineSegments : RendererBase {
     mutable ImVec2 UV1;
 };
 
+template <class _Getter>
+struct RendererTriangleFill : RendererBase {
+    RendererTriangleFill(const _Getter& getter, ImU32 col) : RendererBase(getter.Count / 3, 3, 3),
+                                                             Getter(getter),
+                                                             Col(col) {}
+    void Init(ImDrawList3D& draw_list_3d) const {
+        UV = draw_list_3d._SharedData->TexUvWhitePixel;
+    }
+
+    IMPLOT3D_INLINE bool Render(ImDrawList3D& draw_list_3d, const ImPlot3DBox& cull_box, int prim) const {
+        ImPlot3DPoint p_plot[3];
+        p_plot[0] = Getter(3 * prim);
+        p_plot[1] = Getter(3 * prim + 1);
+        p_plot[2] = Getter(3 * prim + 2);
+
+        // Check if the triangle is outside the culling box
+        if (!cull_box.Contains(p_plot[0]) && !cull_box.Contains(p_plot[0]) && !cull_box.Contains(p_plot[1]))
+            return false;
+
+        // Project the triangle vertices to screen space
+        ImVec2 p[3];
+        p[0] = PlotToPixels(p_plot[0]);
+        p[1] = PlotToPixels(p_plot[1]);
+        p[2] = PlotToPixels(p_plot[2]);
+
+        // 3 vertices per triangle
+        draw_list_3d._VtxWritePtr[0].pos.x = p[0].x;
+        draw_list_3d._VtxWritePtr[0].pos.y = p[0].y;
+        draw_list_3d._VtxWritePtr[0].uv = UV;
+        draw_list_3d._VtxWritePtr[0].col = Col;
+        draw_list_3d._VtxWritePtr[1].pos.x = p[1].x;
+        draw_list_3d._VtxWritePtr[1].pos.y = p[1].y;
+        draw_list_3d._VtxWritePtr[1].uv = UV;
+        draw_list_3d._VtxWritePtr[1].col = Col;
+        draw_list_3d._VtxWritePtr[2].pos.x = p[2].x;
+        draw_list_3d._VtxWritePtr[2].pos.y = p[2].y;
+        draw_list_3d._VtxWritePtr[2].uv = UV;
+        draw_list_3d._VtxWritePtr[2].col = Col;
+        draw_list_3d._VtxWritePtr += 3;
+
+        // 3 indices per triangle
+        draw_list_3d._IdxWritePtr[0] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx);
+        draw_list_3d._IdxWritePtr[1] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + 1);
+        draw_list_3d._IdxWritePtr[2] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + 2);
+        draw_list_3d._IdxWritePtr += 3;
+        // 1 Z per vertex
+        draw_list_3d._ZWritePtr[0] = GetPointDepth((p_plot[0] + p_plot[1] + p_plot[2]) / 3);
+        draw_list_3d._ZWritePtr++;
+
+        // Update vertex count
+        draw_list_3d._VtxCurrentIdx += 3;
+
+        return true;
+    }
+
+    const _Getter& Getter;
+    mutable ImVec2 UV;
+    const ImU32 Col;
+};
+
 //-----------------------------------------------------------------------------
 // [SECTION] Indexers
 //-----------------------------------------------------------------------------
@@ -591,6 +663,17 @@ struct GetterLoop {
     GetterLoop(_Getter getter) : Getter(getter), Count(getter.Count + 1) {}
     template <typename I> IMPLOT3D_INLINE ImPlot3DPoint operator()(I idx) const {
         idx = idx % (Count - 1);
+        return Getter(idx);
+    }
+    const _Getter Getter;
+    const int Count;
+};
+
+template <typename _Getter>
+struct GetterTriangleLines {
+    GetterTriangleLines(_Getter getter) : Getter(getter), Count(getter.Count * 2) {}
+    template <typename I> IMPLOT3D_INLINE ImPlot3DPoint operator()(I idx) const {
+        idx = ((idx % 6 + 1) / 2) % 3 + idx / 6 * 3;
         return Getter(idx);
     }
     const _Getter Getter;
@@ -741,22 +824,20 @@ template <typename _Getter>
 void PlotLineEx(const char* label_id, const _Getter& getter, ImPlot3DLineFlags flags) {
     if (BeginItemEx(label_id, getter, flags, ImPlot3DCol_Line)) {
         const ImPlot3DNextItemData& n = GetItemData();
-        if (getter.Count > 1) {
-            if (n.RenderLine) {
-                const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Line]);
-                if (ImHasFlag(flags, ImPlot3DLineFlags_Segments)) {
-                    RenderPrimitives<RendererLineSegments>(getter, col_line, n.LineWeight);
-                } else if (ImHasFlag(flags, ImPlot3DLineFlags_Loop)) {
-                    if (ImHasFlag(flags, ImPlot3DLineFlags_SkipNaN))
-                        RenderPrimitives<RendererLineStripSkip>(GetterLoop<_Getter>(getter), col_line, n.LineWeight);
-                    else
-                        RenderPrimitives<RendererLineStrip>(GetterLoop<_Getter>(getter), col_line, n.LineWeight);
-                } else {
-                    if (ImHasFlag(flags, ImPlot3DLineFlags_SkipNaN))
-                        RenderPrimitives<RendererLineStripSkip>(getter, col_line, n.LineWeight);
-                    else
-                        RenderPrimitives<RendererLineStrip>(getter, col_line, n.LineWeight);
-                }
+        if (getter.Count >= 2 && n.RenderLine) {
+            const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Line]);
+            if (ImHasFlag(flags, ImPlot3DLineFlags_Segments)) {
+                RenderPrimitives<RendererLineSegments>(getter, col_line, n.LineWeight);
+            } else if (ImHasFlag(flags, ImPlot3DLineFlags_Loop)) {
+                if (ImHasFlag(flags, ImPlot3DLineFlags_SkipNaN))
+                    RenderPrimitives<RendererLineStripSkip>(GetterLoop<_Getter>(getter), col_line, n.LineWeight);
+                else
+                    RenderPrimitives<RendererLineStrip>(GetterLoop<_Getter>(getter), col_line, n.LineWeight);
+            } else {
+                if (ImHasFlag(flags, ImPlot3DLineFlags_SkipNaN))
+                    RenderPrimitives<RendererLineStripSkip>(getter, col_line, n.LineWeight);
+                else
+                    RenderPrimitives<RendererLineStrip>(getter, col_line, n.LineWeight);
             }
         }
 
@@ -779,6 +860,50 @@ IMPLOT3D_TMP void PlotLine(const char* label_id, const T* xs, const T* ys, const
 
 #define INSTANTIATE_MACRO(T) \
     template IMPLOT3D_API void PlotLine<T>(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DLineFlags flags, int offset, int stride);
+CALL_INSTANTIATE_FOR_NUMERIC_TYPES()
+#undef INSTANTIATE_MACRO
+
+//-----------------------------------------------------------------------------
+// [SECTION] PlotTriangle
+//-----------------------------------------------------------------------------
+
+template <typename _Getter>
+void PlotTriangleEx(const char* label_id, const _Getter& getter, ImPlot3DTriangleFlags flags) {
+    if (BeginItemEx(label_id, getter, flags, ImPlot3DCol_Line)) {
+        const ImPlot3DNextItemData& n = GetItemData();
+
+        // Render fill
+        if (getter.Count >= 3 && n.RenderLine) {
+            const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Fill]);
+            RenderPrimitives<RendererTriangleFill>(getter, col_fill);
+        }
+
+        // Render lines
+        if (getter.Count >= 2 && n.RenderLine) {
+            const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Line]);
+            RenderPrimitives<RendererLineSegments>(GetterTriangleLines<_Getter>(getter), col_line, n.LineWeight);
+        }
+
+        // Render markers
+        if (n.Marker != ImPlot3DMarker_None) {
+            const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerOutline]);
+            const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerFill]);
+            RenderMarkers<_Getter>(getter, n.Marker, n.MarkerSize, n.RenderMarkerFill, col_fill, n.RenderMarkerLine, col_line, n.MarkerWeight);
+        }
+
+        EndItem();
+    }
+}
+
+IMPLOT3D_TMP void PlotTriangle(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DTriangleFlags flags, int offset, int stride) {
+    if (count < 3)
+        return;
+    GetterXYZ<IndexerIdx<T>, IndexerIdx<T>, IndexerIdx<T>> getter(IndexerIdx<T>(xs, count, offset, stride), IndexerIdx<T>(ys, count, offset, stride), IndexerIdx<T>(zs, count, offset, stride), count);
+    return PlotTriangleEx(label_id, getter, flags);
+}
+
+#define INSTANTIATE_MACRO(T) \
+    template IMPLOT3D_API void PlotTriangle<T>(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DTriangleFlags flags, int offset, int stride);
 CALL_INSTANTIATE_FOR_NUMERIC_TYPES()
 #undef INSTANTIATE_MACRO
 

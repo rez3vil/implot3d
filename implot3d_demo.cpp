@@ -106,7 +106,7 @@ void DemoLinePlots() {
 void DemoScatterPlots() {
     srand(0);
     static float xs1[100], ys1[100], zs1[100];
-    for (int i = 0; i < 100; ++i) {
+    for (int i = 0; i < 100; i++) {
         xs1[i] = i * 0.01f;
         ys1[i] = xs1[i] + 0.1f * ((float)rand() / (float)RAND_MAX);
         zs1[i] = xs1[i] + 0.1f * ((float)rand() / (float)RAND_MAX);
@@ -124,6 +124,24 @@ void DemoScatterPlots() {
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 6, ImPlot3D::GetColormapColor(1), IMPLOT3D_AUTO, ImPlot3D::GetColormapColor(1));
         ImPlot3D::PlotScatter("Data 2", xs2, ys2, zs1, 50);
         ImPlot3D::PopStyleVar();
+        ImPlot3D::EndPlot();
+    }
+}
+
+void DemoTrianglePlots() {
+    srand(0);
+    static float xs1[6], ys1[6], zs1[6];
+    for (int i = 0; i < 6; i++) {
+        xs1[i] = 0.1f * ((float)rand() / (float)RAND_MAX);
+        ys1[i] = 0.1f * ((float)rand() / (float)RAND_MAX);
+        zs1[i] = 0.1f * ((float)rand() / (float)RAND_MAX);
+    }
+
+    if (ImPlot3D::BeginPlot("Triangle Plots")) {
+        ImPlot3D::SetNextLineStyle(ImPlot3D::GetColormapColor(0), 2);
+        ImPlot3D::SetNextFillStyle(ImPlot3D::GetColormapColor(1));
+        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 6, ImPlot3D::GetColormapColor(3), IMPLOT3D_AUTO, ImPlot3D::GetColormapColor(3));
+        ImPlot3D::PlotTriangle("Triangle", xs1, ys1, zs1, 6);
         ImPlot3D::EndPlot();
     }
 }
@@ -365,6 +383,7 @@ void ShowDemoWindow(bool* p_open) {
         if (ImGui::BeginTabItem("Plots")) {
             DemoHeader("Line Plots", DemoLinePlots);
             DemoHeader("Scatter Plots", DemoScatterPlots);
+            DemoHeader("Triangle Plots", DemoTrianglePlots);
             DemoHeader("Realtime Plots", DemoRealtimePlots);
             DemoHeader("Markers and Text", DemoMarkersAndText);
             DemoHeader("NaN Values", DemoNaNValues);
@@ -748,6 +767,7 @@ void StyleSeaborn() {
 
     ImVec4* colors = style.Colors;
     colors[ImPlot3DCol_Line] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_Fill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerOutline] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_MarkerFill] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_FrameBg] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
