@@ -56,6 +56,8 @@ static inline float ImLog10(float x) { return log10f(x); }
 // Returns true if flag is set
 template <typename TSet, typename TFlag>
 static inline bool ImHasFlag(TSet set, TFlag flag) { return (set & flag) == flag; }
+template <typename T>
+static inline T ImRemap01(T x, T x0, T x1) { return (x - x0) / (x1 - x0); }
 // Returns true if val is NAN
 static inline bool ImNan(double val) { return isnan(val); }
 // Returns true if val is NAN or INFINITY
@@ -139,6 +141,7 @@ struct ImPlot3DNextItemData {
     bool RenderFill;
     bool RenderMarkerLine;
     bool RenderMarkerFill;
+    bool ShouldColormapFill;
     bool Hidden;
 
     ImPlot3DNextItemData() { Reset(); }
@@ -155,6 +158,7 @@ struct ImPlot3DNextItemData {
         RenderFill = false;
         RenderMarkerLine = true;
         RenderMarkerFill = true;
+        ShouldColormapFill = true;
         Hidden = false;
     }
 };

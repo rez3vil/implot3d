@@ -163,6 +163,7 @@ bool BeginItem(const char* label_id, ImPlot3DItemFlags flags, ImPlot3DCol recolo
 
     // Set next item color
     ImVec4 item_color = ImGui::ColorConvertU32ToFloat4(item->Color);
+    n.ShouldColormapFill = IsColorAuto(n.Colors[ImPlot3DCol_Fill]) && IsColorAuto(ImPlot3DCol_Fill);
     n.Colors[ImPlot3DCol_Line] = IsColorAuto(n.Colors[ImPlot3DCol_Line]) ? (IsColorAuto(ImPlot3DCol_Line) ? item_color : gp.Style.Colors[ImPlot3DCol_Line]) : n.Colors[ImPlot3DCol_Line];
     n.Colors[ImPlot3DCol_Fill] = IsColorAuto(n.Colors[ImPlot3DCol_Fill]) ? (IsColorAuto(ImPlot3DCol_Fill) ? item_color : gp.Style.Colors[ImPlot3DCol_Fill]) : n.Colors[ImPlot3DCol_Fill];
     n.Colors[ImPlot3DCol_MarkerOutline] = IsColorAuto(n.Colors[ImPlot3DCol_MarkerOutline]) ? (IsColorAuto(ImPlot3DCol_MarkerOutline) ? n.Colors[ImPlot3DCol_Line] : gp.Style.Colors[ImPlot3DCol_MarkerOutline]) : n.Colors[ImPlot3DCol_MarkerOutline];
@@ -698,6 +699,18 @@ struct RendererSurfaceFill : RendererBase {
                                                                                       Col(col) {}
     void Init(ImDrawList3D& draw_list_3d) const {
         UV = draw_list_3d._SharedData->TexUvWhitePixel;
+
+        // Compute min and max values for the colormap (if not solid fill)
+        const ImPlot3DNextItemData& n = GetItemData();
+        if (n.ShouldColormapFill) {
+            Min = FLT_MAX;
+            Max = -FLT_MAX;
+            for (int i = 0; i < Getter.Count; i++) {
+                float z = Getter(i).z;
+                Min = ImMin(Min, z);
+                Max = ImMax(Max, z);
+            }
+        }
     }
 
     IMPLOT3D_INLINE bool Render(ImDrawList3D& draw_list_3d, const ImPlot3DBox& cull_box, int prim) const {
@@ -715,6 +728,18 @@ struct RendererSurfaceFill : RendererBase {
             !cull_box.Contains(p_plot[2]) && !cull_box.Contains(p_plot[3]))
             return false;
 
+        // Compute colors
+        ImU32 cols[4] = {Col, Col, Col, Col};
+        const ImPlot3DNextItemData& n = GetItemData();
+        if (n.ShouldColormapFill) {
+            float alpha = GImPlot3D->NextItemData.FillAlpha;
+            for (int i = 0; i < 4; i++) {
+                ImVec4 col = SampleColormap(ImClamp(ImRemap01(p_plot[i].z, Min, Max), 0.0f, 1.0f));
+                col.w *= alpha;
+                cols[i] = ImGui::ColorConvertFloat4ToU32(col);
+            }
+        }
+
         // Project the quad vertices to screen space
         ImVec2 p[4];
         p[0] = PlotToPixels(p_plot[0]);
@@ -726,22 +751,22 @@ struct RendererSurfaceFill : RendererBase {
         draw_list_3d._VtxWritePtr[0].pos.x = p[0].x;
         draw_list_3d._VtxWritePtr[0].pos.y = p[0].y;
         draw_list_3d._VtxWritePtr[0].uv = UV;
-        draw_list_3d._VtxWritePtr[0].col = Col;
+        draw_list_3d._VtxWritePtr[0].col = cols[0];
 
         draw_list_3d._VtxWritePtr[1].pos.x = p[1].x;
         draw_list_3d._VtxWritePtr[1].pos.y = p[1].y;
         draw_list_3d._VtxWritePtr[1].uv = UV;
-        draw_list_3d._VtxWritePtr[1].col = Col;
+        draw_list_3d._VtxWritePtr[1].col = cols[1];
 
         draw_list_3d._VtxWritePtr[2].pos.x = p[2].x;
         draw_list_3d._VtxWritePtr[2].pos.y = p[2].y;
         draw_list_3d._VtxWritePtr[2].uv = UV;
-        draw_list_3d._VtxWritePtr[2].col = Col;
+        draw_list_3d._VtxWritePtr[2].col = cols[2];
 
         draw_list_3d._VtxWritePtr[3].pos.x = p[3].x;
         draw_list_3d._VtxWritePtr[3].pos.y = p[3].y;
         draw_list_3d._VtxWritePtr[3].uv = UV;
-        draw_list_3d._VtxWritePtr[3].col = Col;
+        draw_list_3d._VtxWritePtr[3].col = cols[3];
 
         draw_list_3d._VtxWritePtr += 4;
 
@@ -769,6 +794,8 @@ struct RendererSurfaceFill : RendererBase {
 
     const _Getter& Getter;
     mutable ImVec2 UV;
+    mutable float Min; // Minimum value for the colormap
+    mutable float Max; // Minimum value for the colormap
     const int XCount;
     const int YCount;
     const ImU32 Col;
