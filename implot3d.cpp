@@ -2463,23 +2463,74 @@ void ImDrawList3D::PrimUnreserve(int idx_count, int vtx_count) {
 void ImDrawList3D::SortedMoveToImGuiDrawList() {
     ImDrawList& draw_list = *ImGui::GetWindowDrawList();
 
+    const int tri_count = ZBuffer.Size;
+    if (tri_count == 0) {
+        // No triangles, just clear and return
+        VtxBuffer.clear();
+        IdxBuffer.clear();
+        ZBuffer.clear();
+        _VtxCurrentIdx = 0;
+        _VtxWritePtr = VtxBuffer.Data;
+        _IdxWritePtr = IdxBuffer.Data;
+        _ZWritePtr = ZBuffer.Data;
+        return;
+    }
+
+    // Build an array of (z, tri_idx)
+    struct TriRef {
+        float z;
+        int tri_idx;
+    };
+    TriRef* tris = (TriRef*)IM_ALLOC(sizeof(TriRef) * tri_count);
+    for (int i = 0; i < tri_count; i++) {
+        tris[i].z = ZBuffer[i];
+        tris[i].tri_idx = i;
+    }
+
+    // Sort by z (distance from viewer)
+    ImQsort(tris, (size_t)tri_count, sizeof(TriRef),
+            [](const void* a, const void* b) {
+                float za = ((const TriRef*)a)->z;
+                float zb = ((const TriRef*)b)->z;
+                return (za < zb) ? -1 : (za > zb) ? 1
+                                                  : 0;
+            });
+
     // Reserve space in the ImGui draw list
-    // TODO check available space
     draw_list.PrimReserve(IdxBuffer.Size, VtxBuffer.Size);
 
-    // Offset indices
-    unsigned int offset = draw_list._VtxCurrentIdx;
-    for (int i = 0; i < IdxBuffer.Size; i++)
-        IdxBuffer.Data[i] += offset;
-
-    // Copy vertices
+    // Copy vertices (no reordering needed)
     memcpy(draw_list._VtxWritePtr, VtxBuffer.Data, VtxBuffer.Size * sizeof(ImDrawVert));
+    unsigned int idx_offset = draw_list._VtxCurrentIdx;
     draw_list._VtxWritePtr += VtxBuffer.Size;
     draw_list._VtxCurrentIdx += (unsigned int)VtxBuffer.Size;
 
-    // Copy indices
-    memcpy(draw_list._IdxWritePtr, IdxBuffer.Data, IdxBuffer.Size * sizeof(ImDrawIdx));
-    draw_list._IdxWritePtr += IdxBuffer.Size;
+    // Maximum index allowed to not overflow ImDrawIdx
+    unsigned int max_index_allowed = MaxIdx() - idx_offset;
+
+    // Copy indices with triangle sorting based on distance from viewer
+    ImDrawIdx* idx_out = draw_list._IdxWritePtr;
+    ImDrawIdx* idx_in = IdxBuffer.Data;
+    int triangles_added = 0;
+    for (int i = 0; i < tri_count; i++) {
+        int tri_i = tris[i].tri_idx;
+        int base_idx = tri_i * 3;
+        unsigned int i0 = (unsigned int)idx_in[base_idx + 0];
+        unsigned int i1 = (unsigned int)idx_in[base_idx + 1];
+        unsigned int i2 = (unsigned int)idx_in[base_idx + 2];
+
+        // Check if after adding offset any of these indices exceed max_index_allowed
+        if (i0 > max_index_allowed || i1 > max_index_allowed || i2 > max_index_allowed)
+            break;
+
+        idx_out[0] = (ImDrawIdx)(i0 + idx_offset);
+        idx_out[1] = (ImDrawIdx)(i1 + idx_offset);
+        idx_out[2] = (ImDrawIdx)(i2 + idx_offset);
+
+        idx_out += 3;
+        triangles_added++;
+    }
+    draw_list._IdxWritePtr = idx_out;
 
     // Clear local buffers since we've moved them
     VtxBuffer.clear();
@@ -2489,6 +2540,8 @@ void ImDrawList3D::SortedMoveToImGuiDrawList() {
     _VtxWritePtr = VtxBuffer.Data;
     _IdxWritePtr = IdxBuffer.Data;
     _ZWritePtr = ZBuffer.Data;
+
+    IM_FREE(tris);
 }
 
 //-----------------------------------------------------------------------------

@@ -124,6 +124,8 @@ struct ImDrawList3D {
     void PrimUnreserve(int idx_count, int vtx_count);
 
     void SortedMoveToImGuiDrawList();
+
+    constexpr static unsigned int MaxIdx() { return sizeof(ImDrawIdx) == 2 ? 65535 : 4294967295; }
 };
 
 struct ImPlot3DNextItemData {

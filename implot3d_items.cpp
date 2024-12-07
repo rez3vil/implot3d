@@ -75,14 +75,6 @@
         }                                \
     } while (0)
 
-// Calculate maximum index size of ImDrawIdx
-template <typename T>
-struct MaxIdx {
-    static const unsigned int Value;
-};
-template <> const unsigned int MaxIdx<unsigned short>::Value = 65535;
-template <> const unsigned int MaxIdx<unsigned int>::Value = 4294967295;
-
 IMPLOT3D_INLINE void GetLineRenderProps(const ImDrawList3D& draw_list_3d, float& half_weight, ImVec2& tex_uv0, ImVec2& tex_uv1) {
     const bool aa = ImHasFlag(draw_list_3d._Flags, ImDrawListFlags_AntiAliasedLines) &&
                     ImHasFlag(draw_list_3d._Flags, ImDrawListFlags_AntiAliasedLinesUseTex);
@@ -301,9 +293,10 @@ IMPLOT3D_INLINE void PrimLine(ImDrawList3D& draw_list_3d, const ImVec2& P1, cons
     draw_list_3d._IdxWritePtr[4] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + 2);
     draw_list_3d._IdxWritePtr[5] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + 3);
     draw_list_3d._IdxWritePtr += 6;
-    draw_list_3d._ZWritePtr[0] = z;
-    draw_list_3d._ZWritePtr++;
     draw_list_3d._VtxCurrentIdx += 4;
+    draw_list_3d._ZWritePtr[0] = z;
+    draw_list_3d._ZWritePtr[1] = z;
+    draw_list_3d._ZWritePtr += 2;
 }
 
 //-----------------------------------------------------------------------------
@@ -353,16 +346,17 @@ struct RendererMarkersFill : RendererBase {
         }
         // 3 indices per triangle
         for (int i = 2; i < Count; i++) {
+            // Indices
             draw_list_3d._IdxWritePtr[0] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx);
-            draw_list_3d._IdxWritePtr[1] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + 1);
-            draw_list_3d._IdxWritePtr[2] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + 2);
+            draw_list_3d._IdxWritePtr[1] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + i - 1);
+            draw_list_3d._IdxWritePtr[2] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + i);
             draw_list_3d._IdxWritePtr += 3;
+            // Z
+            draw_list_3d._ZWritePtr[0] = GetPointDepth(p_plot);
+            draw_list_3d._ZWritePtr++;
         }
         // Update vertex count
         draw_list_3d._VtxCurrentIdx += (ImDrawIdx)Count;
-        // 1 z value per triangle
-        draw_list_3d._ZWritePtr[0] = GetPointDepth(p_plot);
-        draw_list_3d._ZWritePtr++;
         return true;
     }
     const _Getter& Getter;
@@ -625,7 +619,7 @@ void RenderPrimitives(const _Getter& getter, Args... args) {
     // Initialize renderer
     renderer.Init(draw_list_3d);
     // Find how many can be reserved up to end of current draw command's limit
-    unsigned int prims_to_render = ImMin(renderer.Prims, (MaxIdx<ImDrawIdx>::Value - draw_list_3d._VtxCurrentIdx) / renderer.VtxConsumed);
+    unsigned int prims_to_render = ImMin(renderer.Prims, (ImDrawList3D::MaxIdx() - draw_list_3d._VtxCurrentIdx) / renderer.VtxConsumed);
 
     // Reserve vertices and indices to render the primitives
     draw_list_3d.PrimReserve(prims_to_render * renderer.IdxConsumed, prims_to_render * renderer.VtxConsumed);
