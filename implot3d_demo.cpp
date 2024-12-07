@@ -146,6 +146,42 @@ void DemoTrianglePlots() {
     }
 }
 
+void DemoSurfacePlots() {
+    constexpr int N = 20;
+    static float xs[N * N], ys[N * N], zs[N * N];
+
+    // Define the range for X and Y
+    constexpr float range_min = -5.0f;
+    constexpr float range_max = 5.0f;
+    constexpr float step = (range_max - range_min) / (N - 1);
+
+    // Populate the xs, ys, and zs arrays
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            int idx = i * N + j;
+            xs[idx] = range_min + j * step;                                   // X values are constant along rows
+            ys[idx] = range_min + i * step;                                   // Y values are constant along columns
+            zs[idx] = sinf(std::sqrt(xs[idx] * xs[idx] + ys[idx] * ys[idx])); // Z = sin(sqrt(X^2 + Y^2))
+        }
+    }
+
+    // Begin the plot
+    if (ImPlot3D::BeginPlot("Surface Plots")) {
+        // Set styles
+        ImPlot3D::PushStyleVar(ImPlot3DStyleVar_FillAlpha, 0.25f);
+        ImPlot3D::SetNextFillStyle(ImPlot3D::GetColormapColor(0));
+        ImPlot3D::SetNextLineStyle(ImPlot3D::GetColormapColor(1), 2);
+        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 2, ImPlot3D::GetColormapColor(1), IMPLOT3D_AUTO, ImPlot3D::GetColormapColor(1));
+
+        // Plot the surface
+        ImPlot3D::PlotSurface("Wave Surface", xs, ys, zs, N * N);
+
+        // End the plot
+        ImPlot3D::PopStyleVar();
+        ImPlot3D::EndPlot();
+    }
+}
+
 void DemoRealtimePlots() {
     ImGui::BulletText("Move your mouse to change the data!");
     static ScrollingBuffer sdata1, sdata2, sdata3;
@@ -384,6 +420,7 @@ void ShowDemoWindow(bool* p_open) {
             DemoHeader("Line Plots", DemoLinePlots);
             DemoHeader("Scatter Plots", DemoScatterPlots);
             DemoHeader("Triangle Plots", DemoTrianglePlots);
+            DemoHeader("Surface Plots", DemoSurfacePlots);
             DemoHeader("Realtime Plots", DemoRealtimePlots);
             DemoHeader("Markers and Text", DemoMarkersAndText);
             DemoHeader("NaN Values", DemoNaNValues);

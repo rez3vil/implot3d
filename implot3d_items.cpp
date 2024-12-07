@@ -908,6 +908,50 @@ CALL_INSTANTIATE_FOR_NUMERIC_TYPES()
 #undef INSTANTIATE_MACRO
 
 //-----------------------------------------------------------------------------
+// [SECTION] PlotSurface
+//-----------------------------------------------------------------------------
+
+template <typename _Getter>
+void PlotSurfaceEx(const char* label_id, const _Getter& getter, ImPlot3DSurfaceFlags flags) {
+    if (BeginItemEx(label_id, getter, flags, ImPlot3DCol_Line)) {
+        const ImPlot3DNextItemData& n = GetItemData();
+
+        //// Render fill
+        // if (getter.Count >= 3 && n.RenderLine) {
+        //     const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Fill]);
+        //     RenderPrimitives<RendererSurfaceFill>(getter, col_fill);
+        // }
+
+        //// Render lines
+        // if (getter.Count >= 2 && n.RenderLine) {
+        //     const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Line]);
+        //     RenderPrimitives<RendererLineSegments>(GetterSurfaceLines<_Getter>(getter), col_line, n.LineWeight);
+        // }
+
+        // Render markers
+        if (n.Marker != ImPlot3DMarker_None) {
+            const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerOutline]);
+            const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerFill]);
+            RenderMarkers<_Getter>(getter, n.Marker, n.MarkerSize, n.RenderMarkerFill, col_fill, n.RenderMarkerLine, col_line, n.MarkerWeight);
+        }
+
+        EndItem();
+    }
+}
+
+IMPLOT3D_TMP void PlotSurface(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DSurfaceFlags flags, int offset, int stride) {
+    if (count < 4)
+        return;
+    GetterXYZ<IndexerIdx<T>, IndexerIdx<T>, IndexerIdx<T>> getter(IndexerIdx<T>(xs, count, offset, stride), IndexerIdx<T>(ys, count, offset, stride), IndexerIdx<T>(zs, count, offset, stride), count);
+    return PlotSurfaceEx(label_id, getter, flags);
+}
+
+#define INSTANTIATE_MACRO(T) \
+    template IMPLOT3D_API void PlotSurface<T>(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DSurfaceFlags flags, int offset, int stride);
+CALL_INSTANTIATE_FOR_NUMERIC_TYPES()
+#undef INSTANTIATE_MACRO
+
+//-----------------------------------------------------------------------------
 // [SECTION] PlotText
 //-----------------------------------------------------------------------------
 
