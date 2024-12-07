@@ -146,6 +146,78 @@ void DemoTrianglePlots() {
     }
 }
 
+void DemoQuadPlots() {
+    static float xs[6 * 4], ys[6 * 4], zs[6 * 4];
+
+    // clang-format off
+    // Initialize the cube vertices for +x and -x faces
+    // +x face
+    xs[0] = 1; ys[0] = -1; zs[0] = -1;
+    xs[1] = 1; ys[1] =  1; zs[1] = -1;
+    xs[2] = 1; ys[2] =  1; zs[2] =  1;
+    xs[3] = 1; ys[3] = -1; zs[3] =  1;
+
+    // -x face
+    xs[4] = -1; ys[4] = -1; zs[4] = -1;
+    xs[5] = -1; ys[5] =  1; zs[5] = -1;
+    xs[6] = -1; ys[6] =  1; zs[6] =  1;
+    xs[7] = -1; ys[7] = -1; zs[7] =  1;
+
+    // Initialize the cube vertices for +y and -y faces
+    // +y face
+    xs[8] = -1; ys[8] = 1; zs[8] = -1;
+    xs[9] =  1; ys[9] = 1; zs[9] = -1;
+    xs[10] =  1; ys[10] = 1; zs[10] =  1;
+    xs[11] = -1; ys[11] = 1; zs[11] =  1;
+
+    // -y face
+    xs[12] = -1; ys[12] = -1; zs[12] = -1;
+    xs[13] =  1; ys[13] = -1; zs[13] = -1;
+    xs[14] =  1; ys[14] = -1; zs[14] =  1;
+    xs[15] = -1; ys[15] = -1; zs[15] =  1;
+
+    // Initialize the cube vertices for +z and -z faces
+    // +z face
+    xs[16] = -1; ys[16] = -1; zs[16] = 1;
+    xs[17] =  1; ys[17] = -1; zs[17] = 1;
+    xs[18] =  1; ys[18] =  1; zs[18] = 1;
+    xs[19] = -1; ys[19] =  1; zs[19] = 1;
+
+    // -z face
+    xs[20] = -1; ys[20] = -1; zs[20] = -1;
+    xs[21] =  1; ys[21] = -1; zs[21] = -1;
+    xs[22] =  1; ys[22] =  1; zs[22] = -1;
+    xs[23] = -1; ys[23] =  1; zs[23] = -1;
+    // clang-format on
+
+    if (ImPlot3D::BeginPlot("Quad Plots")) {
+        ImPlot3D::SetupAxesLimits(-1.5f, 1.5f, -1.5f, 1.5f, -1.5f, 1.5f);
+
+        // Render +x and -x faces
+        static ImVec4 colorX(0.8f, 0.2f, 0.2f, 0.8f); // Red
+        ImPlot3D::SetNextFillStyle(colorX);
+        ImPlot3D::SetNextLineStyle(colorX, 2);
+        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 3, colorX, IMPLOT3D_AUTO, colorX);
+        ImPlot3D::PlotQuad("X", &xs[0], &ys[0], &zs[0], 8);
+
+        // Render +y and -y faces
+        static ImVec4 colorY(0.2f, 0.8f, 0.2f, 0.8f); // Green
+        ImPlot3D::SetNextFillStyle(colorY);
+        ImPlot3D::SetNextLineStyle(colorY, 2);
+        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 3, colorY, IMPLOT3D_AUTO, colorY);
+        ImPlot3D::PlotQuad("Y", &xs[8], &ys[8], &zs[8], 8);
+
+        // Render +z and -z faces
+        static ImVec4 colorZ(0.2f, 0.2f, 0.8f, 0.8f); // Blue
+        ImPlot3D::SetNextFillStyle(colorZ);
+        ImPlot3D::SetNextLineStyle(colorZ, 2);
+        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 3, colorZ, IMPLOT3D_AUTO, colorZ);
+        ImPlot3D::PlotQuad("Z", &xs[16], &ys[16], &zs[16], 8);
+
+        ImPlot3D::EndPlot();
+    }
+}
+
 void DemoSurfacePlots() {
     constexpr int N = 20;
     static float xs[N * N], ys[N * N], zs[N * N];
@@ -420,6 +492,7 @@ void ShowDemoWindow(bool* p_open) {
             DemoHeader("Line Plots", DemoLinePlots);
             DemoHeader("Scatter Plots", DemoScatterPlots);
             DemoHeader("Triangle Plots", DemoTrianglePlots);
+            DemoHeader("Quad Plots", DemoQuadPlots);
             DemoHeader("Surface Plots", DemoSurfacePlots);
             DemoHeader("Realtime Plots", DemoRealtimePlots);
             DemoHeader("Markers and Text", DemoMarkersAndText);

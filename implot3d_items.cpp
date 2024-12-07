@@ -611,6 +611,85 @@ struct RendererTriangleFill : RendererBase {
     const ImU32 Col;
 };
 
+template <class _Getter>
+struct RendererQuadFill : RendererBase {
+    RendererQuadFill(const _Getter& getter, ImU32 col) : RendererBase(getter.Count / 4, 6, 4),
+                                                         Getter(getter),
+                                                         Col(col) {}
+    void Init(ImDrawList3D& draw_list_3d) const {
+        UV = draw_list_3d._SharedData->TexUvWhitePixel;
+    }
+
+    IMPLOT3D_INLINE bool Render(ImDrawList3D& draw_list_3d, const ImPlot3DBox& cull_box, int prim) const {
+        ImPlot3DPoint p_plot[4];
+        p_plot[0] = Getter(4 * prim);
+        p_plot[1] = Getter(4 * prim + 1);
+        p_plot[2] = Getter(4 * prim + 2);
+        p_plot[3] = Getter(4 * prim + 3);
+
+        // Check if the quad is outside the culling box
+        if (!cull_box.Contains(p_plot[0]) && !cull_box.Contains(p_plot[1]) &&
+            !cull_box.Contains(p_plot[2]) && !cull_box.Contains(p_plot[3]))
+            return false;
+
+        // Project the quad vertices to screen space
+        ImVec2 p[4];
+        p[0] = PlotToPixels(p_plot[0]);
+        p[1] = PlotToPixels(p_plot[1]);
+        p[2] = PlotToPixels(p_plot[2]);
+        p[3] = PlotToPixels(p_plot[3]);
+
+        // Add vertices for two triangles
+        draw_list_3d._VtxWritePtr[0].pos.x = p[0].x;
+        draw_list_3d._VtxWritePtr[0].pos.y = p[0].y;
+        draw_list_3d._VtxWritePtr[0].uv = UV;
+        draw_list_3d._VtxWritePtr[0].col = Col;
+
+        draw_list_3d._VtxWritePtr[1].pos.x = p[1].x;
+        draw_list_3d._VtxWritePtr[1].pos.y = p[1].y;
+        draw_list_3d._VtxWritePtr[1].uv = UV;
+        draw_list_3d._VtxWritePtr[1].col = Col;
+
+        draw_list_3d._VtxWritePtr[2].pos.x = p[2].x;
+        draw_list_3d._VtxWritePtr[2].pos.y = p[2].y;
+        draw_list_3d._VtxWritePtr[2].uv = UV;
+        draw_list_3d._VtxWritePtr[2].col = Col;
+
+        draw_list_3d._VtxWritePtr[3].pos.x = p[3].x;
+        draw_list_3d._VtxWritePtr[3].pos.y = p[3].y;
+        draw_list_3d._VtxWritePtr[3].uv = UV;
+        draw_list_3d._VtxWritePtr[3].col = Col;
+
+        draw_list_3d._VtxWritePtr += 4;
+
+        // Add indices for two triangles
+        draw_list_3d._IdxWritePtr[0] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx);
+        draw_list_3d._IdxWritePtr[1] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + 1);
+        draw_list_3d._IdxWritePtr[2] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + 2);
+
+        draw_list_3d._IdxWritePtr[3] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx);
+        draw_list_3d._IdxWritePtr[4] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + 2);
+        draw_list_3d._IdxWritePtr[5] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + 3);
+
+        draw_list_3d._IdxWritePtr += 6;
+
+        // Add depth values for the two triangles
+        float z = GetPointDepth((p_plot[0] + p_plot[1] + p_plot[2]) / 3.0f);
+        draw_list_3d._ZWritePtr[0] = z;
+        draw_list_3d._ZWritePtr[1] = z;
+        draw_list_3d._ZWritePtr += 2;
+
+        // Update vertex count
+        draw_list_3d._VtxCurrentIdx += 4;
+
+        return true;
+    }
+
+    const _Getter& Getter;
+    mutable ImVec2 UV;
+    const ImU32 Col;
+};
+
 //-----------------------------------------------------------------------------
 // [SECTION] Indexers
 //-----------------------------------------------------------------------------
@@ -674,6 +753,17 @@ struct GetterTriangleLines {
     GetterTriangleLines(_Getter getter) : Getter(getter), Count(getter.Count * 2) {}
     template <typename I> IMPLOT3D_INLINE ImPlot3DPoint operator()(I idx) const {
         idx = ((idx % 6 + 1) / 2) % 3 + idx / 6 * 3;
+        return Getter(idx);
+    }
+    const _Getter Getter;
+    const int Count;
+};
+
+template <typename _Getter>
+struct GetterQuadLines {
+    GetterQuadLines(_Getter getter) : Getter(getter), Count(getter.Count * 2) {}
+    template <typename I> IMPLOT3D_INLINE ImPlot3DPoint operator()(I idx) const {
+        idx = ((idx % 8 + 1) / 2) % 4 + idx / 8 * 4;
         return Getter(idx);
     }
     const _Getter Getter;
@@ -904,6 +994,50 @@ IMPLOT3D_TMP void PlotTriangle(const char* label_id, const T* xs, const T* ys, c
 
 #define INSTANTIATE_MACRO(T) \
     template IMPLOT3D_API void PlotTriangle<T>(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DTriangleFlags flags, int offset, int stride);
+CALL_INSTANTIATE_FOR_NUMERIC_TYPES()
+#undef INSTANTIATE_MACRO
+
+//-----------------------------------------------------------------------------
+// [SECTION] PlotQuad
+//-----------------------------------------------------------------------------
+
+template <typename _Getter>
+void PlotQuadEx(const char* label_id, const _Getter& getter, ImPlot3DQuadFlags flags) {
+    if (BeginItemEx(label_id, getter, flags, ImPlot3DCol_Line)) {
+        const ImPlot3DNextItemData& n = GetItemData();
+
+        // Render fill
+        if (getter.Count >= 4 && n.RenderLine) {
+            const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Fill]);
+            RenderPrimitives<RendererQuadFill>(getter, col_fill);
+        }
+
+        // Render lines
+        if (getter.Count >= 2 && n.RenderLine) {
+            const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Line]);
+            RenderPrimitives<RendererLineSegments>(GetterQuadLines<_Getter>(getter), col_line, n.LineWeight);
+        }
+
+        // Render markers
+        if (n.Marker != ImPlot3DMarker_None) {
+            const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerOutline]);
+            const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerFill]);
+            RenderMarkers<_Getter>(getter, n.Marker, n.MarkerSize, n.RenderMarkerFill, col_fill, n.RenderMarkerLine, col_line, n.MarkerWeight);
+        }
+
+        EndItem();
+    }
+}
+
+IMPLOT3D_TMP void PlotQuad(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DQuadFlags flags, int offset, int stride) {
+    if (count < 3)
+        return;
+    GetterXYZ<IndexerIdx<T>, IndexerIdx<T>, IndexerIdx<T>> getter(IndexerIdx<T>(xs, count, offset, stride), IndexerIdx<T>(ys, count, offset, stride), IndexerIdx<T>(zs, count, offset, stride), count);
+    return PlotQuadEx(label_id, getter, flags);
+}
+
+#define INSTANTIATE_MACRO(T) \
+    template IMPLOT3D_API void PlotQuad<T>(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DQuadFlags flags, int offset, int stride);
 CALL_INSTANTIATE_FOR_NUMERIC_TYPES()
 #undef INSTANTIATE_MACRO
 

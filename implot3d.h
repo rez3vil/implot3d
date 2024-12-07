@@ -79,7 +79,8 @@ typedef int ImPlot3DItemFlags;     // -> ImPlot3DItemFlags_     // Flags: Item f
 typedef int ImPlot3DScatterFlags;  // -> ImPlot3DScatterFlags_  // Flags: Scatter plot flags
 typedef int ImPlot3DLineFlags;     // -> ImPlot3DLineFlags_     // Flags: Line plot flags
 typedef int ImPlot3DTriangleFlags; // -> ImPlot3DTriangleFlags_ // Flags: Triangle plot flags
-typedef int ImPlot3DSurfaceFlags;  // -> ImPlot3DSurfaceFlags_ // Flags: Surface plot flags
+typedef int ImPlot3DQuadFlags;     // -> ImPlot3DQuadFlags_     // Flags: QuadFplot flags
+typedef int ImPlot3DSurfaceFlags;  // -> ImPlot3DSurfaceFlags_  // Flags: Surface plot flags
 typedef int ImPlot3DLegendFlags;   // -> ImPlot3DLegendFlags_   // Flags: Legend flags
 typedef int ImPlot3DAxisFlags;     // -> ImPlot3DAxisFlags_     // Flags: Axis flags
 
@@ -189,6 +190,13 @@ enum ImPlot3DTriangleFlags_ {
     ImPlot3DTriangleFlags_None = 0, // Default
     ImPlot3DTriangleFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
     ImPlot3DTriangleFlags_NoFit = ImPlot3DItemFlags_NoFit,
+};
+
+// Flags for PlotQuad
+enum ImPlot3DQuadFlags_ {
+    ImPlot3DQuadFlags_None = 0, // Default
+    ImPlot3DQuadFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
+    ImPlot3DQuadFlags_NoFit = ImPlot3DItemFlags_NoFit,
 };
 
 // Flags for PlotSurface
@@ -349,6 +357,8 @@ IMPLOT3D_TMP void PlotScatter(const char* label_id, const T* xs, const T* ys, co
 IMPLOT3D_TMP void PlotLine(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DLineFlags flags = 0, int offset = 0, int stride = sizeof(T));
 
 IMPLOT3D_TMP void PlotTriangle(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DTriangleFlags flags = 0, int offset = 0, int stride = sizeof(T));
+
+IMPLOT3D_TMP void PlotQuad(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DQuadFlags flags = 0, int offset = 0, int stride = sizeof(T));
 
 IMPLOT3D_TMP void PlotSurface(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DSurfaceFlags flags = 0, int offset = 0, int stride = sizeof(T));
 
