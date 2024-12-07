@@ -240,13 +240,13 @@ void DemoSurfacePlots() {
     // Begin the plot
     if (ImPlot3D::BeginPlot("Surface Plots")) {
         // Set styles
-        ImPlot3D::PushStyleVar(ImPlot3DStyleVar_FillAlpha, 0.25f);
+        ImPlot3D::PushStyleVar(ImPlot3DStyleVar_FillAlpha, 0.8f);
         ImPlot3D::SetNextFillStyle(ImPlot3D::GetColormapColor(0));
-        ImPlot3D::SetNextLineStyle(ImPlot3D::GetColormapColor(1), 2);
+        ImPlot3D::SetNextLineStyle(ImPlot3D::GetColormapColor(1));
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 2, ImPlot3D::GetColormapColor(1), IMPLOT3D_AUTO, ImPlot3D::GetColormapColor(1));
 
         // Plot the surface
-        ImPlot3D::PlotSurface("Wave Surface", xs, ys, zs, N * N);
+        ImPlot3D::PlotSurface("Wave Surface", xs, ys, zs, N, N);
 
         // End the plot
         ImPlot3D::PopStyleVar();
