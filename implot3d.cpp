@@ -33,6 +33,7 @@
 // [SECTION] ImPlot3DBox
 // [SECTION] ImPlot3DRange
 // [SECTION] ImPlot3DQuat
+// [SECTION] ImDrawList3D
 // [SECTION] ImPlot3DAxis
 // [SECTION] ImPlot3DPlot
 // [SECTION] ImPlot3DStyle
@@ -989,7 +990,7 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     gp.CurrentItems = &gp.CurrentPlot->Items;
     ImPlot3DPlot& plot = *gp.CurrentPlot;
 
-    // Populate plot ID/flags
+    // Populate plot
     plot.ID = ID;
     plot.Flags = flags;
     plot.JustCreated = just_created;
@@ -1031,6 +1032,8 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
 
     // Push frame rect clipping
     ImGui::PushClipRect(plot.FrameRect.Min, plot.FrameRect.Max, true);
+    plot.DrawList._Flags = window->DrawList->Flags;
+    plot.DrawList._SharedData = ImGui::GetDrawListSharedData();
 
     return true;
 }
@@ -1040,6 +1043,9 @@ void EndPlot() {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "Mismatched BeginPlot()/EndPlot()!");
     ImPlot3DPlot& plot = *gp.CurrentPlot;
+
+    // Move triangles from 3D draw list to ImGui draw list
+    plot.DrawList.SortedMoveToImGuiDrawList();
 
     // Handle data fitting
     if (plot.FitThisFrame) {
@@ -2424,6 +2430,65 @@ ImPlot3DQuat ImPlot3DQuat::Slerp(const ImPlot3DQuat& q1, const ImPlot3DQuat& q2,
         s1 * q1.y + s2 * q2_.y,
         s1 * q1.z + s2 * q2_.z,
         s1 * q1.w + s2 * q2_.w);
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] ImDrawList3D
+//-----------------------------------------------------------------------------
+
+void ImDrawList3D::PrimReserve(int idx_count, int vtx_count) {
+    IM_ASSERT_PARANOID(idx_count >= 0 && vtx_count >= 0 && idx_count % 3 == 0);
+
+    int vtx_buffer_old_size = VtxBuffer.Size;
+    VtxBuffer.resize(vtx_buffer_old_size + vtx_count);
+    _VtxWritePtr = VtxBuffer.Data + vtx_buffer_old_size;
+
+    int idx_buffer_old_size = IdxBuffer.Size;
+    IdxBuffer.resize(idx_buffer_old_size + idx_count);
+    _IdxWritePtr = IdxBuffer.Data + idx_buffer_old_size;
+
+    int z_buffer_old_size = ZBuffer.Size;
+    ZBuffer.resize(z_buffer_old_size + idx_count / 3);
+    _ZWritePtr = ZBuffer.Data + z_buffer_old_size;
+}
+
+void ImDrawList3D::PrimUnreserve(int idx_count, int vtx_count) {
+    IM_ASSERT_PARANOID(idx_count >= 0 && vtx_count >= 0 && idx_count % 3 == 0);
+
+    VtxBuffer.shrink(VtxBuffer.Size - vtx_count);
+    IdxBuffer.shrink(IdxBuffer.Size - idx_count);
+    ZBuffer.shrink(ZBuffer.Size - idx_count / 3);
+}
+
+void ImDrawList3D::SortedMoveToImGuiDrawList() {
+    ImDrawList& draw_list = *ImGui::GetWindowDrawList();
+
+    // Reserve space in the ImGui draw list
+    // TODO check available space
+    draw_list.PrimReserve(IdxBuffer.Size, VtxBuffer.Size);
+
+    // Offset indices
+    unsigned int offset = draw_list._VtxCurrentIdx;
+    for (int i = 0; i < IdxBuffer.Size; i++)
+        IdxBuffer.Data[i] += offset;
+
+    // Copy vertices
+    memcpy(draw_list._VtxWritePtr, VtxBuffer.Data, VtxBuffer.Size * sizeof(ImDrawVert));
+    draw_list._VtxWritePtr += VtxBuffer.Size;
+    draw_list._VtxCurrentIdx += (unsigned int)VtxBuffer.Size;
+
+    // Copy indices
+    memcpy(draw_list._IdxWritePtr, IdxBuffer.Data, IdxBuffer.Size * sizeof(ImDrawIdx));
+    draw_list._IdxWritePtr += IdxBuffer.Size;
+
+    // Clear local buffers since we've moved them
+    VtxBuffer.clear();
+    IdxBuffer.clear();
+    ZBuffer.clear();
+    _VtxCurrentIdx = 0;
+    _VtxWritePtr = VtxBuffer.Data;
+    _IdxWritePtr = IdxBuffer.Data;
+    _ZWritePtr = ZBuffer.Data;
 }
 
 //-----------------------------------------------------------------------------

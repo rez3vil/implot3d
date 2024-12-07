@@ -105,6 +105,27 @@ typedef void (*ImPlot3DLocator)(ImPlot3DTicker& ticker, const ImPlot3DRange& ran
 // [SECTION] Structs
 //-----------------------------------------------------------------------------
 
+struct ImDrawList3D {
+    ImVector<ImDrawIdx> IdxBuffer;     // Index buffer
+    ImVector<ImDrawVert> VtxBuffer;    // Vertex buffer
+    ImVector<float> ZBuffer;           // Z buffer. Depth value for each triangle
+    unsigned int _VtxCurrentIdx;       // [Internal] current vertex index
+    ImDrawVert* _VtxWritePtr;          // [Internal] point within VtxBuffer.Data after each add command (to avoid using the ImVector<> operators too much)
+    ImDrawIdx* _IdxWritePtr;           // [Internal] point within IdxBuffer.Data after each add command (to avoid using the ImVector<> operators too much)
+    float* _ZWritePtr;                 // [Internal] point within ZBuffer.Data after each add command (to avoid using the ImVector<> operators too much)
+    ImDrawListFlags _Flags;            // [Internal] draw list flags
+    ImDrawListSharedData* _SharedData; // [Internal] shared draw list data
+
+    ImDrawList3D() {
+        memset(this, 0, sizeof(*this));
+    }
+
+    void PrimReserve(int idx_count, int vtx_count);
+    void PrimUnreserve(int idx_count, int vtx_count);
+
+    void SortedMoveToImGuiDrawList();
+};
+
 struct ImPlot3DNextItemData {
     ImVec4 Colors[3]; // ImPlot3DCol_Line, ImPlot3DCol_MarkerOutline, ImPlot3DCol_MarkerFill,
     float LineWeight;
@@ -462,6 +483,8 @@ struct ImPlot3DPlot {
     // Items
     ImPlot3DItemGroup Items;
     ImPlot3DItem* CurrentItem;
+    // 3D draw list
+    ImDrawList3D DrawList;
 
     ImPlot3DPlot() {
         Flags = ImPlot3DFlags_None;

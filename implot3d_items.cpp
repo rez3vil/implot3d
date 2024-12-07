@@ -83,16 +83,16 @@ struct MaxIdx {
 template <> const unsigned int MaxIdx<unsigned short>::Value = 65535;
 template <> const unsigned int MaxIdx<unsigned int>::Value = 4294967295;
 
-IMPLOT3D_INLINE void GetLineRenderProps(const ImDrawList& draw_list, float& half_weight, ImVec2& tex_uv0, ImVec2& tex_uv1) {
-    const bool aa = ImHasFlag(draw_list.Flags, ImDrawListFlags_AntiAliasedLines) &&
-                    ImHasFlag(draw_list.Flags, ImDrawListFlags_AntiAliasedLinesUseTex);
+IMPLOT3D_INLINE void GetLineRenderProps(const ImDrawList3D& draw_list_3d, float& half_weight, ImVec2& tex_uv0, ImVec2& tex_uv1) {
+    const bool aa = ImHasFlag(draw_list_3d._Flags, ImDrawListFlags_AntiAliasedLines) &&
+                    ImHasFlag(draw_list_3d._Flags, ImDrawListFlags_AntiAliasedLinesUseTex);
     if (aa) {
-        ImVec4 tex_uvs = draw_list._Data->TexUvLines[(int)(half_weight * 2)];
+        ImVec4 tex_uvs = draw_list_3d._SharedData->TexUvLines[(int)(half_weight * 2)];
         tex_uv0 = ImVec2(tex_uvs.x, tex_uvs.y);
         tex_uv1 = ImVec2(tex_uvs.z, tex_uvs.w);
         half_weight += 1;
     } else {
-        tex_uv0 = tex_uv1 = draw_list._Data->TexUvWhitePixel;
+        tex_uv0 = tex_uv1 = draw_list_3d._SharedData->TexUvWhitePixel;
     }
 }
 
@@ -271,42 +271,51 @@ void SetNextMarkerStyle(ImPlot3DMarker marker, float size, const ImVec4& fill, f
 // [SECTION] Draw Utils
 //-----------------------------------------------------------------------------
 
-IMPLOT3D_INLINE void PrimLine(ImDrawList& draw_list, const ImVec2& P1, const ImVec2& P2, float half_weight, ImU32 col, const ImVec2& tex_uv0, const ImVec2 tex_uv1) {
+IMPLOT3D_INLINE void PrimLine(ImDrawList3D& draw_list_3d, const ImVec2& P1, const ImVec2& P2, float half_weight, ImU32 col, const ImVec2& tex_uv0, const ImVec2 tex_uv1, float z) {
     float dx = P2.x - P1.x;
     float dy = P2.y - P1.y;
     IMPLOT3D_NORMALIZE2F(dx, dy);
     dx *= half_weight;
     dy *= half_weight;
-    draw_list._VtxWritePtr[0].pos.x = P1.x + dy;
-    draw_list._VtxWritePtr[0].pos.y = P1.y - dx;
-    draw_list._VtxWritePtr[0].uv = tex_uv0;
-    draw_list._VtxWritePtr[0].col = col;
-    draw_list._VtxWritePtr[1].pos.x = P2.x + dy;
-    draw_list._VtxWritePtr[1].pos.y = P2.y - dx;
-    draw_list._VtxWritePtr[1].uv = tex_uv0;
-    draw_list._VtxWritePtr[1].col = col;
-    draw_list._VtxWritePtr[2].pos.x = P2.x - dy;
-    draw_list._VtxWritePtr[2].pos.y = P2.y + dx;
-    draw_list._VtxWritePtr[2].uv = tex_uv1;
-    draw_list._VtxWritePtr[2].col = col;
-    draw_list._VtxWritePtr[3].pos.x = P1.x - dy;
-    draw_list._VtxWritePtr[3].pos.y = P1.y + dx;
-    draw_list._VtxWritePtr[3].uv = tex_uv1;
-    draw_list._VtxWritePtr[3].col = col;
-    draw_list._VtxWritePtr += 4;
-    draw_list._IdxWritePtr[0] = (ImDrawIdx)(draw_list._VtxCurrentIdx);
-    draw_list._IdxWritePtr[1] = (ImDrawIdx)(draw_list._VtxCurrentIdx + 1);
-    draw_list._IdxWritePtr[2] = (ImDrawIdx)(draw_list._VtxCurrentIdx + 2);
-    draw_list._IdxWritePtr[3] = (ImDrawIdx)(draw_list._VtxCurrentIdx);
-    draw_list._IdxWritePtr[4] = (ImDrawIdx)(draw_list._VtxCurrentIdx + 2);
-    draw_list._IdxWritePtr[5] = (ImDrawIdx)(draw_list._VtxCurrentIdx + 3);
-    draw_list._IdxWritePtr += 6;
-    draw_list._VtxCurrentIdx += 4;
+    draw_list_3d._VtxWritePtr[0].pos.x = P1.x + dy;
+    draw_list_3d._VtxWritePtr[0].pos.y = P1.y - dx;
+    draw_list_3d._VtxWritePtr[0].uv = tex_uv0;
+    draw_list_3d._VtxWritePtr[0].col = col;
+    draw_list_3d._VtxWritePtr[1].pos.x = P2.x + dy;
+    draw_list_3d._VtxWritePtr[1].pos.y = P2.y - dx;
+    draw_list_3d._VtxWritePtr[1].uv = tex_uv0;
+    draw_list_3d._VtxWritePtr[1].col = col;
+    draw_list_3d._VtxWritePtr[2].pos.x = P2.x - dy;
+    draw_list_3d._VtxWritePtr[2].pos.y = P2.y + dx;
+    draw_list_3d._VtxWritePtr[2].uv = tex_uv1;
+    draw_list_3d._VtxWritePtr[2].col = col;
+    draw_list_3d._VtxWritePtr[3].pos.x = P1.x - dy;
+    draw_list_3d._VtxWritePtr[3].pos.y = P1.y + dx;
+    draw_list_3d._VtxWritePtr[3].uv = tex_uv1;
+    draw_list_3d._VtxWritePtr[3].col = col;
+    draw_list_3d._VtxWritePtr += 4;
+    draw_list_3d._IdxWritePtr[0] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx);
+    draw_list_3d._IdxWritePtr[1] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + 1);
+    draw_list_3d._IdxWritePtr[2] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + 2);
+    draw_list_3d._IdxWritePtr[3] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx);
+    draw_list_3d._IdxWritePtr[4] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + 2);
+    draw_list_3d._IdxWritePtr[5] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + 3);
+    draw_list_3d._IdxWritePtr += 6;
+    draw_list_3d._ZWritePtr[0] = z;
+    draw_list_3d._ZWritePtr++;
+    draw_list_3d._VtxCurrentIdx += 4;
 }
 
 //-----------------------------------------------------------------------------
 // [SECTION] Renderers
 //-----------------------------------------------------------------------------
+
+float GetPointDepth(ImPlot3DPoint p) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    ImPlot3DPoint p_rot = plot.Rotation * p;
+    return p_rot.z;
+}
 
 struct RendererBase {
     RendererBase(int prims, int idx_consumed, int vtx_consumed) : Prims(prims),
@@ -325,29 +334,35 @@ struct RendererMarkersFill : RendererBase {
                                                                                                          Count(count),
                                                                                                          Size(size),
                                                                                                          Col(col) {}
-    void Init(ImDrawList& draw_list) const {
-        UV = draw_list._Data->TexUvWhitePixel;
+    void Init(ImDrawList3D& draw_list_3d) const {
+        UV = draw_list_3d._SharedData->TexUvWhitePixel;
     }
 
-    IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, const ImPlot3DBox& cull_box, int prim) const {
+    IMPLOT3D_INLINE bool Render(ImDrawList3D& draw_list_3d, const ImPlot3DBox& cull_box, int prim) const {
         ImPlot3DPoint p_plot = Getter(prim);
         if (!cull_box.Contains(p_plot))
             return false;
         ImVec2 p = PlotToPixels(p_plot);
+        // 3 vertices per triangle
         for (int i = 0; i < Count; i++) {
-            draw_list._VtxWritePtr[0].pos.x = p.x + Marker[i].x * Size;
-            draw_list._VtxWritePtr[0].pos.y = p.y + Marker[i].y * Size;
-            draw_list._VtxWritePtr[0].uv = UV;
-            draw_list._VtxWritePtr[0].col = Col;
-            draw_list._VtxWritePtr++;
+            draw_list_3d._VtxWritePtr[0].pos.x = p.x + Marker[i].x * Size;
+            draw_list_3d._VtxWritePtr[0].pos.y = p.y + Marker[i].y * Size;
+            draw_list_3d._VtxWritePtr[0].uv = UV;
+            draw_list_3d._VtxWritePtr[0].col = Col;
+            draw_list_3d._VtxWritePtr++;
         }
+        // 3 indices per triangle
         for (int i = 2; i < Count; i++) {
-            draw_list._IdxWritePtr[0] = (ImDrawIdx)(draw_list._VtxCurrentIdx);
-            draw_list._IdxWritePtr[1] = (ImDrawIdx)(draw_list._VtxCurrentIdx + i - 1);
-            draw_list._IdxWritePtr[2] = (ImDrawIdx)(draw_list._VtxCurrentIdx + i);
-            draw_list._IdxWritePtr += 3;
+            draw_list_3d._IdxWritePtr[0] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx);
+            draw_list_3d._IdxWritePtr[1] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + 1);
+            draw_list_3d._IdxWritePtr[2] = (ImDrawIdx)(draw_list_3d._VtxCurrentIdx + 2);
+            draw_list_3d._IdxWritePtr += 3;
         }
-        draw_list._VtxCurrentIdx += (ImDrawIdx)Count;
+        // Update vertex count
+        draw_list_3d._VtxCurrentIdx += (ImDrawIdx)Count;
+        // 1 z value per triangle
+        draw_list_3d._ZWritePtr[0] = GetPointDepth(p_plot);
+        draw_list_3d._ZWritePtr++;
         return true;
     }
     const _Getter& Getter;
@@ -362,11 +377,11 @@ template <class _Getter>
 struct RendererMarkersLine : RendererBase {
     RendererMarkersLine(const _Getter& getter, const ImVec2* marker, int count, float size, float weight, ImU32 col) : RendererBase(getter.Count, count / 2 * 6, count / 2 * 4), Getter(getter), Marker(marker), Count(count), HalfWeight(ImMax(1.0f, weight) * 0.5f), Size(size), Col(col) {}
 
-    void Init(ImDrawList& draw_list) const {
-        GetLineRenderProps(draw_list, HalfWeight, UV0, UV1);
+    void Init(ImDrawList3D& draw_list_3d) const {
+        GetLineRenderProps(draw_list_3d, HalfWeight, UV0, UV1);
     }
 
-    IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, const ImPlot3DBox& cull_box, int prim) const {
+    IMPLOT3D_INLINE bool Render(ImDrawList3D& draw_list_3d, const ImPlot3DBox& cull_box, int prim) const {
         ImPlot3DPoint p_plot = Getter(prim);
         if (!cull_box.Contains(p_plot))
             return false;
@@ -374,7 +389,7 @@ struct RendererMarkersLine : RendererBase {
         for (int i = 0; i < Count; i = i + 2) {
             ImVec2 p1(p.x + Marker[i].x * Size, p.y + Marker[i].y * Size);
             ImVec2 p2(p.x + Marker[i + 1].x * Size, p.y + Marker[i + 1].y * Size);
-            PrimLine(draw_list, p1, p2, HalfWeight, Col, UV0, UV1);
+            PrimLine(draw_list_3d, p1, p2, HalfWeight, Col, UV0, UV1, GetPointDepth(p_plot));
         }
         return true;
     }
@@ -400,23 +415,23 @@ struct RendererLineStrip : RendererBase {
         P1_plot = Getter(0);
     }
 
-    void Init(ImDrawList& draw_list) const {
-        GetLineRenderProps(draw_list, HalfWeight, UV0, UV1);
+    void Init(ImDrawList3D& draw_list_3d) const {
+        GetLineRenderProps(draw_list_3d, HalfWeight, UV0, UV1);
     }
 
-    IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, const ImPlot3DBox& cull_box, int prim) const {
+    IMPLOT3D_INLINE bool Render(ImDrawList3D& draw_list_3d, const ImPlot3DBox& cull_box, int prim) const {
         ImPlot3DPoint P2_plot = Getter(prim + 1);
 
         // Clip the line segment to the culling box using Liang-Barsky algorithm
-        ImPlot3DPoint P0_clipped, P1_clipped;
-        bool visible = cull_box.ClipLineSegment(P1_plot, P2_plot, P0_clipped, P1_clipped);
+        ImPlot3DPoint P1_clipped, P2_clipped;
+        bool visible = cull_box.ClipLineSegment(P1_plot, P2_plot, P1_clipped, P2_clipped);
 
         if (visible) {
             // Convert clipped points to pixel coordinates
-            ImVec2 P0_screen = PlotToPixels(P0_clipped);
             ImVec2 P1_screen = PlotToPixels(P1_clipped);
+            ImVec2 P2_screen = PlotToPixels(P2_clipped);
             // Render the line segment
-            PrimLine(draw_list, P0_screen, P1_screen, HalfWeight, Col, UV0, UV1);
+            PrimLine(draw_list_3d, P1_screen, P2_screen, HalfWeight, Col, UV0, UV1, GetPointDepth((P1_plot + P2_plot) * 0.5f));
         }
 
         // Update for next segment
@@ -444,11 +459,11 @@ struct RendererLineStripSkip : RendererBase {
         P1_plot = Getter(0);
     }
 
-    void Init(ImDrawList& draw_list) const {
-        GetLineRenderProps(draw_list, HalfWeight, UV0, UV1);
+    void Init(ImDrawList3D& draw_list_3d) const {
+        GetLineRenderProps(draw_list_3d, HalfWeight, UV0, UV1);
     }
 
-    IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, const ImPlot3DBox& cull_box, int prim) const {
+    IMPLOT3D_INLINE bool Render(ImDrawList3D& draw_list_3d, const ImPlot3DBox& cull_box, int prim) const {
         // Get the next point in plot coordinates
         ImPlot3DPoint P2_plot = Getter(prim + 1);
         bool visible = false;
@@ -458,15 +473,15 @@ struct RendererLineStripSkip : RendererBase {
             !ImNan(P2_plot.x) && !ImNan(P2_plot.y) && !ImNan(P2_plot.z)) {
 
             // Clip the line segment to the culling box
-            ImPlot3DPoint P0_clipped, P1_clipped;
-            visible = cull_box.ClipLineSegment(P1_plot, P2_plot, P0_clipped, P1_clipped);
+            ImPlot3DPoint P1_clipped, P2_clipped;
+            visible = cull_box.ClipLineSegment(P1_plot, P2_plot, P1_clipped, P2_clipped);
 
             if (visible) {
                 // Convert clipped points to pixel coordinates
-                ImVec2 P0_screen = PlotToPixels(P0_clipped);
                 ImVec2 P1_screen = PlotToPixels(P1_clipped);
+                ImVec2 P2_screen = PlotToPixels(P2_clipped);
                 // Render the line segment
-                PrimLine(draw_list, P0_screen, P1_screen, HalfWeight, Col, UV0, UV1);
+                PrimLine(draw_list_3d, P1_screen, P2_screen, HalfWeight, Col, UV0, UV1, GetPointDepth((P1_plot + P2_plot) * 0.5f));
             }
         }
 
@@ -493,11 +508,11 @@ struct RendererLineSegments : RendererBase {
           Col(col),
           HalfWeight(ImMax(1.0f, weight) * 0.5f) {}
 
-    void Init(ImDrawList& draw_list) const {
-        GetLineRenderProps(draw_list, HalfWeight, UV0, UV1);
+    void Init(ImDrawList3D& draw_list_3d) const {
+        GetLineRenderProps(draw_list_3d, HalfWeight, UV0, UV1);
     }
 
-    IMPLOT3D_INLINE bool Render(ImDrawList& draw_list, const ImPlot3DBox& cull_box, int prim) const {
+    IMPLOT3D_INLINE bool Render(ImDrawList3D& draw_list_3d, const ImPlot3DBox& cull_box, int prim) const {
         // Get the segment's endpoints in plot coordinates
         ImPlot3DPoint P1_plot = Getter(prim * 2 + 0);
         ImPlot3DPoint P2_plot = Getter(prim * 2 + 1);
@@ -507,15 +522,15 @@ struct RendererLineSegments : RendererBase {
             !ImNan(P2_plot.x) && !ImNan(P2_plot.y) && !ImNan(P2_plot.z)) {
 
             // Clip the line segment to the culling box
-            ImPlot3DPoint P0_clipped, P1_clipped;
-            bool visible = cull_box.ClipLineSegment(P1_plot, P2_plot, P0_clipped, P1_clipped);
+            ImPlot3DPoint P1_clipped, P2_clipped;
+            bool visible = cull_box.ClipLineSegment(P1_plot, P2_plot, P1_clipped, P2_clipped);
 
             if (visible) {
                 // Convert clipped points to pixel coordinates
-                ImVec2 P0_screen = PlotToPixels(P0_clipped);
                 ImVec2 P1_screen = PlotToPixels(P1_clipped);
+                ImVec2 P2_screen = PlotToPixels(P2_clipped);
                 // Render the line segment
-                PrimLine(draw_list, P0_screen, P1_screen, HalfWeight, Col, UV0, UV1);
+                PrimLine(draw_list_3d, P1_screen, P2_screen, HalfWeight, Col, UV0, UV1, GetPointDepth((P1_plot + P2_plot) * 0.5f));
             }
             return visible;
         }
@@ -596,8 +611,8 @@ struct GetterLoop {
 template <template <class> class _Renderer, class _Getter, typename... Args>
 void RenderPrimitives(const _Getter& getter, Args... args) {
     _Renderer<_Getter> renderer(getter, args...);
-    ImDrawList& draw_list = *GetPlotDrawList();
     ImPlot3DPlot& plot = *GetCurrentPlot();
+    ImDrawList3D& draw_list_3d = plot.DrawList;
     ImPlot3DBox cull_box;
     if (ImHasFlag(plot.Flags, ImPlot3DFlags_NoClip)) {
         cull_box.Min = ImPlot3DPoint(-HUGE_VAL, -HUGE_VAL, -HUGE_VAL);
@@ -608,17 +623,19 @@ void RenderPrimitives(const _Getter& getter, Args... args) {
     }
 
     // Initialize renderer
-    renderer.Init(draw_list);
+    renderer.Init(draw_list_3d);
     // Find how many can be reserved up to end of current draw command's limit
-    unsigned int prims_to_render = ImMin(renderer.Prims, (MaxIdx<ImDrawIdx>::Value - draw_list._VtxCurrentIdx) / renderer.VtxConsumed);
+    unsigned int prims_to_render = ImMin(renderer.Prims, (MaxIdx<ImDrawIdx>::Value - draw_list_3d._VtxCurrentIdx) / renderer.VtxConsumed);
+
     // Reserve vertices and indices to render the primitives
-    draw_list.PrimReserve(prims_to_render * renderer.IdxConsumed, prims_to_render * renderer.VtxConsumed);
+    draw_list_3d.PrimReserve(prims_to_render * renderer.IdxConsumed, prims_to_render * renderer.VtxConsumed);
     // Render primitives
     int num_culled = 0;
     for (unsigned int i = 0; i < prims_to_render; i++)
-        if (!renderer.Render(draw_list, cull_box, i))
+        if (!renderer.Render(draw_list_3d, cull_box, i))
             num_culled++;
-    draw_list.PrimUnreserve(num_culled * renderer.IdxConsumed, num_culled * renderer.VtxConsumed);
+    // Unreserve unused vertices and indices
+    draw_list_3d.PrimUnreserve(num_culled * renderer.IdxConsumed, num_culled * renderer.VtxConsumed);
 }
 
 //-----------------------------------------------------------------------------
