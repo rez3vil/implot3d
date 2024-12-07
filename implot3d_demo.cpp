@@ -255,6 +255,23 @@ void DemoSurfacePlots() {
     ImPlot3D::PopColormap();
 }
 
+void DemoMeshPlots() {
+    // Begin the plot
+    if (ImPlot3D::BeginPlot("Mesh Plots")) {
+        ImPlot3D::SetupAxesLimits(-1, 1, -1, 1, -1, 1);
+
+        // Plot duck
+        ImVec4 duck_color(0.8f, 0.8f, 0.2f, 0.6f);
+        ImPlot3D::SetNextFillStyle(duck_color);
+        ImPlot3D::SetNextLineStyle(duck_color);
+        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 2, duck_color, IMPLOT3D_AUTO, duck_color);
+        ImPlot3D::PlotMesh("Duck", duck_vtx, duck_idx, DUCK_VTX_COUNT, DUCK_IDX_COUNT);
+
+        // End the plot
+        ImPlot3D::EndPlot();
+    }
+}
+
 void DemoRealtimePlots() {
     ImGui::BulletText("Move your mouse to change the data!");
     static ScrollingBuffer sdata1, sdata2, sdata3;
@@ -495,6 +512,7 @@ void ShowDemoWindow(bool* p_open) {
             DemoHeader("Triangle Plots", DemoTrianglePlots);
             DemoHeader("Quad Plots", DemoQuadPlots);
             DemoHeader("Surface Plots", DemoSurfacePlots);
+            DemoHeader("Mesh Plots", DemoMeshPlots);
             DemoHeader("Realtime Plots", DemoRealtimePlots);
             DemoHeader("Markers and Text", DemoMarkersAndText);
             DemoHeader("NaN Values", DemoNaNValues);

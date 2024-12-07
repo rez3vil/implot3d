@@ -925,6 +925,32 @@ struct GetterSurfaceLines {
     const int YCount;
 };
 
+struct Getter3DPoints {
+    Getter3DPoints(const ImPlot3DPoint* points, int count) : Points(points), Count(count) {}
+    template <typename I> IMPLOT3D_INLINE ImPlot3DPoint operator()(I idx) const {
+        return Points[idx];
+    }
+    const ImPlot3DPoint* Points;
+    const int Count;
+};
+
+struct GetterMeshTriangles {
+    GetterMeshTriangles(const ImPlot3DPoint* vtx, const unsigned int* idx, int idx_count)
+        : Vtx(vtx), Idx(idx), IdxCount(idx_count), TriCount(idx_count / 3), Count(idx_count) {}
+
+    template <typename I>
+    IMPLOT3D_INLINE ImPlot3DPoint operator()(I i) const {
+        unsigned int vi = Idx[i];
+        return Vtx[vi];
+    }
+
+    const ImPlot3DPoint* Vtx;
+    const unsigned int* Idx;
+    int IdxCount;
+    int TriCount;
+    int Count;
+};
+
 //-----------------------------------------------------------------------------
 // [SECTION] RenderPrimitives
 //-----------------------------------------------------------------------------
@@ -1120,7 +1146,7 @@ void PlotTriangleEx(const char* label_id, const _Getter& getter, ImPlot3DTriangl
         const ImPlot3DNextItemData& n = GetItemData();
 
         // Render fill
-        if (getter.Count >= 3 && n.RenderLine) {
+        if (getter.Count >= 3 && n.RenderFill) {
             const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Fill]);
             RenderPrimitives<RendererTriangleFill>(getter, col_fill);
         }
@@ -1164,7 +1190,7 @@ void PlotQuadEx(const char* label_id, const _Getter& getter, ImPlot3DQuadFlags f
         const ImPlot3DNextItemData& n = GetItemData();
 
         // Render fill
-        if (getter.Count >= 4 && n.RenderLine) {
+        if (getter.Count >= 4 && n.RenderFill) {
             const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Fill]);
             RenderPrimitives<RendererQuadFill>(getter, col_fill);
         }
@@ -1208,7 +1234,7 @@ void PlotSurfaceEx(const char* label_id, const _Getter& getter, int x_count, int
         const ImPlot3DNextItemData& n = GetItemData();
 
         // Render fill
-        if (getter.Count >= 4 && n.RenderLine) {
+        if (getter.Count >= 4 && n.RenderFill) {
             const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Fill]);
             RenderPrimitives<RendererSurfaceFill>(getter, x_count, y_count, col_fill);
         }
@@ -1242,6 +1268,35 @@ IMPLOT3D_TMP void PlotSurface(const char* label_id, const T* xs, const T* ys, co
     template IMPLOT3D_API void PlotSurface<T>(const char* label_id, const T* xs, const T* ys, const T* zs, int x_count, int y_count, ImPlot3DSurfaceFlags flags, int offset, int stride);
 CALL_INSTANTIATE_FOR_NUMERIC_TYPES()
 #undef INSTANTIATE_MACRO
+
+void PlotMesh(const char* label_id, const ImPlot3DPoint* vtx, const unsigned int* idx, int vtx_count, int idx_count, ImPlot3DMeshFlags flags) {
+    Getter3DPoints getter(vtx, vtx_count);                     // Get vertices
+    GetterMeshTriangles getter_triangles(vtx, idx, idx_count); // Get triangle vertices
+    if (BeginItemEx(label_id, getter, flags, ImPlot3DCol_Line)) {
+        const ImPlot3DNextItemData& n = GetItemData();
+
+        // Render fill
+        if (getter.Count >= 3 && n.RenderFill) {
+            const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Fill]);
+            RenderPrimitives<RendererTriangleFill>(getter_triangles, col_fill);
+        }
+
+        // Render lines
+        if (getter.Count >= 2 && n.RenderLine) {
+            const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Line]);
+            RenderPrimitives<RendererLineSegments>(GetterTriangleLines<GetterMeshTriangles>(getter_triangles), col_line, n.LineWeight);
+        }
+
+        // Render markers
+        if (n.Marker != ImPlot3DMarker_None) {
+            const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerOutline]);
+            const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerFill]);
+            RenderMarkers(getter, n.Marker, n.MarkerSize, n.RenderMarkerFill, col_fill, n.RenderMarkerLine, col_line, n.MarkerWeight);
+        }
+
+        EndItem();
+    }
+}
 
 //-----------------------------------------------------------------------------
 // [SECTION] PlotText

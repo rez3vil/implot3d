@@ -31,6 +31,7 @@
 // [SECTION] ImPlot3DQuat
 // [SECTION] ImPlot3DStyle
 // [SECTION] Callbacks
+// [SECTION] Meshes
 
 #pragma once
 #include "imgui.h"
@@ -81,6 +82,7 @@ typedef int ImPlot3DLineFlags;     // -> ImPlot3DLineFlags_     // Flags: Line p
 typedef int ImPlot3DTriangleFlags; // -> ImPlot3DTriangleFlags_ // Flags: Triangle plot flags
 typedef int ImPlot3DQuadFlags;     // -> ImPlot3DQuadFlags_     // Flags: QuadFplot flags
 typedef int ImPlot3DSurfaceFlags;  // -> ImPlot3DSurfaceFlags_  // Flags: Surface plot flags
+typedef int ImPlot3DMeshFlags;     // -> ImPlot3DMeshFlags_     // Flags: Mesh plot flags
 typedef int ImPlot3DLegendFlags;   // -> ImPlot3DLegendFlags_   // Flags: Legend flags
 typedef int ImPlot3DAxisFlags;     // -> ImPlot3DAxisFlags_     // Flags: Axis flags
 
@@ -204,6 +206,13 @@ enum ImPlot3DSurfaceFlags_ {
     ImPlot3DSurfaceFlags_None = 0, // Default
     ImPlot3DSurfaceFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
     ImPlot3DSurfaceFlags_NoFit = ImPlot3DItemFlags_NoFit,
+};
+
+// Flags for PlotMesh
+enum ImPlot3DMeshFlags_ {
+    ImPlot3DMeshFlags_None = 0, // Default
+    ImPlot3DMeshFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
+    ImPlot3DMeshFlags_NoFit = ImPlot3DItemFlags_NoFit,
 };
 
 // Flags for legends
@@ -361,6 +370,8 @@ IMPLOT3D_TMP void PlotTriangle(const char* label_id, const T* xs, const T* ys, c
 IMPLOT3D_TMP void PlotQuad(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DQuadFlags flags = 0, int offset = 0, int stride = sizeof(T));
 
 IMPLOT3D_TMP void PlotSurface(const char* label_id, const T* xs, const T* ys, const T* zs, int x_count, int y_count, ImPlot3DSurfaceFlags flags = 0, int offset = 0, int stride = sizeof(T));
+
+IMPLOT3D_API void PlotMesh(const char* label_id, const ImPlot3DPoint* vtx, const unsigned int* idx, int vtx_count, int idx_count, ImPlot3DMeshFlags flags = 0);
 
 // Plots a centered text label at point x,y,z. It is possible to set the text angle in radians and offset in pixels
 IMPLOT3D_API void PlotText(const char* text, float x, float y, float z, float angle = 0.0f, const ImVec2& pix_offset = ImVec2(0, 0));
@@ -700,5 +711,31 @@ struct ImPlot3DStyle {
 
 // Callback signature for axis tick label formatter
 typedef int (*ImPlot3DFormatter)(float value, char* buff, int size, void* user_data);
+
+//-----------------------------------------------------------------------------
+// [SECTION] Meshes
+//-----------------------------------------------------------------------------
+
+namespace ImPlot3D {
+
+// Cube
+constexpr int CUBE_VTX_COUNT = 8;              // Number of cube vertices
+constexpr int CUBE_IDX_COUNT = 36;             // Number of cube indices (12 triangles)
+extern ImPlot3DPoint cube_vtx[CUBE_VTX_COUNT]; // Cube vertices
+extern unsigned int cube_idx[CUBE_IDX_COUNT];  // Cube indices
+
+// Sphere
+constexpr int SPHERE_VTX_COUNT = 162;              // Number of sphere vertices for 128 triangles
+constexpr int SPHERE_IDX_COUNT = 960;              // Number of sphere indices (128 triangles)
+extern ImPlot3DPoint sphere_vtx[SPHERE_VTX_COUNT]; // Sphere vertices
+extern unsigned int sphere_idx[SPHERE_IDX_COUNT];  // Sphere indices
+
+// Duck (Rubber Duck by Poly by Google [CC-BY] via Poly Pizza)
+constexpr int DUCK_VTX_COUNT = 254;            // Number of duck vertices
+constexpr int DUCK_IDX_COUNT = 1428;           // Number of duck indices
+extern ImPlot3DPoint duck_vtx[DUCK_VTX_COUNT]; // Duck vertices
+extern unsigned int duck_idx[DUCK_IDX_COUNT];  // Duck indices
+
+} // namespace ImPlot3D
 
 #endif // #ifndef IMGUI_DISABLE
