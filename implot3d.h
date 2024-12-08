@@ -92,11 +92,12 @@ typedef int ImPlot3DAxisFlags;     // -> ImPlot3DAxisFlags_     // Flags: Axis f
 
 // Flags for ImPlot3D::BeginPlot()
 enum ImPlot3DFlags_ {
-    ImPlot3DFlags_None = 0,          // Default
-    ImPlot3DFlags_NoTitle = 1 << 0,  // Hide plot title
-    ImPlot3DFlags_NoLegend = 1 << 1, // Hide plot legend
-    ImPlot3DFlags_NoClip = 1 << 2,   // Disable 3D box clipping
-    ImPlot3DFlags_CanvasOnly = ImPlot3DFlags_NoTitle | ImPlot3DFlags_NoLegend,
+    ImPlot3DFlags_None = 0,             // Default
+    ImPlot3DFlags_NoTitle = 1 << 0,     // Hide plot title
+    ImPlot3DFlags_NoLegend = 1 << 1,    // Hide plot legend
+    ImPlot3DFlags_NoMouseText = 1 << 2, // Hide mouse position in plot coordinates
+    ImPlot3DFlags_NoClip = 1 << 3,      // Disable 3D box clipping
+    ImPlot3DFlags_CanvasOnly = ImPlot3DFlags_NoTitle | ImPlot3DFlags_NoLegend | ImPlot3DFlags_NoMouseText,
 };
 
 // Represents a condition for SetupAxisLimits etc. (same as ImGuiCond, but we only support a subset of those enums)

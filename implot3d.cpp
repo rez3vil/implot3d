@@ -17,6 +17,7 @@
 // [SECTION] Context
 // [SECTION] Text Utils
 // [SECTION] Legend Utils
+// [SECTION] Mouse Position Utils
 // [SECTION] Plot Box Utils
 // [SECTION] Formatter
 // [SECTION] Locator
@@ -328,6 +329,44 @@ void RenderLegend() {
 
     // Render legends
     ShowLegendEntries(plot.Items, legend.Rect, legend.Hovered, gp.Style.LegendInnerPadding, gp.Style.LegendSpacing, !legend_horz, *draw_list);
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] Mouse Position Utils
+//-----------------------------------------------------------------------------
+
+void RenderMousePos() {
+    ImPlot3DContext& gp = *GImPlot3D;
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    if (ImHasFlag(plot.Flags, ImPlot3DFlags_NoMouseText))
+        return;
+
+    ImVec2 mouse_pos = ImGui::GetMousePos();
+    ImPlot3DPoint mouse_plot_pos = PixelsToPlotPlane(mouse_pos, ImPlane3D_YZ, true);
+    if (mouse_plot_pos.IsNaN())
+        mouse_plot_pos = PixelsToPlotPlane(mouse_pos, ImPlane3D_XZ, true);
+    if (mouse_plot_pos.IsNaN())
+        mouse_plot_pos = PixelsToPlotPlane(mouse_pos, ImPlane3D_XY, true);
+
+    char buff[IMPLOT3D_LABEL_MAX_SIZE];
+    if (!mouse_plot_pos.IsNaN()) {
+        ImGuiTextBuffer builder;
+        builder.append("(");
+        for (int i = 0; i < 3; i++) {
+            ImPlot3DAxis& axis = plot.Axes[i];
+            if (i > 0)
+                builder.append(", ");
+            axis.Formatter(mouse_plot_pos[i], buff, IMPLOT3D_LABEL_MAX_SIZE, axis.FormatterData);
+            builder.append(buff);
+        }
+        builder.append(")");
+
+        const ImVec2 size = ImGui::CalcTextSize(builder.c_str());
+        // TODO custom location/padding
+        const ImVec2 pos = GetLocationPos(plot.PlotRect, size, ImPlot3DLocation_SouthEast, ImVec2(10, 10));
+        ImDrawList& draw_list = *ImGui::GetWindowDrawList();
+        draw_list.AddText(pos, GetStyleColorU32(ImPlot3DCol_InlayText), builder.c_str());
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -1180,6 +1219,9 @@ void EndPlot() {
 
     // Render legend
     RenderLegend();
+
+    // Render mouse position
+    RenderMousePos();
 
     // Legend context menu
     if (ImGui::BeginPopup("##LegendContext")) {
