@@ -1796,13 +1796,14 @@ void HandleInput(ImPlot3DPlot& plot) {
     if (!rotating && IO.MouseReleased[ImGuiMouseButton_Right])
         plot.OpenContextThisFrame = true;
 
+    // TODO Only open context menu if the mouse is not in the middle of double click action
     const char* axis_contexts[3] = {"##XAxisContext", "##YAxisContext", "##ZAxisContext"};
     if (plot.OpenContextThisFrame) {
         if (plot.Items.Legend.Hovered)
             ImGui::OpenPopup("##LegendContext");
         else if (hovered_axis != -1) {
             ImGui::OpenPopup(axis_contexts[hovered_axis]);
-        } else if (plot.Hovered) {
+        } else if (plot.Hovered && hovered_plane == -1) {
             ImGui::OpenPopup("##PlotContext");
         }
     }
