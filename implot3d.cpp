@@ -20,6 +20,7 @@
 // [SECTION] Plot Box Utils
 // [SECTION] Formatter
 // [SECTION] Locator
+// [SECTION] Context Menus
 // [SECTION] Begin/End Plot
 // [SECTION] Setup
 // [SECTION] Plot Utils
@@ -48,6 +49,7 @@
 
 #include "implot3d.h"
 #include "implot3d_internal.h"
+#include <iostream>
 
 #ifndef IMGUI_DISABLE
 
@@ -317,7 +319,7 @@ void RenderLegend() {
     legend.Rect = ImRect(legend_pos, legend_pos + legend_size);
 
     // Test hover
-    legend.Hovered = ImGui::IsWindowHovered() && legend.Rect.Contains(IO.MousePos);
+    legend.Hovered = legend.Rect.Contains(IO.MousePos);
 
     // Render background
     ImU32 col_bg = GetStyleColorU32(ImPlot3DCol_LegendBg);
@@ -327,6 +329,9 @@ void RenderLegend() {
 
     // Render legends
     ShowLegendEntries(plot.Items, legend.Rect, legend.Hovered, gp.Style.LegendInnerPadding, gp.Style.LegendSpacing, !legend_horz, *draw_list);
+
+    if (plot.OpenContextThisFrame && legend.Hovered)
+        ImGui::OpenPopup("##LegendContext");
 }
 
 //-----------------------------------------------------------------------------
@@ -966,6 +971,36 @@ void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, ImPlot3
     }
 }
 
+//------------------------------------------------------------------------------
+// [SECTION] Context Menus
+//------------------------------------------------------------------------------
+
+bool ShowLegendContextMenu(ImPlot3DLegend& legend, bool visible) {
+    const float s = ImGui::GetFrameHeight();
+    bool ret = false;
+    if (ImGui::Checkbox("Show", &visible))
+        ret = true;
+    if (ImGui::RadioButton("H", ImHasFlag(legend.Flags, ImPlot3DLegendFlags_Horizontal)))
+        legend.Flags |= ImPlot3DLegendFlags_Horizontal;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("V", !ImHasFlag(legend.Flags, ImPlot3DLegendFlags_Horizontal)))
+        legend.Flags &= ~ImPlot3DLegendFlags_Horizontal;
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(2, 2));
+    // clang-format off
+    if (ImGui::Button("NW",ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_NorthWest; } ImGui::SameLine();
+    if (ImGui::Button("N", ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_North;     } ImGui::SameLine();
+    if (ImGui::Button("NE",ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_NorthEast; }
+    if (ImGui::Button("W", ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_West;      } ImGui::SameLine();
+    if (ImGui::InvisibleButton("C", ImVec2(1.5f*s,s))) {     } ImGui::SameLine();
+    if (ImGui::Button("E", ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_East;      }
+    if (ImGui::Button("SW",ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_SouthWest; } ImGui::SameLine();
+    if (ImGui::Button("S", ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_South;     } ImGui::SameLine();
+    if (ImGui::Button("SE",ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_SouthEast; }
+    // clang-format on
+    ImGui::PopStyleVar();
+    return ret;
+}
+
 //-----------------------------------------------------------------------------
 // [SECTION] Begin/End Plot
 //-----------------------------------------------------------------------------
@@ -992,14 +1027,15 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
 
     // Populate plot
     plot.ID = ID;
-    plot.Flags = flags;
     plot.JustCreated = just_created;
     if (just_created) {
+        plot.Flags = flags;
         plot.Rotation = init_rotation;
         for (int i = 0; i < 3; i++)
             plot.Axes[i] = ImPlot3DAxis();
     }
     plot.SetupLocked = false;
+    plot.OpenContextThisFrame = false;
 
     // Populate title
     if (title_id && ImGui::FindRenderedTextEnd(title_id, nullptr) != title_id && !ImHasFlag(plot.Flags, ImPlot3DFlags_NoTitle))
@@ -1066,6 +1102,15 @@ void EndPlot() {
 
     // Render legend
     RenderLegend();
+
+    // Legend popups
+    if (ImGui::BeginPopup("##LegendContext")) {
+        ImGui::Text("Legend");
+        ImGui::Separator();
+        if (ShowLegendContextMenu(plot.Items.Legend, !ImHasFlag(plot.Flags, ImPlot3DFlags_NoLegend)))
+            ImFlipFlag(plot.Flags, ImPlot3DFlags_NoLegend);
+        ImGui::EndPopup();
+    }
 
     // Pop frame rect clipping
     ImGui::PopClipRect();
@@ -1363,6 +1408,8 @@ ImPlot3DRay NDCRayToPlotRay(const ImPlot3DRay& ray) {
 // [SECTION] Setup Utils
 //-----------------------------------------------------------------------------
 
+static const float MOUSE_CURSOR_DRAG_THRESHOLD = 5.0f;
+
 void HandleInput(ImPlot3DPlot& plot) {
     ImGuiIO& IO = ImGui::GetIO();
 
@@ -1378,6 +1425,10 @@ void HandleInput(ImPlot3DPlot& plot) {
 #if (IMGUI_VERSION_NUM < 18966)
     ImGui::SetItemAllowOverlap(); // Handled by ButtonBehavior()
 #endif
+
+    // State
+    const ImVec2 rot_drag = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
+    const bool rotating = ImLengthSqr(rot_drag) > MOUSE_CURSOR_DRAG_THRESHOLD;
 
     // Check if any axis/plane is hovered
     const ImPlot3DQuat& rotation = plot.Rotation;
@@ -1593,6 +1644,10 @@ void HandleInput(ImPlot3DPlot& plot) {
             }
         }
     }
+
+    // Handle context menu action
+    if (!rotating && IO.MouseReleased[ImGuiMouseButton_Right])
+        plot.OpenContextThisFrame = true;
 }
 
 void SetupLock() {

@@ -56,6 +56,9 @@ static inline float ImLog10(float x) { return log10f(x); }
 // Returns true if flag is set
 template <typename TSet, typename TFlag>
 static inline bool ImHasFlag(TSet set, TFlag flag) { return (set & flag) == flag; }
+// Flips a flag in a flagset
+template <typename TSet, typename TFlag>
+static inline void ImFlipFlag(TSet& set, TFlag flag) { ImHasFlag(set, flag) ? set &= ~flag : set |= flag; }
 template <typename T>
 static inline T ImRemap01(T x, T x0, T x1) { return (x - x0) / (x1 - x0); }
 // Returns true if val is NAN
@@ -495,6 +498,8 @@ struct ImPlot3DPlot {
     ImPlot3DItem* CurrentItem;
     // 3D draw list
     ImDrawList3D DrawList;
+    // Misc
+    bool OpenContextThisFrame;
 
     ImPlot3DPlot() {
         Flags = ImPlot3DFlags_None;
@@ -510,6 +515,7 @@ struct ImPlot3DPlot {
         HeldPlaneIdx = -1;
         FitThisFrame = true;
         CurrentItem = nullptr;
+        OpenContextThisFrame = false;
     }
 
     void ExtendFit(const ImPlot3DPoint& point);
