@@ -65,6 +65,11 @@ static inline T ImRemap01(T x, T x0, T x1) { return (x - x0) / (x1 - x0); }
 static inline bool ImNan(double val) { return isnan(val); }
 // Returns true if val is NAN or INFINITY
 static inline bool ImNanOrInf(double val) { return !(val >= -DBL_MAX && val <= DBL_MAX) || ImNan(val); }
+// Turns NANs to 0s
+static inline double ImConstrainNan(double val) { return ImNan(val) ? 0 : val; }
+// Turns infinity to floating point maximums
+static inline double ImConstrainInf(double val) { return val >= DBL_MAX ? DBL_MAX : val <= -DBL_MAX ? -DBL_MAX
+                                                                                                    : val; }
 // True if two numbers are approximately equal using units in the last place.
 static inline bool ImAlmostEqual(double v1, double v2, int ulp = 2) { return ImAbs(v1 - v2) < DBL_EPSILON * ImAbs(v1 + v2) * ulp || ImAbs(v1 - v2) < DBL_MIN; }
 // Set alpha channel of 32-bit color from float in range [0.0 1.0]
@@ -457,12 +462,36 @@ struct ImPlot3DAxis {
         Range.Max = ImMax(v1, v2);
     }
 
+    inline bool SetMin(double _min, bool force = false) {
+        if (!force && IsLockedMin())
+            return false;
+        _min = ImConstrainNan(ImConstrainInf(_min));
+        if (_min >= Range.Max)
+            return false;
+        Range.Min = _min;
+        return true;
+    }
+
+    inline bool SetMax(double _max, bool force = false) {
+        if (!force && IsLockedMax())
+            return false;
+        _max = ImConstrainNan(ImConstrainInf(_max));
+        if (_max <= Range.Min)
+            return false;
+        Range.Max = _max;
+        return true;
+    }
+
     inline bool IsRangeLocked() const { return RangeCond == ImPlot3DCond_Always; }
     inline bool IsLockedMin() const { return IsRangeLocked() || ImHasFlag(Flags, ImPlot3DAxisFlags_LockMin); }
     inline bool IsLockedMax() const { return IsRangeLocked() || ImHasFlag(Flags, ImPlot3DAxisFlags_LockMax); }
     inline bool IsLocked() const { return IsLockedMin() && IsLockedMax(); }
 
     bool HasLabel() const;
+    bool HasGridLines() const;
+    bool HasTickLabels() const;
+    bool HasTickMarks() const;
+    bool IsAutoFitting() const;
     void ExtendFit(float value);
     void ApplyFit();
     float PlotToNDC(float value) const;

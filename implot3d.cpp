@@ -49,7 +49,6 @@
 
 #include "implot3d.h"
 #include "implot3d_internal.h"
-#include <iostream>
 
 #ifndef IMGUI_DISABLE
 
@@ -329,9 +328,6 @@ void RenderLegend() {
 
     // Render legends
     ShowLegendEntries(plot.Items, legend.Rect, legend.Hovered, gp.Style.LegendInnerPadding, gp.Style.LegendSpacing, !legend_horz, *draw_list);
-
-    if (plot.OpenContextThisFrame && legend.Hovered)
-        ImGui::OpenPopup("##LegendContext");
 }
 
 //-----------------------------------------------------------------------------
@@ -1001,6 +997,57 @@ bool ShowLegendContextMenu(ImPlot3DLegend& legend, bool visible) {
     return ret;
 }
 
+void ShowAxisContextMenu(ImPlot3DAxis& axis) {
+    ImGui::PushItemWidth(75);
+    bool always_locked = axis.IsRangeLocked() || axis.IsAutoFitting();
+    bool label = axis.HasLabel();
+    bool grid = axis.HasGridLines();
+    bool ticks = axis.HasTickMarks();
+    bool labels = axis.HasTickLabels();
+    double drag_speed = (axis.Range.Size() <= FLT_EPSILON) ? FLT_EPSILON * 1.0e+13 : 0.01 * axis.Range.Size(); // recover from almost equal axis limits.
+
+    ImGui::BeginDisabled(always_locked);
+    ImGui::CheckboxFlags("##LockMin", (unsigned int*)&axis.Flags, ImPlot3DAxisFlags_LockMin);
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+
+    ImGui::BeginDisabled(axis.IsLockedMin() || always_locked);
+    float temp_min = axis.Range.Min;
+    if (ImGui::DragFloat("Min", &temp_min, (float)drag_speed, -HUGE_VAL, axis.Range.Max - FLT_EPSILON)) {
+        axis.SetMin(temp_min, true);
+    }
+    ImGui::EndDisabled();
+
+    ImGui::BeginDisabled(always_locked);
+    ImGui::CheckboxFlags("##LockMax", (unsigned int*)&axis.Flags, ImPlot3DAxisFlags_LockMax);
+    ImGui::EndDisabled();
+    ImGui::SameLine();
+    ImGui::BeginDisabled(axis.IsLockedMax() || always_locked);
+    float temp_max = axis.Range.Max;
+    if (ImGui::DragFloat("Max", &temp_max, (float)drag_speed, axis.Range.Min + FLT_EPSILON, HUGE_VAL)) {
+        axis.SetMax(temp_max, true);
+    }
+    ImGui::EndDisabled();
+
+    ImGui::Separator();
+
+    // Flags
+    ImGui::CheckboxFlags("Auto-Fit", (unsigned int*)&axis.Flags, ImPlot3DAxisFlags_AutoFit);
+    ImGui::Separator();
+
+    ImGui::BeginDisabled(axis.LabelOffset == -1);
+    if (ImGui::Checkbox("Label", &label))
+        ImFlipFlag(axis.Flags, ImPlot3DAxisFlags_NoLabel);
+    ImGui::EndDisabled();
+
+    if (ImGui::Checkbox("Grid Lines", &grid))
+        ImFlipFlag(axis.Flags, ImPlot3DAxisFlags_NoGridLines);
+    if (ImGui::Checkbox("Tick Marks", &ticks))
+        ImFlipFlag(axis.Flags, ImPlot3DAxisFlags_NoTickMarks);
+    if (ImGui::Checkbox("Tick Labels", &labels))
+        ImFlipFlag(axis.Flags, ImPlot3DAxisFlags_NoTickLabels);
+}
+
 //-----------------------------------------------------------------------------
 // [SECTION] Begin/End Plot
 //-----------------------------------------------------------------------------
@@ -1103,13 +1150,25 @@ void EndPlot() {
     // Render legend
     RenderLegend();
 
-    // Legend popups
+    // Legend context menu
     if (ImGui::BeginPopup("##LegendContext")) {
         ImGui::Text("Legend");
         ImGui::Separator();
         if (ShowLegendContextMenu(plot.Items.Legend, !ImHasFlag(plot.Flags, ImPlot3DFlags_NoLegend)))
             ImFlipFlag(plot.Flags, ImPlot3DFlags_NoLegend);
         ImGui::EndPopup();
+    }
+
+    // Axis context menus
+    static const char* axis_contexts[3] = {"##XAxisContext", "##YAxisContext", "##ZAxisContext"};
+    for (int i = 0; i < 3; i++) {
+        ImPlot3DAxis& axis = plot.Axes[i];
+        if (ImGui::BeginPopup(axis_contexts[i])) {
+            ImGui::Text(axis.HasLabel() ? plot.GetAxisLabel(axis) : "%c-Axis", 'X' + i);
+            ImGui::Separator();
+            ShowAxisContextMenu(axis);
+            ImGui::EndPopup();
+        }
     }
 
     // Pop frame rect clipping
@@ -1135,8 +1194,10 @@ void SetupAxis(ImAxis3D idx, const char* label, ImPlot3DAxisFlags flags) {
     // Get plot and axis
     ImPlot3DPlot& plot = *gp.CurrentPlot;
     ImPlot3DAxis& axis = plot.Axes[idx];
-    axis.Flags = flags;
-    plot.SetAxisLabel(axis, label);
+    if (plot.JustCreated) {
+        axis.Flags = flags;
+        plot.SetAxisLabel(axis, label);
+    }
 }
 
 void SetupAxisLimits(ImAxis3D idx, double min_lim, double max_lim, ImPlot3DCond cond) {
@@ -1485,6 +1546,13 @@ void HandleInput(ImPlot3DPlot& plot) {
             plot.Axes[i].FitThisFrame = transform_axis[i];
     }
 
+    // Handle auto fit
+    for (int i = 0; i < 3; i++)
+        if (plot.Axes[i].IsAutoFitting()) {
+            plot.FitThisFrame = true;
+            plot.Axes[i].FitThisFrame = true;
+        }
+
     // Handle translation with right mouse button
     if (plot.Held && ImGui::IsMouseDown(0)) {
         ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
@@ -1645,9 +1713,18 @@ void HandleInput(ImPlot3DPlot& plot) {
         }
     }
 
-    // Handle context menu action
+    // Handle context menu
     if (!rotating && IO.MouseReleased[ImGuiMouseButton_Right])
         plot.OpenContextThisFrame = true;
+
+    const char* axis_contexts[3] = {"##XAxisContext", "##YAxisContext", "##ZAxisContext"};
+    if (plot.OpenContextThisFrame) {
+        if (plot.Items.Legend.Hovered)
+            ImGui::OpenPopup("##LegendContext");
+        else if (hovered_axis != -1) {
+            ImGui::OpenPopup(axis_contexts[hovered_axis]);
+        }
+    }
 }
 
 void SetupLock() {
@@ -2613,9 +2690,11 @@ void ImDrawList3D::SortedMoveToImGuiDrawList() {
 // [SECTION] ImPlot3DAxis
 //-----------------------------------------------------------------------------
 
-bool ImPlot3DAxis::HasLabel() const {
-    return LabelOffset != -1 && !ImHasFlag(Flags, ImPlot3DAxisFlags_NoLabel);
-}
+bool ImPlot3DAxis::HasLabel() const { return LabelOffset != -1 && !ImHasFlag(Flags, ImPlot3DAxisFlags_NoLabel); }
+bool ImPlot3DAxis::HasGridLines() const { return !ImHasFlag(Flags, ImPlot3DAxisFlags_NoGridLines); }
+bool ImPlot3DAxis::HasTickLabels() const { return !ImHasFlag(Flags, ImPlot3DAxisFlags_NoTickLabels); }
+bool ImPlot3DAxis::HasTickMarks() const { return !ImHasFlag(Flags, ImPlot3DAxisFlags_NoTickMarks); }
+bool ImPlot3DAxis::IsAutoFitting() const { return ImHasFlag(Flags, ImPlot3DAxisFlags_AutoFit); }
 
 void ImPlot3DAxis::ExtendFit(float value) {
     FitExtents.Min = ImMin(FitExtents.Min, value);
