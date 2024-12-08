@@ -141,7 +141,8 @@ struct ImPlot3DNextItemData {
     bool RenderFill;
     bool RenderMarkerLine;
     bool RenderMarkerFill;
-    bool ShouldColormapFill;
+    bool IsAutoFill;
+    bool IsAutoLine;
     bool Hidden;
 
     ImPlot3DNextItemData() { Reset(); }
@@ -158,7 +159,8 @@ struct ImPlot3DNextItemData {
         RenderFill = false;
         RenderMarkerLine = true;
         RenderMarkerFill = true;
-        ShouldColormapFill = true;
+        IsAutoFill = true;
+        IsAutoLine = true;
         Hidden = false;
     }
 };

@@ -163,7 +163,8 @@ bool BeginItem(const char* label_id, ImPlot3DItemFlags flags, ImPlot3DCol recolo
 
     // Set next item color
     ImVec4 item_color = ImGui::ColorConvertU32ToFloat4(item->Color);
-    n.ShouldColormapFill = IsColorAuto(n.Colors[ImPlot3DCol_Fill]) && IsColorAuto(ImPlot3DCol_Fill);
+    n.IsAutoFill = IsColorAuto(n.Colors[ImPlot3DCol_Fill]) && IsColorAuto(ImPlot3DCol_Fill);
+    n.IsAutoLine = IsColorAuto(n.Colors[ImPlot3DCol_Line]) && IsColorAuto(ImPlot3DCol_Line);
     n.Colors[ImPlot3DCol_Line] = IsColorAuto(n.Colors[ImPlot3DCol_Line]) ? (IsColorAuto(ImPlot3DCol_Line) ? item_color : gp.Style.Colors[ImPlot3DCol_Line]) : n.Colors[ImPlot3DCol_Line];
     n.Colors[ImPlot3DCol_Fill] = IsColorAuto(n.Colors[ImPlot3DCol_Fill]) ? (IsColorAuto(ImPlot3DCol_Fill) ? item_color : gp.Style.Colors[ImPlot3DCol_Fill]) : n.Colors[ImPlot3DCol_Fill];
     n.Colors[ImPlot3DCol_MarkerOutline] = IsColorAuto(n.Colors[ImPlot3DCol_MarkerOutline]) ? (IsColorAuto(ImPlot3DCol_MarkerOutline) ? n.Colors[ImPlot3DCol_Line] : gp.Style.Colors[ImPlot3DCol_MarkerOutline]) : n.Colors[ImPlot3DCol_MarkerOutline];
@@ -702,7 +703,7 @@ struct RendererSurfaceFill : RendererBase {
 
         // Compute min and max values for the colormap (if not solid fill)
         const ImPlot3DNextItemData& n = GetItemData();
-        if (n.ShouldColormapFill) {
+        if (n.IsAutoFill) {
             Min = FLT_MAX;
             Max = -FLT_MAX;
             for (int i = 0; i < Getter.Count; i++) {
@@ -731,7 +732,7 @@ struct RendererSurfaceFill : RendererBase {
         // Compute colors
         ImU32 cols[4] = {Col, Col, Col, Col};
         const ImPlot3DNextItemData& n = GetItemData();
-        if (n.ShouldColormapFill) {
+        if (n.IsAutoFill) {
             float alpha = GImPlot3D->NextItemData.FillAlpha;
             for (int i = 0; i < 4; i++) {
                 ImVec4 col = SampleColormap(ImClamp(ImRemap01(p_plot[i].z, Min, Max), 0.0f, 1.0f));
@@ -1142,7 +1143,7 @@ CALL_INSTANTIATE_FOR_NUMERIC_TYPES()
 
 template <typename _Getter>
 void PlotTriangleEx(const char* label_id, const _Getter& getter, ImPlot3DTriangleFlags flags) {
-    if (BeginItemEx(label_id, getter, flags, ImPlot3DCol_Line)) {
+    if (BeginItemEx(label_id, getter, flags, ImPlot3DCol_Fill)) {
         const ImPlot3DNextItemData& n = GetItemData();
 
         // Render fill
@@ -1186,7 +1187,7 @@ CALL_INSTANTIATE_FOR_NUMERIC_TYPES()
 
 template <typename _Getter>
 void PlotQuadEx(const char* label_id, const _Getter& getter, ImPlot3DQuadFlags flags) {
-    if (BeginItemEx(label_id, getter, flags, ImPlot3DCol_Line)) {
+    if (BeginItemEx(label_id, getter, flags, ImPlot3DCol_Fill)) {
         const ImPlot3DNextItemData& n = GetItemData();
 
         // Render fill
@@ -1230,7 +1231,7 @@ CALL_INSTANTIATE_FOR_NUMERIC_TYPES()
 
 template <typename _Getter>
 void PlotSurfaceEx(const char* label_id, const _Getter& getter, int x_count, int y_count, ImPlot3DSurfaceFlags flags) {
-    if (BeginItemEx(label_id, getter, flags, ImPlot3DCol_Line)) {
+    if (BeginItemEx(label_id, getter, flags, ImPlot3DCol_Fill)) {
         const ImPlot3DNextItemData& n = GetItemData();
 
         // Render fill
@@ -1272,7 +1273,7 @@ CALL_INSTANTIATE_FOR_NUMERIC_TYPES()
 void PlotMesh(const char* label_id, const ImPlot3DPoint* vtx, const unsigned int* idx, int vtx_count, int idx_count, ImPlot3DMeshFlags flags) {
     Getter3DPoints getter(vtx, vtx_count);                     // Get vertices
     GetterMeshTriangles getter_triangles(vtx, idx, idx_count); // Get triangle vertices
-    if (BeginItemEx(label_id, getter, flags, ImPlot3DCol_Line)) {
+    if (BeginItemEx(label_id, getter, flags, ImPlot3DCol_Fill)) {
         const ImPlot3DNextItemData& n = GetItemData();
 
         // Render fill
@@ -1282,7 +1283,7 @@ void PlotMesh(const char* label_id, const ImPlot3DPoint* vtx, const unsigned int
         }
 
         // Render lines
-        if (getter.Count >= 2 && n.RenderLine) {
+        if (getter.Count >= 2 && n.RenderLine && !n.IsAutoLine) {
             const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Line]);
             RenderPrimitives<RendererLineSegments>(GetterTriangleLines<GetterMeshTriangles>(getter_triangles), col_line, n.LineWeight);
         }
