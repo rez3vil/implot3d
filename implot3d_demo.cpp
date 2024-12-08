@@ -129,19 +129,77 @@ void DemoScatterPlots() {
 }
 
 void DemoTrianglePlots() {
-    srand(0);
-    static float xs1[6], ys1[6], zs1[6];
-    for (int i = 0; i < 6; i++) {
-        xs1[i] = 0.1f * ((float)rand() / (float)RAND_MAX);
-        ys1[i] = 0.1f * ((float)rand() / (float)RAND_MAX);
-        zs1[i] = 0.1f * ((float)rand() / (float)RAND_MAX);
-    }
+    // Pyramid coordinates
+    // Apex
+    float ax = 0.0f, ay = 0.0f, az = 1.0f;
+    // Square base corners
+    float cx[4] = {-0.5f, 0.5f, 0.5f, -0.5f};
+    float cy[4] = {-0.5f, -0.5f, 0.5f, 0.5f};
+    float cz[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+
+    // We have 6 triangles (18 vertices) total:
+    // Sides:
+    // T1: apex, corner0, corner1
+    // T2: apex, corner1, corner2
+    // T3: apex, corner2, corner3
+    // T4: apex, corner3, corner0
+    // Base (two triangles form a square):
+    // T5: corner0, corner1, corner2
+    // T6: corner0, corner2, corner3
+
+    static float xs[18], ys[18], zs[18];
+    int i = 0;
+
+    // Helper lambda to append a vertex
+    auto AddVertex = [&](float X, float Y, float Z) {
+        xs[i] = X;
+        ys[i] = Y;
+        zs[i] = Z;
+        i++;
+    };
+
+    // Triangle 1
+    AddVertex(ax, ay, az);
+    AddVertex(cx[0], cy[0], cz[0]);
+    AddVertex(cx[1], cy[1], cz[1]);
+
+    // Triangle 2
+    AddVertex(ax, ay, az);
+    AddVertex(cx[1], cy[1], cz[1]);
+    AddVertex(cx[2], cy[2], cz[2]);
+
+    // Triangle 3
+    AddVertex(ax, ay, az);
+    AddVertex(cx[2], cy[2], cz[2]);
+    AddVertex(cx[3], cy[3], cz[3]);
+
+    // Triangle 4
+    AddVertex(ax, ay, az);
+    AddVertex(cx[3], cy[3], cz[3]);
+    AddVertex(cx[0], cy[0], cz[0]);
+
+    // Triangle 5 (base)
+    AddVertex(cx[0], cy[0], cz[0]);
+    AddVertex(cx[1], cy[1], cz[1]);
+    AddVertex(cx[2], cy[2], cz[2]);
+
+    // Triangle 6 (base)
+    AddVertex(cx[0], cy[0], cz[0]);
+    AddVertex(cx[2], cy[2], cz[2]);
+    AddVertex(cx[3], cy[3], cz[3]);
+
+    // Now we have 18 vertices in xs, ys, zs forming the pyramid
 
     if (ImPlot3D::BeginPlot("Triangle Plots")) {
-        ImPlot3D::SetNextLineStyle(ImPlot3D::GetColormapColor(0), 2);
-        ImPlot3D::SetNextFillStyle(ImPlot3D::GetColormapColor(1));
-        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 6, ImPlot3D::GetColormapColor(3), IMPLOT3D_AUTO, ImPlot3D::GetColormapColor(3));
-        ImPlot3D::PlotTriangle("Triangle", xs1, ys1, zs1, 6);
+        ImPlot3D::SetupAxesLimits(-1, 1, -1, 1, -0.5, 1.5);
+
+        // Setup pyramid colors
+        ImPlot3D::SetNextFillStyle(ImPlot3D::GetColormapColor(0));
+        ImPlot3D::SetNextLineStyle(ImPlot3D::GetColormapColor(1), 2);
+        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 3, ImPlot3D::GetColormapColor(2), IMPLOT3D_AUTO, ImPlot3D::GetColormapColor(2));
+
+        // Plot pyramid
+        ImPlot3D::PlotTriangle("Pyramid", xs, ys, zs, 6 * 3); // 6 triangles, 3 vertices each = 18
         ImPlot3D::EndPlot();
     }
 }
