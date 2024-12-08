@@ -689,7 +689,7 @@ void RenderAxisLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImP
         if (!axis.HasLabel())
             continue;
 
-        const char* label = plot.GetAxisLabel(axis);
+        const char* label = axis.GetLabel();
 
         // Corner indices
         int idx0 = axis_corners[a][0];
@@ -1035,7 +1035,7 @@ void ShowAxisContextMenu(ImPlot3DAxis& axis) {
     ImGui::CheckboxFlags("Auto-Fit", (unsigned int*)&axis.Flags, ImPlot3DAxisFlags_AutoFit);
     ImGui::Separator();
 
-    ImGui::BeginDisabled(axis.LabelOffset == -1);
+    ImGui::BeginDisabled(axis.Label.empty());
     if (ImGui::Checkbox("Label", &label))
         ImFlipFlag(axis.Flags, ImPlot3DAxisFlags_NoLabel);
     ImGui::EndDisabled();
@@ -1046,6 +1046,40 @@ void ShowAxisContextMenu(ImPlot3DAxis& axis) {
         ImFlipFlag(axis.Flags, ImPlot3DAxisFlags_NoTickMarks);
     if (ImGui::Checkbox("Tick Labels", &labels))
         ImFlipFlag(axis.Flags, ImPlot3DAxisFlags_NoTickLabels);
+}
+
+void ShowPlotContextMenu(ImPlot3DPlot& plot) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    const bool owns_legend = gp.CurrentItems == &plot.Items;
+
+    char buf[16] = {};
+
+    const char* axis_labels[3] = {"X-Axis", "Y-Axis", "Z-Axis"};
+    for (int i = 0; i < 3; i++) {
+        ImPlot3DAxis& axis = plot.Axes[i];
+        ImGui::PushID(i);
+        ImFormatString(buf, sizeof(buf) - 1, i == 0 ? "X-Axis" : "X-Axis %d", i + 1);
+        if (ImGui::BeginMenu(axis.HasLabel() ? axis.GetLabel() : axis_labels[i])) {
+            ShowAxisContextMenu(axis);
+            ImGui::EndMenu();
+        }
+        ImGui::PopID();
+    }
+
+    ImGui::Separator();
+    if ((ImGui::BeginMenu("Legend"))) {
+        if (ShowLegendContextMenu(plot.Items.Legend, !ImHasFlag(plot.Flags, ImPlot3DFlags_NoLegend)))
+            ImFlipFlag(plot.Flags, ImPlot3DFlags_NoLegend);
+        ImGui::EndMenu();
+    }
+
+    if ((ImGui::BeginMenu("Settings"))) {
+        ImGui::BeginDisabled(plot.Title.empty());
+        if (ImGui::MenuItem("Title", nullptr, plot.HasTitle()))
+            ImFlipFlag(plot.Flags, ImPlot3DFlags_NoTitle);
+        ImGui::EndDisabled();
+        ImGui::EndMenu();
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -1085,10 +1119,7 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     plot.OpenContextThisFrame = false;
 
     // Populate title
-    if (title_id && ImGui::FindRenderedTextEnd(title_id, nullptr) != title_id && !ImHasFlag(plot.Flags, ImPlot3DFlags_NoTitle))
-        plot.TextBuffer.append(title_id, title_id + strlen(title_id) + 1);
-    else
-        plot.TextBuffer.clear();
+    plot.SetTitle(title_id);
 
     // Calculate frame size
     ImVec2 frame_size = ImGui::CalcItemSize(size, gp.Style.PlotDefaultSize.x, gp.Style.PlotDefaultSize.y);
@@ -1164,11 +1195,17 @@ void EndPlot() {
     for (int i = 0; i < 3; i++) {
         ImPlot3DAxis& axis = plot.Axes[i];
         if (ImGui::BeginPopup(axis_contexts[i])) {
-            ImGui::Text(axis.HasLabel() ? plot.GetAxisLabel(axis) : "%c-Axis", 'X' + i);
+            ImGui::Text(axis.HasLabel() ? axis.GetLabel() : "%c-Axis", 'X' + i);
             ImGui::Separator();
             ShowAxisContextMenu(axis);
             ImGui::EndPopup();
         }
+    }
+
+    // Plot context menu
+    if (ImGui::BeginPopup("##PlotContext")) {
+        ShowPlotContextMenu(plot);
+        ImGui::EndPopup();
     }
 
     // Pop frame rect clipping
@@ -1196,7 +1233,7 @@ void SetupAxis(ImAxis3D idx, const char* label, ImPlot3DAxisFlags flags) {
     ImPlot3DAxis& axis = plot.Axes[idx];
     if (plot.JustCreated) {
         axis.Flags = flags;
-        plot.SetAxisLabel(axis, label);
+        axis.SetLabel(label);
     }
 }
 
@@ -1723,6 +1760,8 @@ void HandleInput(ImPlot3DPlot& plot) {
             ImGui::OpenPopup("##LegendContext");
         else if (hovered_axis != -1) {
             ImGui::OpenPopup(axis_contexts[hovered_axis]);
+        } else if (plot.Hovered) {
+            ImGui::OpenPopup("##PlotContext");
         }
     }
 }
@@ -1774,10 +1813,10 @@ void SetupLock() {
     }
 
     // Render title
-    if (!plot.TextBuffer.empty()) {
+    if (plot.HasTitle()) {
         ImU32 col = GetStyleColorU32(ImPlot3DCol_TitleText);
         ImVec2 top_center = ImVec2(plot.FrameRect.GetCenter().x, plot.CanvasRect.Min.y);
-        AddTextCentered(draw_list, top_center, col, plot.TextBuffer.c_str());
+        AddTextCentered(draw_list, top_center, col, plot.GetTitle());
         plot.PlotRect.Min.y += ImGui::GetTextLineHeight() + gp.Style.LabelPadding.y;
     }
 
@@ -2690,7 +2729,7 @@ void ImDrawList3D::SortedMoveToImGuiDrawList() {
 // [SECTION] ImPlot3DAxis
 //-----------------------------------------------------------------------------
 
-bool ImPlot3DAxis::HasLabel() const { return LabelOffset != -1 && !ImHasFlag(Flags, ImPlot3DAxisFlags_NoLabel); }
+bool ImPlot3DAxis::HasLabel() const { return !Label.empty() && !ImHasFlag(Flags, ImPlot3DAxisFlags_NoLabel); }
 bool ImPlot3DAxis::HasGridLines() const { return !ImHasFlag(Flags, ImPlot3DAxisFlags_NoGridLines); }
 bool ImPlot3DAxis::HasTickLabels() const { return !ImHasFlag(Flags, ImPlot3DAxisFlags_NoTickLabels); }
 bool ImPlot3DAxis::HasTickMarks() const { return !ImHasFlag(Flags, ImPlot3DAxisFlags_NoTickMarks); }
@@ -2753,17 +2792,6 @@ void ImPlot3DPlot::SetRange(const ImPlot3DPoint& min, const ImPlot3DPoint& max) 
     Axes[1].SetRange(min.y, max.y);
     Axes[2].SetRange(min.z, max.z);
 }
-
-void ImPlot3DPlot::SetAxisLabel(ImPlot3DAxis& axis, const char* label) {
-    if (label && ImGui::FindRenderedTextEnd(label, nullptr) != label) {
-        axis.LabelOffset = TextBuffer.size();
-        TextBuffer.append(label, label + strlen(label) + 1);
-    } else {
-        axis.LabelOffset = -1;
-    }
-}
-
-const char* ImPlot3DPlot::GetAxisLabel(const ImPlot3DAxis& axis) const { return TextBuffer.Buf.Data + axis.LabelOffset; }
 
 //-----------------------------------------------------------------------------
 // [SECTION] ImPlot3DStyle

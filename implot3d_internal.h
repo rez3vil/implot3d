@@ -424,7 +424,7 @@ struct ImPlot3DAxis {
     ImPlot3DAxisFlags Flags;
     ImPlot3DRange Range;
     ImPlot3DCond RangeCond;
-    int LabelOffset;
+    ImGuiTextBuffer Label;
     // Ticks
     ImPlot3DTicker Ticker;
     ImPlot3DFormatter Formatter;
@@ -443,8 +443,6 @@ struct ImPlot3DAxis {
         Range.Min = 0.0f;
         Range.Max = 1.0f;
         RangeCond = ImPlot3DCond_None;
-        // Label
-        LabelOffset = -1;
         // Ticks
         Formatter = nullptr;
         FormatterData = nullptr;
@@ -487,6 +485,14 @@ struct ImPlot3DAxis {
     inline bool IsLockedMax() const { return IsRangeLocked() || ImHasFlag(Flags, ImPlot3DAxisFlags_LockMax); }
     inline bool IsLocked() const { return IsLockedMin() && IsLockedMax(); }
 
+    inline void SetLabel(const char* label) {
+        Label.Buf.shrink(0);
+        if (label && ImGui::FindRenderedTextEnd(label, nullptr) != label)
+            Label.append(label, label + strlen(label) + 1);
+    }
+
+    inline const char* GetLabel() const { return Label.Buf.Data; }
+
     bool HasLabel() const;
     bool HasGridLines() const;
     bool HasTickLabels() const;
@@ -502,7 +508,7 @@ struct ImPlot3DAxis {
 struct ImPlot3DPlot {
     ImGuiID ID;
     ImPlot3DFlags Flags;
-    ImGuiTextBuffer TextBuffer;
+    ImGuiTextBuffer Title;
     bool JustCreated;
     // Bounding rectangles
     ImRect FrameRect;  // Outermost bounding rectangle that encapsulates whole the plot/title/padding/etc
@@ -547,13 +553,19 @@ struct ImPlot3DPlot {
         OpenContextThisFrame = false;
     }
 
+    inline void SetTitle(const char* title) {
+        Title.Buf.shrink(0);
+        if (title && ImGui::FindRenderedTextEnd(title, nullptr) != title)
+            Title.append(title, title + strlen(title) + 1);
+    }
+    inline bool HasTitle() const { return !Title.empty() && !ImHasFlag(Flags, ImPlot3DFlags_NoTitle); }
+    inline const char* GetTitle() const { return Title.Buf.Data; }
+
     void ExtendFit(const ImPlot3DPoint& point);
     ImPlot3DPoint RangeMin() const;
     ImPlot3DPoint RangeMax() const;
     ImPlot3DPoint RangeCenter() const;
     void SetRange(const ImPlot3DPoint& min, const ImPlot3DPoint& max);
-    void SetAxisLabel(ImPlot3DAxis& axis, const char* label);
-    const char* GetAxisLabel(const ImPlot3DAxis& axis) const;
 };
 
 struct ImPlot3DContext {
