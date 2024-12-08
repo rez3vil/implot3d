@@ -559,7 +559,7 @@ void RenderPlotBorder(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImV
     }
 }
 
-void RenderPlotGrid(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DPoint* corners, const bool* active_faces, const int plane_2d) {
+void RenderGrid(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DPoint* corners, const bool* active_faces, const int plane_2d) {
     ImVec4 col_grid = GetStyleColorVec4(ImPlot3DCol_AxisGrid);
     ImU32 col_grid_minor = ImGui::GetColorU32(col_grid * ImVec4(1, 1, 1, 0.3f));
     ImU32 col_grid_major = ImGui::GetColorU32(col_grid * ImVec4(1, 1, 1, 0.6f));
@@ -630,6 +630,156 @@ void RenderPlotGrid(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlo
     }
 }
 
+// void RenderTickMarks(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DPoint* corners, const ImVec2* corners_pix, const int axis_corners[3][2], const int plane_2d) {
+//     ImU32 col_tick = GetStyleColorU32(ImPlot3DCol_AxisTick);
+//
+//     for (int a = 0; a < 3; a++) {
+//         const ImPlot3DAxis& axis = plot.Axes[a];
+//         if (ImHasFlag(axis.Flags, ImPlot3DAxisFlags_NoTickMarks))
+//             continue;
+//
+//         // Corner indices for this axis
+//         int idx0 = axis_corners[a][0];
+//         int idx1 = axis_corners[a][1];
+//
+//         // If normal to the 2D plot, ignore the ticks
+//         if (idx0 == idx1)
+//             continue;
+//
+//         // Start and end points of the axis in plot space
+//         ImPlot3DPoint axis_start = corners[idx0];
+//         ImPlot3DPoint axis_end = corners[idx1];
+//
+//         // Direction vector along the axis
+//         ImPlot3DPoint axis_dir = axis_end - axis_start;
+//
+//         // Convert axis start and end to screen space
+//         ImVec2 axis_start_pix = corners_pix[idx0];
+//         ImVec2 axis_end_pix = corners_pix[idx1];
+//
+//         // Plot axis line
+//         draw_list->AddLine(axis_start_pix, axis_end_pix, col_tick);
+//
+//         const float major_size = 0.1f;
+//         const float minor_size = 0.05f;
+//
+//         // Loop over ticks
+//         for (int t = 0; t < axis.Ticker.TickCount(); ++t) {
+//             const ImPlot3DTick& tick = axis.Ticker.Ticks[t];
+//             if (!tick.ShowLabel)
+//                 continue;
+//             float size = tick.Major ? major_size : minor_size;
+//             float v = (tick.PlotPos - axis.Range.Min) / (axis.Range.Max - axis.Range.Min);
+//
+//             ImVec2 tick_pix = axis_start_pix + (axis_end_pix - axis_start_pix) * v;
+//             // TODO we need to render them in the correct direction
+//             draw_list->AddLine(tick_pix, tick_pix + ImVec2(size * 100, 0), col_tick);
+//         }
+//     }
+// }
+
+void RenderTickMarks(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DPoint* corners, const ImVec2* corners_pix, const int axis_corners[3][2], const int plane_2d) {
+    ImU32 col_tick = GetStyleColorU32(ImPlot3DCol_AxisTick);
+
+    auto DeterminePlaneForAxis = [&](int axis_idx) {
+        if (plane_2d != -1)
+            return plane_2d;
+        // If no plane chosen (-1), use:
+        // X or Y axis -> XY plane (2)
+        // Z axis -> YZ plane (0)
+        if (axis_idx == 2)
+            return 1; // Z-axis use XZ plane
+        else
+            return 2; // X or Y-axis use XY plane
+    };
+
+    for (int a = 0; a < 3; a++) {
+        const ImPlot3DAxis& axis = plot.Axes[a];
+        if (ImHasFlag(axis.Flags, ImPlot3DAxisFlags_NoTickMarks))
+            continue;
+
+        int idx0 = axis_corners[a][0];
+        int idx1 = axis_corners[a][1];
+        if (idx0 == idx1) // axis not visible or invalid
+            continue;
+
+        ImPlot3DPoint axis_start = corners[idx0];
+        ImPlot3DPoint axis_end = corners[idx1];
+        ImPlot3DPoint axis_dir = axis_end - axis_start;
+        float axis_len = axis_dir.Length();
+        if (axis_len < 1e-12f)
+            continue;
+        axis_dir /= axis_len;
+
+        // Draw axis line
+        ImVec2 axis_start_pix = corners_pix[idx0];
+        ImVec2 axis_end_pix = corners_pix[idx1];
+        draw_list->AddLine(axis_start_pix, axis_end_pix, col_tick);
+
+        // Choose plane
+        int chosen_plane = DeterminePlaneForAxis(a);
+
+        // Project axis_dir onto chosen plane
+        ImPlot3DPoint proj_dir = axis_dir;
+        if (chosen_plane == 0) {
+            // YZ plane: zero out x
+            proj_dir.x = 0.0f;
+        } else if (chosen_plane == 1) {
+            // XZ plane: zero out y
+            proj_dir.y = 0.0f;
+        } else if (chosen_plane == 2) {
+            // XY plane: zero out z
+            proj_dir.z = 0.0f;
+        }
+
+        float proj_len = proj_dir.Length();
+        if (proj_len < 1e-12f) {
+            // Axis is parallel to plane normal or something degenerate, skip ticks
+            continue;
+        }
+        proj_dir /= proj_len;
+
+        // Rotate 90 degrees in chosen plane
+        ImPlot3DPoint tick_dir;
+        if (chosen_plane == 2) {
+            // XY plane
+            // proj_dir=(px,py,0), rotate by 90°: (px,py) -> (-py,px)
+            tick_dir = ImPlot3DPoint(-proj_dir.y, proj_dir.x, 0);
+        } else if (chosen_plane == 0) {
+            // YZ plane
+            // proj_dir=(0,py,pz), rotate 90°: (py,pz) -> (-pz,py)
+            tick_dir = ImPlot3DPoint(0, -proj_dir.z, proj_dir.y);
+        } else {
+            // XZ plane (plane=1)
+            // proj_dir=(px,0,pz), rotate 90°: (px,pz) -> (-pz,px)
+            tick_dir = ImPlot3DPoint(-proj_dir.z, 0, proj_dir.x);
+        }
+
+        // Tick lengths in plot units
+        float major_size_plot = (axis.Range.Max - axis.Range.Min) * 0.06f;
+        float minor_size_plot = (axis.Range.Max - axis.Range.Min) * 0.03f;
+
+        for (int t = 0; t < axis.Ticker.TickCount(); ++t) {
+            const ImPlot3DTick& tick = axis.Ticker.Ticks[t];
+            float size_plot = tick.Major ? major_size_plot : minor_size_plot;
+            float v = (tick.PlotPos - axis.Range.Min) / (axis.Range.Max - axis.Range.Min);
+
+            ImPlot3DPoint tick_pos_plot = axis_start + axis_dir * (v * axis_len);
+
+            // Half tick on each side of the axis line
+            ImPlot3DPoint half_tick = tick_dir * (size_plot * 0.5f);
+
+            ImPlot3DPoint T1_plot = tick_pos_plot - half_tick;
+            ImPlot3DPoint T2_plot = tick_pos_plot + half_tick;
+
+            ImVec2 T1_screen = PlotToPixels(T1_plot);
+            ImVec2 T2_screen = PlotToPixels(T2_plot);
+
+            draw_list->AddLine(T1_screen, T2_screen, col_tick);
+        }
+    }
+}
+
 void RenderTickLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DPoint* corners, const ImVec2* corners_pix, const int axis_corners[3][2]) {
     ImVec2 box_center_pix = PlotToPixels(plot.RangeCenter());
     ImU32 col_tick_txt = GetStyleColorU32(ImPlot3DCol_AxisText);
@@ -678,7 +828,7 @@ void RenderTickLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImP
             offset_dir_pix = -offset_dir_pix;
 
         // Adjust the offset magnitude
-        float offset_magnitude = 20.0f; // Adjust as needed
+        float offset_magnitude = 20.0f; // TODO Calculate based on label size
         ImVec2 offset_pix = offset_dir_pix * offset_magnitude;
 
         // Compute angle perpendicular to axis in screen space
@@ -921,7 +1071,8 @@ void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
     // Render components
     RenderPlotBackground(draw_list, plot, corners_pix, active_faces, plane_2d);
     RenderPlotBorder(draw_list, plot, corners_pix, active_faces, plane_2d);
-    RenderPlotGrid(draw_list, plot, corners, active_faces, plane_2d);
+    RenderGrid(draw_list, plot, corners, active_faces, plane_2d);
+    RenderTickMarks(draw_list, plot, corners, corners_pix, axis_corners, plane_2d);
     RenderTickLabels(draw_list, plot, corners, corners_pix, axis_corners);
     RenderAxisLabels(draw_list, plot, corners, corners_pix, axis_corners);
 }
@@ -1948,6 +2099,7 @@ void StyleColorsAuto(ImPlot3DStyle* dst) {
     colors[ImPlot3DCol_LegendText] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_AxisText] = IMPLOT3D_AUTO_COL;
     colors[ImPlot3DCol_AxisGrid] = IMPLOT3D_AUTO_COL;
+    colors[ImPlot3DCol_AxisTick] = IMPLOT3D_AUTO_COL;
 }
 
 void StyleColorsDark(ImPlot3DStyle* dst) {
@@ -1968,6 +2120,7 @@ void StyleColorsDark(ImPlot3DStyle* dst) {
     colors[ImPlot3DCol_LegendText] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     colors[ImPlot3DCol_AxisText] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     colors[ImPlot3DCol_AxisGrid] = ImVec4(1.00f, 1.00f, 1.00f, 0.25f);
+    colors[ImPlot3DCol_AxisTick] = IMPLOT3D_AUTO_COL;
 }
 
 void StyleColorsLight(ImPlot3DStyle* dst) {
@@ -1988,6 +2141,7 @@ void StyleColorsLight(ImPlot3DStyle* dst) {
     colors[ImPlot3DCol_LegendText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     colors[ImPlot3DCol_AxisText] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     colors[ImPlot3DCol_AxisGrid] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    colors[ImPlot3DCol_AxisTick] = IMPLOT3D_AUTO_COL;
 }
 
 void StyleColorsClassic(ImPlot3DStyle* dst) {
@@ -2008,6 +2162,7 @@ void StyleColorsClassic(ImPlot3DStyle* dst) {
     colors[ImPlot3DCol_LegendText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
     colors[ImPlot3DCol_AxisText] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
     colors[ImPlot3DCol_AxisGrid] = ImVec4(0.90f, 0.90f, 0.90f, 0.25f);
+    colors[ImPlot3DCol_AxisTick] = IMPLOT3D_AUTO_COL;
 }
 
 void PushStyleColor(ImPlot3DCol idx, ImU32 col) {
@@ -2294,6 +2449,7 @@ ImVec4 GetAutoColor(ImPlot3DCol idx) {
         case ImPlot3DCol_LegendText: return ImGui::GetStyleColorVec4(ImGuiCol_Text);
         case ImPlot3DCol_AxisText: return ImGui::GetStyleColorVec4(ImGuiCol_Text);
         case ImPlot3DCol_AxisGrid: return ImGui::GetStyleColorVec4(ImGuiCol_Text) * ImVec4(1, 1, 1, 0.25f);
+        case ImPlot3DCol_AxisTick: return GetStyleColorVec4(ImPlot3DCol_AxisGrid);
         default: return IMPLOT3D_AUTO_COL;
     }
 }
@@ -2314,6 +2470,7 @@ const char* GetStyleColorName(ImPlot3DCol idx) {
         "LegendText",
         "AxisText",
         "AxisGrid",
+        "AxisTick",
     };
     return color_names[idx];
 }
