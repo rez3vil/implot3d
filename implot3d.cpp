@@ -630,54 +630,6 @@ void RenderGrid(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DP
     }
 }
 
-// void RenderTickMarks(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DPoint* corners, const ImVec2* corners_pix, const int axis_corners[3][2], const int plane_2d) {
-//     ImU32 col_tick = GetStyleColorU32(ImPlot3DCol_AxisTick);
-//
-//     for (int a = 0; a < 3; a++) {
-//         const ImPlot3DAxis& axis = plot.Axes[a];
-//         if (ImHasFlag(axis.Flags, ImPlot3DAxisFlags_NoTickMarks))
-//             continue;
-//
-//         // Corner indices for this axis
-//         int idx0 = axis_corners[a][0];
-//         int idx1 = axis_corners[a][1];
-//
-//         // If normal to the 2D plot, ignore the ticks
-//         if (idx0 == idx1)
-//             continue;
-//
-//         // Start and end points of the axis in plot space
-//         ImPlot3DPoint axis_start = corners[idx0];
-//         ImPlot3DPoint axis_end = corners[idx1];
-//
-//         // Direction vector along the axis
-//         ImPlot3DPoint axis_dir = axis_end - axis_start;
-//
-//         // Convert axis start and end to screen space
-//         ImVec2 axis_start_pix = corners_pix[idx0];
-//         ImVec2 axis_end_pix = corners_pix[idx1];
-//
-//         // Plot axis line
-//         draw_list->AddLine(axis_start_pix, axis_end_pix, col_tick);
-//
-//         const float major_size = 0.1f;
-//         const float minor_size = 0.05f;
-//
-//         // Loop over ticks
-//         for (int t = 0; t < axis.Ticker.TickCount(); ++t) {
-//             const ImPlot3DTick& tick = axis.Ticker.Ticks[t];
-//             if (!tick.ShowLabel)
-//                 continue;
-//             float size = tick.Major ? major_size : minor_size;
-//             float v = (tick.PlotPos - axis.Range.Min) / (axis.Range.Max - axis.Range.Min);
-//
-//             ImVec2 tick_pix = axis_start_pix + (axis_end_pix - axis_start_pix) * v;
-//             // TODO we need to render them in the correct direction
-//             draw_list->AddLine(tick_pix, tick_pix + ImVec2(size * 100, 0), col_tick);
-//         }
-//     }
-// }
-
 void RenderTickMarks(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DPoint* corners, const ImVec2* corners_pix, const int axis_corners[3][2], const int plane_2d) {
     ImU32 col_tick = GetStyleColorU32(ImPlot3DCol_AxisTick);
 
@@ -741,39 +693,40 @@ void RenderTickMarks(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPl
 
         // Rotate 90 degrees in chosen plane
         ImPlot3DPoint tick_dir;
-        if (chosen_plane == 2) {
-            // XY plane
-            // proj_dir=(px,py,0), rotate by 90°: (px,py) -> (-py,px)
-            tick_dir = ImPlot3DPoint(-proj_dir.y, proj_dir.x, 0);
-        } else if (chosen_plane == 0) {
+        if (chosen_plane == 0) {
             // YZ plane
             // proj_dir=(0,py,pz), rotate 90°: (py,pz) -> (-pz,py)
             tick_dir = ImPlot3DPoint(0, -proj_dir.z, proj_dir.y);
-        } else {
+        } else if (chosen_plane == 1) {
             // XZ plane (plane=1)
             // proj_dir=(px,0,pz), rotate 90°: (px,pz) -> (-pz,px)
             tick_dir = ImPlot3DPoint(-proj_dir.z, 0, proj_dir.x);
+        } else {
+            // XY plane
+            // proj_dir=(px,py,0), rotate by 90°: (px,py) -> (-py,px)
+            tick_dir = ImPlot3DPoint(-proj_dir.y, proj_dir.x, 0);
         }
+        tick_dir.Normalize();
 
-        // Tick lengths in plot units
-        float major_size_plot = (axis.Range.Max - axis.Range.Min) * 0.06f;
-        float minor_size_plot = (axis.Range.Max - axis.Range.Min) * 0.03f;
+        // Tick lengths in NDC units
+        const float major_size_ndc = 0.06f;
+        const float minor_size_ndc = 0.03f;
 
         for (int t = 0; t < axis.Ticker.TickCount(); ++t) {
             const ImPlot3DTick& tick = axis.Ticker.Ticks[t];
-            float size_plot = tick.Major ? major_size_plot : minor_size_plot;
             float v = (tick.PlotPos - axis.Range.Min) / (axis.Range.Max - axis.Range.Min);
 
-            ImPlot3DPoint tick_pos_plot = axis_start + axis_dir * (v * axis_len);
+            ImPlot3DPoint tick_pos_ndc = PlotToNDC(axis_start + axis_dir * (v * axis_len));
 
             // Half tick on each side of the axis line
-            ImPlot3DPoint half_tick = tick_dir * (size_plot * 0.5f);
+            float size_tick_ndc = tick.Major ? major_size_ndc : minor_size_ndc;
+            ImPlot3DPoint half_tick_ndc = tick_dir * (size_tick_ndc * 0.5f);
 
-            ImPlot3DPoint T1_plot = tick_pos_plot - half_tick;
-            ImPlot3DPoint T2_plot = tick_pos_plot + half_tick;
+            ImPlot3DPoint T1_ndc = tick_pos_ndc - half_tick_ndc;
+            ImPlot3DPoint T2_ndc = tick_pos_ndc + half_tick_ndc;
 
-            ImVec2 T1_screen = PlotToPixels(T1_plot);
-            ImVec2 T2_screen = PlotToPixels(T2_plot);
+            ImVec2 T1_screen = NDCToPixels(T1_ndc);
+            ImVec2 T2_screen = NDCToPixels(T2_ndc);
 
             draw_list->AddLine(T1_screen, T2_screen, col_tick);
         }

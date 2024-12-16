@@ -52,9 +52,8 @@ A comprehensive example showcasing ImPlot3D features can be found in `implot3d_d
 To integrate ImPlot3D into your application, follow these steps:
 
 1. Ensure you have a working Dear ImGui environment. ImPlot3D requires only Dear ImGui to function and does not depend on ImPlot.
-Add the following source files to your project: `implot3d.h`, `implot3d.cpp`, `implot3d_internal.h`, `implot3d_items.cpp`.
-Optionally, include `implot3d_demo.cpp` for examples and `implot3d_meshes.cpp` to support pre-loaded meshes.
-2. Create and destroy an ImPlot3DContext alongside your ImGuiContext:
+2. Add the following source files to your project: `implot3d.h`, `implot3d.cpp`, `implot3d_internal.h`, `implot3d_items.cpp`. Optionally, include `implot3d_demo.cpp` for examples and `implot3d_meshes.cpp` to support pre-loaded meshes.
+3. Create and destroy an ImPlot3DContext alongside your ImGuiContext:
   ```cpp
   ImGui::CreateContext();
   ImPlot3D::CreateContext();
