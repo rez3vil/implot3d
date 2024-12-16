@@ -1742,7 +1742,7 @@ void HandleInput(ImPlot3DPlot& plot) {
     }
 
     // If the user is no longer pressing the translation/zoom buttons, set axes as not held
-    if (!ImGui::IsMouseDown(0) && !ImGui::IsMouseDown(2)) {
+    if (!ImGui::IsMouseDown(ImGuiMouseButton_Left) && !ImGui::IsMouseDown(ImGuiMouseButton_Middle)) {
         for (int i = 0; i < 3; i++)
             plot.Axes[i].Held = false;
     }
@@ -1770,7 +1770,7 @@ void HandleInput(ImPlot3DPlot& plot) {
     }
 
     // Handle translation/zoom fit with double click
-    if (plot_clicked && ImGui::IsMouseDoubleClicked(0) || ImGui::IsMouseDoubleClicked(2)) {
+    if (plot_clicked && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) || ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Middle)) {
         plot.FitThisFrame = true;
         for (int i = 0; i < 3; i++)
             plot.Axes[i].FitThisFrame = transform_axis[i];
@@ -1784,7 +1784,7 @@ void HandleInput(ImPlot3DPlot& plot) {
         }
 
     // Handle translation with right mouse button
-    if (plot.Held && ImGui::IsMouseDown(0)) {
+    if (plot.Held && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
         ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
 
         if (transform_axis[0] && transform_axis[1] && transform_axis[2]) {
@@ -1848,8 +1848,14 @@ void HandleInput(ImPlot3DPlot& plot) {
         }
     }
 
+    // Handle context click with right mouse button
+    if (plot.Held && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+        plot.ContextClick = true;
+    if (rotating || ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Right))
+        plot.ContextClick = false;
+
     // Handle reset rotation with left mouse double click
-    if (plot.Held && ImGui::IsMouseDoubleClicked(1)) {
+    if (plot.Held && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Right)) {
         // Set rotation animation time
         plot.AnimationTime = 0.2f;
         plot.RotationAnimationEnd = plot.Rotation;
@@ -1906,7 +1912,7 @@ void HandleInput(ImPlot3DPlot& plot) {
     }
 
     // Handle rotation with left mouse dragging
-    if (plot.Held && ImGui::IsMouseDown(1)) {
+    if (plot.Held && ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
         ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
 
         // Map delta to rotation angles (in radians)
@@ -1923,8 +1929,8 @@ void HandleInput(ImPlot3DPlot& plot) {
     }
 
     // Handle zoom with mouse wheel
-    if (plot.Hovered && (ImGui::IsMouseDown(2) || IO.MouseWheel != 0)) {
-        float delta = ImGui::IsMouseDown(2) ? (-0.01f * IO.MouseDelta.y) : (-0.1f * IO.MouseWheel);
+    if (plot.Hovered && (ImGui::IsMouseDown(ImGuiMouseButton_Middle) || IO.MouseWheel != 0)) {
+        float delta = ImGui::IsMouseDown(ImGuiMouseButton_Middle) ? (-0.01f * IO.MouseDelta.y) : (-0.1f * IO.MouseWheel);
         float zoom = 1.0f + delta;
         for (int i = 0; i < 3; i++) {
             ImPlot3DAxis& axis = plot.Axes[i];
@@ -1943,9 +1949,13 @@ void HandleInput(ImPlot3DPlot& plot) {
         }
     }
 
-    // Handle context menu
-    if (!rotating && IO.MouseReleased[ImGuiMouseButton_Right])
+    // Handle context menu (should not happen if it is not a double click action)
+    ImGuiContext& g = *GImGui;
+    bool not_double_click = (float)(g.Time - IO.MouseClickedTime[ImGuiMouseButton_Right]) > IO.MouseDoubleClickTime;
+    if (plot.Hovered && plot.ContextClick && not_double_click && !ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+        plot.ContextClick = false;
         plot.OpenContextThisFrame = true;
+    }
 
     // TODO Only open context menu if the mouse is not in the middle of double click action
     const char* axis_contexts[3] = {"##XAxisContext", "##YAxisContext", "##ZAxisContext"};
@@ -1954,7 +1964,9 @@ void HandleInput(ImPlot3DPlot& plot) {
             ImGui::OpenPopup("##LegendContext");
         else if (hovered_axis != -1) {
             ImGui::OpenPopup(axis_contexts[hovered_axis]);
-        } else if (plot.Hovered && hovered_plane == -1) {
+        } else if (hovered_plane != -1) {
+            ImGui::OpenPopup(axis_contexts[hovered_plane]);
+        } else if (plot.Hovered) {
             ImGui::OpenPopup("##PlotContext");
         }
     }

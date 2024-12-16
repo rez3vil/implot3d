@@ -524,8 +524,8 @@ struct ImPlot3DPlot {
     bool SetupLocked;
     bool Hovered;
     bool Held;
-    int HeldEdgeIdx;  ///< Index of the edge being held
-    int HeldPlaneIdx; ///< Index of the plane being held
+    int HeldEdgeIdx;  // Index of the edge being held
+    int HeldPlaneIdx; // Index of the plane being held
     // Fit data
     bool FitThisFrame;
     // Items
@@ -534,6 +534,7 @@ struct ImPlot3DPlot {
     // 3D draw list
     ImDrawList3D DrawList;
     // Misc
+    bool ContextClick; // True if context button was clicked (to distinguish from double click)
     bool OpenContextThisFrame;
 
     ImPlot3DPlot() {
@@ -550,6 +551,7 @@ struct ImPlot3DPlot {
         HeldPlaneIdx = -1;
         FitThisFrame = true;
         CurrentItem = nullptr;
+        ContextClick = false;
         OpenContextThisFrame = false;
     }
 
