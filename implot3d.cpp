@@ -1653,6 +1653,7 @@ ImPlot3DRay NDCRayToPlotRay(const ImPlot3DRay& ray) {
 //-----------------------------------------------------------------------------
 
 static const float MOUSE_CURSOR_DRAG_THRESHOLD = 5.0f;
+static const float ANIMATION_ANGULAR_VELOCITY = 2 * 3.1415f;
 
 void HandleInput(ImPlot3DPlot& plot) {
     ImGuiIO& IO = ImGui::GetIO();
@@ -1809,8 +1810,6 @@ void HandleInput(ImPlot3DPlot& plot) {
 
     // Handle reset rotation with left mouse double click
     if (plot.Held && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Right)) {
-        // Set rotation animation time
-        plot.AnimationTime = 0.2f;
         plot.RotationAnimationEnd = plot.Rotation;
 
         // Calculate rotation to align the z-axis with the camera direction
@@ -1862,6 +1861,13 @@ void HandleInput(ImPlot3DPlot& plot) {
                 plot.RotationAnimationEnd = align_up * plot.RotationAnimationEnd;
             }
         }
+
+        // Compute the angular distance between current and target rotation
+        float dot_product = ImClamp(plot.Rotation.Dot(plot.RotationAnimationEnd), -1.0f, 1.0f);
+        float angle = 2.0f * acosf(fabsf(dot_product));
+
+        // Calculate animation time for constant the angular velocity
+        plot.AnimationTime = angle / ANIMATION_ANGULAR_VELOCITY;
     }
 
     // Handle rotation with left mouse dragging
@@ -2775,6 +2781,10 @@ ImPlot3DQuat ImPlot3DQuat::Slerp(const ImPlot3DQuat& q1, const ImPlot3DQuat& q2,
         s1 * q1.y + s2 * q2_.y,
         s1 * q1.z + s2 * q2_.z,
         s1 * q1.w + s2 * q2_.w);
+}
+
+float ImPlot3DQuat::Dot(const ImPlot3DQuat& rhs) const {
+    return x * rhs.x + y * rhs.y + z * rhs.z + w * rhs.w;
 }
 
 //-----------------------------------------------------------------------------

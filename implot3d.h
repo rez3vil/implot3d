@@ -676,6 +676,9 @@ struct ImPlot3DQuat {
     // Interpolate between two quaternions
     static ImPlot3DQuat Slerp(const ImPlot3DQuat& q1, const ImPlot3DQuat& q2, float t);
 
+    // Get quaternion dot product
+    float Dot(const ImPlot3DQuat& rhs) const;
+
 #ifdef IMPLOT3D_QUAT_CLASS_EXTRA
     IMPLOT3D_QUAT_CLASS_EXTRA // Define additional constructors and implicit cast operators in imconfig.h to convert back and forth between your math types and ImPlot3DQuat
 #endif
