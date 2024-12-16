@@ -1,11 +1,17 @@
 # ImPlot3D
 
-ImPlot3D is an extension of [Dear ImGui](https://github.com/ocornut/imgui) that provides easy-to-use, high-performance 3D plotting functionality. Inspired by [ImPlot](https://github.com/epezent/implot), it brings a familiar and intuitive API for developers already acquainted with ImPlot. However, ImPlot3D is independent of ImPlot, requiring only Dear ImGui as a dependency.
+<p align="center">
+<img src="https://github.com/user-attachments/assets/359473d2-73a9-452c-a5f3-cb96e3785dc2" width="270"> <img src="https://github.com/user-attachments/assets/97ec8be4-50f9-428b-b357-25e2479409b8" width="270"> <img src="https://github.com/user-attachments/assets/c212039b-4853-4d26-95a5-5470bf97555e" width="270">
+</p>
 
-ImPlot3D is designed for rendering 3D plots with customizable markers, lines, surfaces, and meshes, providing an ideal solution for applications requiring visual representation of 3D data.
+<p align="center">
+<img src="https://github.com/user-attachments/assets/ec7ec42a-3c62-44bf-9275-f735f0304c95" width="270"> <img src="https://github.com/user-attachments/assets/e6bd03fa-6d76-4f3e-8d15-c24a05a5f714" width="270"> <img src="https://github.com/user-attachments/assets/b66ff296-7fbf-4644-9129-37daecca0b62" width="270">
+</p>
+
+ImPlot3D is an extension of [Dear ImGui](https://github.com/ocornut/imgui) that provides easy-to-use, high-performance 3D plotting functionality. Inspired by [ImPlot](https://github.com/epezent/implot), it brings a familiar and intuitive API for developers already acquainted with ImPlot. ImPlot3D is designed for rendering 3D plots with customizable markers, lines, surfaces, and meshes, providing an ideal solution for applications requiring visual representation of 3D data.
 
 ## Features
-- GPU accelerated rendering
+- GPU-accelerated rendering
 - Multiple plot types:
   - Line plots
   - Scatter plots
@@ -19,7 +25,7 @@ ImPlot3D is designed for rendering 3D plots with customizable markers, lines, su
 - 16 built-in colormaps and support for and user-added colormaps
 - Optional plot titles, axis labels, and grid labels
 - Optional and configurable legends with toggle buttons to quickly show/hide plot items
-- Default styling based on current ImGui theme, or completely custom plot styles
+- Default styling based on the current ImGui theme, or completely custom plot styles
 
 ## Usage
 The ImPlot3D API is designed to feel very similar to Dear ImGui and ImPlot. You start by calling `ImPlot3D::BeginPlot()` to initialize a 3D plot, followed by plotting various data using the `PlotX` functions (e.g., `PlotLine()` , `PlotScatter()` , `PlotSurface()` ). Finally, you end the plot with ` ImPlot3D::EndPlot()` .
