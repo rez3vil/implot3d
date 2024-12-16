@@ -1950,8 +1950,7 @@ void HandleInput(ImPlot3DPlot& plot) {
     }
 
     // Handle context menu (should not happen if it is not a double click action)
-    ImGuiContext& g = *GImGui;
-    bool not_double_click = (float)(g.Time - IO.MouseClickedTime[ImGuiMouseButton_Right]) > IO.MouseDoubleClickTime;
+    bool not_double_click = (float)(ImGui::GetTime() - IO.MouseClickedTime[ImGuiMouseButton_Right]) > IO.MouseDoubleClickTime;
     if (plot.Hovered && plot.ContextClick && not_double_click && !ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
         plot.ContextClick = false;
         plot.OpenContextThisFrame = true;

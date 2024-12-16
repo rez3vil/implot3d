@@ -554,7 +554,56 @@ void DemoHelp() {
     ImGui::BulletText("See example application in example/ folder.");
 
     ImGui::SeparatorText("USER GUIDE:");
-    ImGui::BulletText("TODO");
+    ImGui::BulletText("Translation");
+    {
+        ImGui::Indent();
+        ImGui::BulletText("Left-click drag to translate.");
+        ImGui::BulletText("If over axis, only that axis will translate.");
+        ImGui::BulletText("If over plane, only that plane will translate.");
+        ImGui::BulletText("If outside plot area, translate in the view plane.");
+        ImGui::Unindent();
+    }
+
+    ImGui::BulletText("Zoom");
+    {
+        ImGui::Indent();
+        ImGui::BulletText("Scroll or middle-click drag to zoom.");
+        ImGui::BulletText("If over axis, only that axis will zoom.");
+        ImGui::BulletText("If over plane, only that plane will zoom.");
+        ImGui::BulletText("If outside plot area, zoom the entire plot.");
+        ImGui::Unindent();
+    }
+
+    ImGui::BulletText("Rotation");
+    {
+        ImGui::Indent();
+        ImGui::BulletText("Right-click drag to rotate.");
+        ImGui::BulletText("To reset rotation, double right-click outside plot area.");
+        ImGui::BulletText("To rotate to plane, double right-click when over the plane.");
+        ImGui::Unindent();
+    }
+
+    ImGui::BulletText("Fit data");
+    {
+        ImGui::Indent();
+        ImGui::BulletText("Double left-click to fit.");
+        ImGui::BulletText("If over axis, fit data to axis.");
+        ImGui::BulletText("If over plane, fit data to plane.");
+        ImGui::BulletText("If outside plot area, fit data to plot.");
+        ImGui::Unindent();
+    }
+
+    ImGui::BulletText("Context Menus");
+    {
+        ImGui::Indent();
+        ImGui::BulletText("Right-click outside plot area to show full context menu.");
+        ImGui::BulletText("Right-click over legend to show legend context menu.");
+        ImGui::BulletText("Right-click over axis to show axis context menu.");
+        ImGui::BulletText("Right-click over plane to show plane context menu.");
+        ImGui::Unindent();
+    }
+
+    ImGui::BulletText("Click legend label icons to show/hide plot items.");
 }
 
 void DemoHeader(const char* label, void (*demo)()) {
