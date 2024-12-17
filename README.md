@@ -10,7 +10,7 @@
 
 ImPlot3D is an extension of [Dear ImGui](https://github.com/ocornut/imgui) that provides easy-to-use, high-performance 3D plotting functionality. Inspired by [ImPlot](https://github.com/epezent/implot), it brings a familiar and intuitive API for developers already acquainted with ImPlot. ImPlot3D is designed for rendering 3D plots with customizable markers, lines, surfaces, and meshes, providing an ideal solution for applications requiring visual representation of 3D data.
 
-## Features
+## 🚀 Features
 - GPU-accelerated rendering
 - Multiple plot types:
   - Line plots
@@ -27,7 +27,7 @@ ImPlot3D is an extension of [Dear ImGui](https://github.com/ocornut/imgui) that 
 - Optional and configurable legends with toggle buttons to quickly show/hide plot items
 - Default styling based on the current ImGui theme, or completely custom plot styles
 
-## Usage
+## 🛠️ Usage
 The ImPlot3D API is designed to feel very similar to Dear ImGui and ImPlot. You start by calling `ImPlot3D::BeginPlot()` to initialize a 3D plot, followed by plotting various data using the `PlotX` functions (e.g., `PlotLine()` , `PlotScatter()` , `PlotSurface()` ). Finally, you end the plot with ` ImPlot3D::EndPlot()` .
 
 ```cpp
@@ -45,10 +45,10 @@ if (ImPlot3D::BeginPlot("My Plot")) {
 ImGui::End();
 ```
 
-## Demos
+## 🎨 Demos
 A comprehensive example showcasing ImPlot3D features can be found in `implot3d_demo.cpp`. Add this file to your project and call `ImPlot3D::ShowDemoWindow()` in your update loop. This demo provides a wide variety of 3D plotting examples, serving as a reference for creating different types of 3D plots. The demo is regularly updated to reflect new features and plot types, so be sure to revisit it with each release!
 
-## Integration
+## ⚙️ Integration
 To integrate ImPlot3D into your application, follow these steps:
 
 1. Ensure you have a working Dear ImGui environment. ImPlot3D requires only Dear ImGui to function and does not depend on ImPlot.
@@ -64,39 +64,39 @@ To integrate ImPlot3D into your application, follow these steps:
 
 You're now ready to start plotting in 3D!
 
-## Extremely Important Note
+## ⚠️ Extremely Important Note
 Dear ImGui, by default, uses 16-bit indexing, which might cause issues with high-density 3D visualizations such as complex surfaces or meshes. This can lead to assertion failures, data truncation, or visual glitches. To avoid these problems, it's recommended to:
 
 - Option 1: Enable 32-bit indices by uncommenting `#define ImDrawIdx unsigned int` in your ImGui imconfig.h file.
 - Option 2: Ensure your renderer supports the `ImGuiBackendFlags_RendererHasVtxOffset` flag. Many official ImGui backends already support this functionality.
 
-## FAQ
-### Why ImPlot3D?
+## 💬 FAQ
+#### Why ImPlot3D?
 While ImGui excels at building UI, it lacks tools for 3D data visualization. ImPlot3D fills this gap, offering a lightweight, real-time library for 3D plotting, designed with interactivity and ease of use in mind.
 
 Inspired by ImPlot, ImPlot3D provides a similar API, making it easy for existing ImPlot users to adopt. It focuses on real-time, application-level 3D visualizations for debugging, simulations, and data analysis, with performance as a priority.
 
 ImPlot is great for 2D visualizations; ImPlot3D extends this power to 3D, offering the same simplicity and speed.
 
-### Where can I find documentation?
+#### Where can I find documentation?
 The API for ImPlot3D is thoroughly commented in `implot3d.h`, and a comprehensive demo file, `implot3d_demo.cpp`, showcases all the features. You are encouraged to explore the demo file as it is regularly updated to reflect new functionality. Additionally, if you're familiar with ImPlot, you'll notice many similarities in usage patterns.
 
-### How is ImPlot3D different from ImPlot?
+#### How is ImPlot3D different from ImPlot?
 ImPlot3D is highly inspired by ImPlot, so if you're already familiar with ImPlot, you'll feel right at home. However, ImPlot3D is specifically built for 3D visualizations, offering interactive 3D rotations, panning, and scaling.
 
 ### Do I need ImPlot to use ImPlot3D?
 No. ImPlot3D is a standalone library and does not depend on ImPlot. You only need Dear ImGui to get started.
 
-### Does ImPlot3D support 2D plots?
+#### Does ImPlot3D support 2D plots?
 While you can rotate the 3D view to align with a 2D plane, ImPlot is far better suited for visualizing 2D data. ImPlot3D is specifically designed for 3D plotting and interaction, so we recommend using ImPlot for all your 2D visualization needs.
 
-### Can I customize the appearance of plots?
+#### Can I customize the appearance of plots?
 Absolutely. ImPlot3D allows you to modify plot styles, including line colors, thickness, fill opacity, and marker sizes. You can also use colormaps for surfaces and customize axis labels, grid styles, and background colors.
 
-### Can I export 3D plots to an image?
+#### Can I export 3D plots to an image?
 Not currently. You can use your OS's screen capturing tools to save a plot. ImPlot3D is designed for real-time visualization and interaction, not for creating publication-quality renders. For publication-quality output, consider exporting your data to a dedicated 3D rendering tool.
 
-### Is ImPlot3D suitable for publication-quality visuals?
+#### Is ImPlot3D suitable for publication-quality visuals?
 ImPlot3D prioritizes interactivity and real-time performance. If you need high-quality visualizations, use ImPlot3D for initial exploration and then switch to tools like [MATLAB](https://www.mathworks.com/products/matlab.html), [matplotlib](https://matplotlib.org/), or [ParaView](https://www.paraview.org/) for the final output.
 
 ## License
