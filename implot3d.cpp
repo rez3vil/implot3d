@@ -195,16 +195,16 @@ void AddTextCentered(ImDrawList* draw_list, ImVec2 top_center, ImU32 col, const 
 ImVec2 GetLocationPos(const ImRect& outer_rect, const ImVec2& inner_size, ImPlot3DLocation loc, const ImVec2& pad) {
     ImVec2 pos;
     // Legend x coordinate
-    if (ImHasFlag(loc, ImPlot3DLocation_West) && !ImHasFlag(loc, ImPlot3DLocation_East))
+    if (ImPlot3D::ImHasFlag(loc, ImPlot3DLocation_West) && !ImPlot3D::ImHasFlag(loc, ImPlot3DLocation_East))
         pos.x = outer_rect.Min.x + pad.x;
-    else if (!ImHasFlag(loc, ImPlot3DLocation_West) && ImHasFlag(loc, ImPlot3DLocation_East))
+    else if (!ImPlot3D::ImHasFlag(loc, ImPlot3DLocation_West) && ImPlot3D::ImHasFlag(loc, ImPlot3DLocation_East))
         pos.x = outer_rect.Max.x - pad.x - inner_size.x;
     else
         pos.x = outer_rect.GetCenter().x - inner_size.x * 0.5f;
     // Legend y coordinate
-    if (ImHasFlag(loc, ImPlot3DLocation_North) && !ImHasFlag(loc, ImPlot3DLocation_South))
+    if (ImPlot3D::ImHasFlag(loc, ImPlot3DLocation_North) && !ImPlot3D::ImHasFlag(loc, ImPlot3DLocation_South))
         pos.y = outer_rect.Min.y + pad.y;
-    else if (!ImHasFlag(loc, ImPlot3DLocation_North) && ImHasFlag(loc, ImPlot3DLocation_South))
+    else if (!ImPlot3D::ImHasFlag(loc, ImPlot3DLocation_North) && ImPlot3D::ImHasFlag(loc, ImPlot3DLocation_South))
         pos.y = outer_rect.Max.y - pad.y - inner_size.y;
     else
         pos.y = outer_rect.GetCenter().y - inner_size.y * 0.5f;
@@ -267,18 +267,18 @@ void ShowLegendEntries(ImPlot3DItemGroup& items, const ImRect& legend_bb, bool h
 
         bool item_hov = false;
         bool item_hld = false;
-        bool item_clk = ImHasFlag(items.Legend.Flags, ImPlot3DLegendFlags_NoButtons)
+        bool item_clk = ImPlot3D::ImHasFlag(items.Legend.Flags, ImPlot3DLegendFlags_NoButtons)
                             ? false
                             : ImGui::ButtonBehavior(button_bb, item->ID, &item_hov, &item_hld);
 
         if (item_clk)
             item->Show = !item->Show;
 
-        const bool hovering = item_hov && !ImHasFlag(items.Legend.Flags, ImPlot3DLegendFlags_NoHighlightItem);
+        const bool hovering = item_hov && !ImPlot3D::ImHasFlag(items.Legend.Flags, ImPlot3DLegendFlags_NoHighlightItem);
 
         if (hovering) {
             item->LegendHovered = true;
-            col_txt_hl = ImMixU32(col_txt, col_item, 64);
+            col_txt_hl = ImPlot3D::ImMixU32(col_txt, col_item, 64);
         } else {
             item->LegendHovered = false;
             col_txt_hl = ImGui::GetColorU32(col_txt);
@@ -302,7 +302,7 @@ void ShowLegendEntries(ImPlot3DItemGroup& items, const ImRect& legend_bb, bool h
 void RenderLegend() {
     ImPlot3DContext& gp = *GImPlot3D;
     ImPlot3DPlot& plot = *gp.CurrentPlot;
-    if (ImHasFlag(plot.Flags, ImPlot3DFlags_NoLegend) || plot.Items.GetLegendCount() == 0)
+    if (ImPlot3D::ImHasFlag(plot.Flags, ImPlot3DFlags_NoLegend) || plot.Items.GetLegendCount() == 0)
         return;
     ImGuiContext& g = *GImGui;
     ImGuiWindow* window = g.CurrentWindow;
@@ -310,7 +310,7 @@ void RenderLegend() {
     const ImGuiIO& IO = ImGui::GetIO();
 
     ImPlot3DLegend& legend = plot.Items.Legend;
-    const bool legend_horz = ImHasFlag(legend.Flags, ImPlot3DLegendFlags_Horizontal);
+    const bool legend_horz = ImPlot3D::ImHasFlag(legend.Flags, ImPlot3DLegendFlags_Horizontal);
     const ImVec2 legend_size = CalcLegendSize(plot.Items, gp.Style.LegendInnerPadding, gp.Style.LegendSpacing, !legend_horz);
     const ImVec2 legend_pos = GetLocationPos(plot.PlotRect,
                                              legend_size,
@@ -338,7 +338,7 @@ void RenderLegend() {
 void RenderMousePos() {
     ImPlot3DContext& gp = *GImPlot3D;
     ImPlot3DPlot& plot = *gp.CurrentPlot;
-    if (ImHasFlag(plot.Flags, ImPlot3DFlags_NoMouseText))
+    if (ImPlot3D::ImHasFlag(plot.Flags, ImPlot3DFlags_NoMouseText))
         return;
 
     ImVec2 mouse_pos = ImGui::GetMousePos();
@@ -587,7 +587,7 @@ void RenderGrid(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DP
         ImPlot3DPoint v_vec = p3 - p0;
 
         // Render grid lines along u axis (axis_u)
-        if (!ImHasFlag(axis_u.Flags, ImPlot3DAxisFlags_NoGridLines))
+        if (!ImPlot3D::ImHasFlag(axis_u.Flags, ImPlot3DAxisFlags_NoGridLines))
             for (int t = 0; t < axis_u.Ticker.TickCount(); ++t) {
                 const ImPlot3DTick& tick = axis_u.Ticker.Ticks[t];
 
@@ -608,7 +608,7 @@ void RenderGrid(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DP
             }
 
         // Render grid lines along v axis (axis_v)
-        if (!ImHasFlag(axis_v.Flags, ImPlot3DAxisFlags_NoGridLines))
+        if (!ImPlot3D::ImHasFlag(axis_v.Flags, ImPlot3DAxisFlags_NoGridLines))
             for (int t = 0; t < axis_v.Ticker.TickCount(); ++t) {
                 const ImPlot3DTick& tick = axis_v.Ticker.Ticks[t];
 
@@ -647,7 +647,7 @@ void RenderTickMarks(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPl
 
     for (int a = 0; a < 3; a++) {
         const ImPlot3DAxis& axis = plot.Axes[a];
-        if (ImHasFlag(axis.Flags, ImPlot3DAxisFlags_NoTickMarks))
+        if (ImPlot3D::ImHasFlag(axis.Flags, ImPlot3DAxisFlags_NoTickMarks))
             continue;
 
         int idx0 = axis_corners[a][0];
@@ -739,7 +739,7 @@ void RenderTickLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImP
 
     for (int a = 0; a < 3; a++) {
         const ImPlot3DAxis& axis = plot.Axes[a];
-        if (ImHasFlag(axis.Flags, ImPlot3DAxisFlags_NoTickLabels))
+        if (ImPlot3D::ImHasFlag(axis.Flags, ImPlot3DAxisFlags_NoTickLabels))
             continue;
 
         // Corner indices for this axis
@@ -1119,10 +1119,10 @@ bool ShowLegendContextMenu(ImPlot3DLegend& legend, bool visible) {
     bool ret = false;
     if (ImGui::Checkbox("Show", &visible))
         ret = true;
-    if (ImGui::RadioButton("H", ImHasFlag(legend.Flags, ImPlot3DLegendFlags_Horizontal)))
+    if (ImGui::RadioButton("H", ImPlot3D::ImHasFlag(legend.Flags, ImPlot3DLegendFlags_Horizontal)))
         legend.Flags |= ImPlot3DLegendFlags_Horizontal;
     ImGui::SameLine();
-    if (ImGui::RadioButton("V", !ImHasFlag(legend.Flags, ImPlot3DLegendFlags_Horizontal)))
+    if (ImGui::RadioButton("V", !ImPlot3D::ImHasFlag(legend.Flags, ImPlot3DLegendFlags_Horizontal)))
         legend.Flags &= ~ImPlot3DLegendFlags_Horizontal;
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(2, 2));
     // clang-format off
@@ -1211,7 +1211,7 @@ void ShowPlotContextMenu(ImPlot3DPlot& plot) {
 
     ImGui::Separator();
     if ((ImGui::BeginMenu("Legend"))) {
-        if (ShowLegendContextMenu(plot.Items.Legend, !ImHasFlag(plot.Flags, ImPlot3DFlags_NoLegend)))
+        if (ShowLegendContextMenu(plot.Items.Legend, !ImPlot3D::ImHasFlag(plot.Flags, ImPlot3DFlags_NoLegend)))
             ImFlipFlag(plot.Flags, ImPlot3DFlags_NoLegend);
         ImGui::EndMenu();
     }
@@ -1332,7 +1332,7 @@ void EndPlot() {
     if (ImGui::BeginPopup("##LegendContext")) {
         ImGui::Text("Legend");
         ImGui::Separator();
-        if (ShowLegendContextMenu(plot.Items.Legend, !ImHasFlag(plot.Flags, ImPlot3DFlags_NoLegend)))
+        if (ShowLegendContextMenu(plot.Items.Legend, !ImPlot3D::ImHasFlag(plot.Flags, ImPlot3DFlags_NoLegend)))
             ImFlipFlag(plot.Flags, ImPlot3DFlags_NoLegend);
         ImGui::EndPopup();
     }
@@ -2531,7 +2531,7 @@ ImPlot3DPoint operator*(float lhs, const ImPlot3DPoint& rhs) {
 }
 
 bool ImPlot3DPoint::IsNaN() const {
-    return ImNan(x) || ImNan(y) || ImNan(z);
+    return ImPlot3D::ImNan(x) || ImPlot3D::ImNan(y) || ImPlot3D::ImNan(z);
 }
 
 //-----------------------------------------------------------------------------
@@ -2906,11 +2906,11 @@ void ImDrawList3D::SortedMoveToImGuiDrawList() {
 // [SECTION] ImPlot3DAxis
 //-----------------------------------------------------------------------------
 
-bool ImPlot3DAxis::HasLabel() const { return !Label.empty() && !ImHasFlag(Flags, ImPlot3DAxisFlags_NoLabel); }
-bool ImPlot3DAxis::HasGridLines() const { return !ImHasFlag(Flags, ImPlot3DAxisFlags_NoGridLines); }
-bool ImPlot3DAxis::HasTickLabels() const { return !ImHasFlag(Flags, ImPlot3DAxisFlags_NoTickLabels); }
-bool ImPlot3DAxis::HasTickMarks() const { return !ImHasFlag(Flags, ImPlot3DAxisFlags_NoTickMarks); }
-bool ImPlot3DAxis::IsAutoFitting() const { return ImHasFlag(Flags, ImPlot3DAxisFlags_AutoFit); }
+bool ImPlot3DAxis::HasLabel() const { return !Label.empty() && !ImPlot3D::ImHasFlag(Flags, ImPlot3DAxisFlags_NoLabel); }
+bool ImPlot3DAxis::HasGridLines() const { return !ImPlot3D::ImHasFlag(Flags, ImPlot3DAxisFlags_NoGridLines); }
+bool ImPlot3DAxis::HasTickLabels() const { return !ImPlot3D::ImHasFlag(Flags, ImPlot3DAxisFlags_NoTickLabels); }
+bool ImPlot3DAxis::HasTickMarks() const { return !ImPlot3D::ImHasFlag(Flags, ImPlot3DAxisFlags_NoTickMarks); }
+bool ImPlot3DAxis::IsAutoFitting() const { return ImPlot3D::ImHasFlag(Flags, ImPlot3DAxisFlags_AutoFit); }
 
 void ImPlot3DAxis::ExtendFit(float value) {
     FitExtents.Min = ImMin(FitExtents.Min, value);
@@ -2918,11 +2918,11 @@ void ImPlot3DAxis::ExtendFit(float value) {
 }
 
 void ImPlot3DAxis::ApplyFit() {
-    if (!IsLockedMin() && !ImNanOrInf(FitExtents.Min))
+    if (!IsLockedMin() && !ImPlot3D::ImNanOrInf(FitExtents.Min))
         Range.Min = FitExtents.Min;
-    if (!IsLockedMax() && !ImNanOrInf(FitExtents.Max))
+    if (!IsLockedMax() && !ImPlot3D::ImNanOrInf(FitExtents.Max))
         Range.Max = FitExtents.Max;
-    if (ImAlmostEqual(Range.Min, Range.Max)) {
+    if (ImPlot3D::ImAlmostEqual(Range.Min, Range.Max)) {
         Range.Max += 0.5;
         Range.Min -= 0.5;
     }
@@ -2944,7 +2944,7 @@ float ImPlot3DAxis::NDCToPlot(float value) const {
 
 void ImPlot3DPlot::ExtendFit(const ImPlot3DPoint& point) {
     for (int i = 0; i < 3; i++) {
-        if (!ImNanOrInf(point[i]) && Axes[i].FitThisFrame)
+        if (!ImPlot3D::ImNanOrInf(point[i]) && Axes[i].FitThisFrame)
             Axes[i].ExtendFit(point[i]);
     }
 }

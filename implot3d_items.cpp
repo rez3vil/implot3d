@@ -78,8 +78,8 @@
     } while (0)
 
 IMPLOT3D_INLINE void GetLineRenderProps(const ImDrawList3D& draw_list_3d, float& half_weight, ImVec2& tex_uv0, ImVec2& tex_uv1) {
-    const bool aa = ImHasFlag(draw_list_3d._Flags, ImDrawListFlags_AntiAliasedLines) &&
-                    ImHasFlag(draw_list_3d._Flags, ImDrawListFlags_AntiAliasedLinesUseTex);
+    const bool aa = ImPlot3D::ImHasFlag(draw_list_3d._Flags, ImDrawListFlags_AntiAliasedLines) &&
+                    ImPlot3D::ImHasFlag(draw_list_3d._Flags, ImDrawListFlags_AntiAliasedLinesUseTex);
     if (aa) {
         ImVec4 tex_uvs = draw_list_3d._SharedData->TexUvLines[(int)(half_weight * 2)];
         tex_uv0 = ImVec2(tex_uvs.x, tex_uvs.y);

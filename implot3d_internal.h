@@ -48,8 +48,7 @@
 // [SECTION] Generic Helpers
 //-----------------------------------------------------------------------------
 
-#ifndef IMPLOT_VERSION
-// Define generic helpers if ImPlot didn't define them already
+namespace ImPlot3D {
 
 // Computes the common (base-10) logarithm
 static inline float ImLog10(float x) { return log10f(x); }
@@ -62,23 +61,23 @@ static inline void ImFlipFlag(TSet& set, TFlag flag) { ImHasFlag(set, flag) ? se
 template <typename T>
 static inline T ImRemap01(T x, T x0, T x1) { return (x - x0) / (x1 - x0); }
 // Returns true if val is NAN
-static inline bool ImNan(double val) { return isnan(val); }
+static inline bool ImNan(float val) { return isnan(val); }
 // Returns true if val is NAN or INFINITY
-static inline bool ImNanOrInf(double val) { return !(val >= -DBL_MAX && val <= DBL_MAX) || ImNan(val); }
+static inline bool ImNanOrInf(float val) { return !(val >= -FLT_MAX && val <= FLT_MAX) || ImNan(val); }
 // Turns NANs to 0s
-static inline double ImConstrainNan(double val) { return ImNan(val) ? 0 : val; }
+static inline double ImConstrainNan(float val) { return ImNan(val) ? 0 : val; }
 // Turns infinity to floating point maximums
-static inline double ImConstrainInf(double val) { return val >= DBL_MAX ? DBL_MAX : val <= -DBL_MAX ? -DBL_MAX
+static inline double ImConstrainInf(double val) { return val >= FLT_MAX ? FLT_MAX : val <= -FLT_MAX ? -FLT_MAX
                                                                                                     : val; }
 // True if two numbers are approximately equal using units in the last place.
-static inline bool ImAlmostEqual(double v1, double v2, int ulp = 2) { return ImAbs(v1 - v2) < DBL_EPSILON * ImAbs(v1 + v2) * ulp || ImAbs(v1 - v2) < DBL_MIN; }
+static inline bool ImAlmostEqual(double v1, double v2, int ulp = 2) { return ImAbs(v1 - v2) < FLT_EPSILON * ImAbs(v1 + v2) * ulp || ImAbs(v1 - v2) < FLT_MIN; }
 // Set alpha channel of 32-bit color from float in range [0.0 1.0]
 static inline ImU32 ImAlphaU32(ImU32 col, float alpha) {
     return col & ~((ImU32)((1.0f - alpha) * 255) << IM_COL32_A_SHIFT);
 }
 // Mix color a and b by factor s in [0 256]
 static inline ImU32 ImMixU32(ImU32 a, ImU32 b, ImU32 s) {
-#ifdef IMPLOT_MIX64
+#ifdef IMPLOT3D_MIX64
     const ImU32 af = 256 - s;
     const ImU32 bf = s;
     const ImU64 al = (a & 0x00ff00ff) | (((ImU64)(a & 0xff00ff00)) << 24);
@@ -97,7 +96,8 @@ static inline ImU32 ImMixU32(ImU32 a, ImU32 b, ImU32 s) {
     return (mh & 0xff00ff00) | ((ml & 0xff00ff00) >> 8);
 #endif
 }
-#endif
+
+} // namespace ImPlot3D
 
 //-----------------------------------------------------------------------------
 // [SECTION] Forward Declarations
@@ -227,7 +227,7 @@ struct ImPlot3DColormapData {
                 for (int s = 0; s < 255; ++s) {
                     ImU32 a = keys[i];
                     ImU32 b = keys[i + 1];
-                    ImU32 c = ImMixU32(a, b, s);
+                    ImU32 c = ImPlot3D::ImMixU32(a, b, s);
                     // if (c != last) {
                     Tables.push_back(c);
                     // last = c;
@@ -465,7 +465,7 @@ struct ImPlot3DAxis {
     inline bool SetMin(double _min, bool force = false) {
         if (!force && IsLockedMin())
             return false;
-        _min = ImConstrainNan(ImConstrainInf(_min));
+        _min = ImPlot3D::ImConstrainNan(ImPlot3D::ImConstrainInf(_min));
         if (_min >= Range.Max)
             return false;
         Range.Min = _min;
@@ -475,7 +475,7 @@ struct ImPlot3DAxis {
     inline bool SetMax(double _max, bool force = false) {
         if (!force && IsLockedMax())
             return false;
-        _max = ImConstrainNan(ImConstrainInf(_max));
+        _max = ImPlot3D::ImConstrainNan(ImPlot3D::ImConstrainInf(_max));
         if (_max <= Range.Min)
             return false;
         Range.Max = _max;
@@ -483,8 +483,8 @@ struct ImPlot3DAxis {
     }
 
     inline bool IsRangeLocked() const { return RangeCond == ImPlot3DCond_Always; }
-    inline bool IsLockedMin() const { return IsRangeLocked() || ImHasFlag(Flags, ImPlot3DAxisFlags_LockMin); }
-    inline bool IsLockedMax() const { return IsRangeLocked() || ImHasFlag(Flags, ImPlot3DAxisFlags_LockMax); }
+    inline bool IsLockedMin() const { return IsRangeLocked() || ImPlot3D::ImHasFlag(Flags, ImPlot3DAxisFlags_LockMin); }
+    inline bool IsLockedMax() const { return IsRangeLocked() || ImPlot3D::ImHasFlag(Flags, ImPlot3DAxisFlags_LockMax); }
     inline bool IsLocked() const { return IsLockedMin() && IsLockedMax(); }
 
     inline void SetLabel(const char* label) {
@@ -562,7 +562,7 @@ struct ImPlot3DPlot {
         if (title && ImGui::FindRenderedTextEnd(title, nullptr) != title)
             Title.append(title, title + strlen(title) + 1);
     }
-    inline bool HasTitle() const { return !Title.empty() && !ImHasFlag(Flags, ImPlot3DFlags_NoTitle); }
+    inline bool HasTitle() const { return !Title.empty() && !ImPlot3D::ImHasFlag(Flags, ImPlot3DFlags_NoTitle); }
     inline const char* GetTitle() const { return Title.Buf.Data; }
 
     void ExtendFit(const ImPlot3DPoint& point);
