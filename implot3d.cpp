@@ -1281,6 +1281,7 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     if (!ImGui::ItemAdd(plot.FrameRect, plot.ID, &plot.FrameRect)) {
         gp.CurrentPlot = nullptr;
         gp.CurrentItems = nullptr;
+        ImGui::EndChild();
         return false;
     }
 
