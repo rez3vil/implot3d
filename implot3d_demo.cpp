@@ -635,6 +635,9 @@ void ShowDemoWindow(bool* p_open) {
     if (show_imgui_demo)
         ImGui::ShowDemoWindow(&show_imgui_demo);
 
+
+    ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(600, 750), ImGuiCond_FirstUseEver);
     ImGui::Begin("ImPlot3D Demo", p_open, ImGuiWindowFlags_MenuBar);
     if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("Tools")) {
