@@ -287,6 +287,7 @@ struct ImPlot3DItem {
     int NameOffset;
     bool Show;
     bool LegendHovered;
+    bool SeenThisFrame;
 
     ImPlot3DItem() {
         ID = 0;
@@ -294,6 +295,7 @@ struct ImPlot3DItem {
         NameOffset = -1;
         Show = true;
         LegendHovered = false;
+        SeenThisFrame = false;
     }
     ~ImPlot3DItem() { ID = 0; }
 };

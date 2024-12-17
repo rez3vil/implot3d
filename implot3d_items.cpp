@@ -231,6 +231,13 @@ ImPlot3DItem* RegisterOrGetItem(const char* label_id, ImPlot3DItemFlags flags, b
     if (just_created != nullptr)
         *just_created = Items.GetItem(id) == nullptr;
     ImPlot3DItem* item = Items.GetOrAddItem(id);
+
+    // Avoid re-adding the same item to the legend (the legend is reset every frame)
+    if (item->SeenThisFrame)
+        return item;
+    item->SeenThisFrame = true;
+
+    // Add item to the legend
     int idx = Items.GetItemIndex(item);
     item->ID = id;
     if (!ImHasFlag(flags, ImPlot3DItemFlags_NoLegend) && ImGui::FindRenderedTextEnd(label_id, nullptr) != label_id) {

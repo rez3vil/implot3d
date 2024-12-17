@@ -1364,6 +1364,10 @@ void EndPlot() {
     // Reset current plot
     gp.CurrentPlot = nullptr;
     gp.CurrentItems = nullptr;
+
+    // Reset the plot items for the next frame
+    for (int i = 0; i < plot.Items.GetItemCount(); i++)
+        plot.Items.GetItemByIndex(i)->SeenThisFrame = false;
 }
 
 //-----------------------------------------------------------------------------
