@@ -1378,10 +1378,8 @@ void SetupAxis(ImAxis3D idx, const char* label, ImPlot3DAxisFlags flags) {
     // Get plot and axis
     ImPlot3DPlot& plot = *gp.CurrentPlot;
     ImPlot3DAxis& axis = plot.Axes[idx];
-    if (plot.JustCreated) {
-        axis.Flags = flags;
-        axis.SetLabel(label);
-    }
+    axis.Flags = flags;
+    axis.SetLabel(label);
 }
 
 void SetupAxisLimits(ImAxis3D idx, double min_lim, double max_lim, ImPlot3DCond cond) {
