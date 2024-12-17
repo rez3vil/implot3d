@@ -1254,8 +1254,11 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     plot.JustCreated = just_created;
     if (just_created) {
         plot.Rotation = init_rotation;
-        for (int i = 0; i < 3; i++)
+        plot.FitThisFrame = true;
+        for (int i = 0; i < 3; i++) {
             plot.Axes[i] = ImPlot3DAxis();
+            plot.Axes[i].FitThisFrame = true;
+        }
     }
     if (plot.PreviousFlags != flags)
         plot.Flags = flags;
@@ -1396,7 +1399,7 @@ void SetupAxisLimits(ImAxis3D idx, double min_lim, double max_lim, ImPlot3DCond 
                          "SetupAxisLimits() needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!"); // get plot and axis
     ImPlot3DPlot& plot = *gp.CurrentPlot;
     ImPlot3DAxis& axis = plot.Axes[idx];
-    if (plot.JustCreated || cond == ImPlot3DCond_Always) {
+    if (!plot.Initialized || cond == ImPlot3DCond_Always) {
         axis.SetRange(min_lim, max_lim);
         axis.RangeCond = cond;
         axis.FitThisFrame = false;
@@ -2004,6 +2007,8 @@ void SetupLock() {
             plot.AnimationTime = 0.0f;
         plot.Rotation = ImPlot3DQuat::Slerp(plot.Rotation, plot.RotationAnimationEnd, t);
     }
+
+    plot.Initialized = true;
 
     // Handle user input
     HandleInput(plot);

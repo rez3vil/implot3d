@@ -516,6 +516,7 @@ struct ImPlot3DPlot {
     ImPlot3DFlags PreviousFlags;
     ImGuiTextBuffer Title;
     bool JustCreated;
+    bool Initialized;
     // Bounding rectangles
     ImRect FrameRect;  // Outermost bounding rectangle that encapsulates whole the plot/title/padding/etc
     ImRect CanvasRect; // Frame rectangle reduced by padding
@@ -546,6 +547,7 @@ struct ImPlot3DPlot {
     ImPlot3DPlot() {
         PreviousFlags = Flags = ImPlot3DFlags_None;
         JustCreated = true;
+        Initialized = false;
         Rotation = ImPlot3DQuat(0.0f, 0.0f, 0.0f, 1.0f);
         for (int i = 0; i < 3; i++)
             Axes[i] = ImPlot3DAxis();
