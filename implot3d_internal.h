@@ -303,7 +303,9 @@ struct ImPlot3DItem {
 // Holds legend state
 struct ImPlot3DLegend {
     ImPlot3DLegendFlags Flags;
+    ImPlot3DLegendFlags PreviousFlags;
     ImPlot3DLocation Location;
+    ImPlot3DLocation PreviousLocation;
     ImVector<int> Indices;
     ImGuiTextBuffer Labels;
     ImRect Rect;
@@ -311,9 +313,9 @@ struct ImPlot3DLegend {
     bool Held;
 
     ImPlot3DLegend() {
-        Flags = ImPlot3DLegendFlags_None;
+        PreviousFlags = Flags = ImPlot3DLegendFlags_None;
         Hovered = Held = false;
-        Location = ImPlot3DLocation_NorthWest;
+        PreviousLocation = Location = ImPlot3DLocation_NorthWest;
     }
 
     void Reset() {
@@ -424,6 +426,7 @@ struct ImPlot3DTicker {
 // Holds axis information
 struct ImPlot3DAxis {
     ImPlot3DAxisFlags Flags;
+    ImPlot3DAxisFlags PreviousFlags;
     ImPlot3DRange Range;
     ImPlot3DCond RangeCond;
     ImGuiTextBuffer Label;
@@ -440,7 +443,7 @@ struct ImPlot3DAxis {
 
     // Constructor
     ImPlot3DAxis() {
-        Flags = ImPlot3DAxisFlags_None;
+        PreviousFlags = Flags = ImPlot3DAxisFlags_None;
         // Range
         Range.Min = 0.0f;
         Range.Max = 1.0f;
@@ -510,6 +513,7 @@ struct ImPlot3DAxis {
 struct ImPlot3DPlot {
     ImGuiID ID;
     ImPlot3DFlags Flags;
+    ImPlot3DFlags PreviousFlags;
     ImGuiTextBuffer Title;
     bool JustCreated;
     // Bounding rectangles
@@ -540,7 +544,7 @@ struct ImPlot3DPlot {
     bool OpenContextThisFrame;
 
     ImPlot3DPlot() {
-        Flags = ImPlot3DFlags_None;
+        PreviousFlags = Flags = ImPlot3DFlags_None;
         JustCreated = true;
         Rotation = ImPlot3DQuat(0.0f, 0.0f, 0.0f, 1.0f);
         for (int i = 0; i < 3; i++)

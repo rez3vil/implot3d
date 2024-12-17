@@ -1253,11 +1253,13 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     plot.ID = ID;
     plot.JustCreated = just_created;
     if (just_created) {
-        plot.Flags = flags;
         plot.Rotation = init_rotation;
         for (int i = 0; i < 3; i++)
             plot.Axes[i] = ImPlot3DAxis();
     }
+    if (plot.PreviousFlags != flags)
+        plot.Flags = flags;
+    plot.PreviousFlags = flags;
     plot.SetupLocked = false;
     plot.OpenContextThisFrame = false;
 
@@ -1382,7 +1384,9 @@ void SetupAxis(ImAxis3D idx, const char* label, ImPlot3DAxisFlags flags) {
     // Get plot and axis
     ImPlot3DPlot& plot = *gp.CurrentPlot;
     ImPlot3DAxis& axis = plot.Axes[idx];
-    axis.Flags = flags;
+    if (axis.PreviousFlags != flags)
+        axis.Flags = flags;
+    axis.PreviousFlags = flags;
     axis.SetLabel(label);
 }
 
@@ -1420,8 +1424,12 @@ void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags) {
     IM_ASSERT_USER_ERROR(gp.CurrentItems != nullptr,
                          "SetupLegend() needs to be called within an itemized context!");
     ImPlot3DLegend& legend = gp.CurrentItems->Legend;
-    legend.Location = location;
-    legend.Flags = flags;
+    if (legend.PreviousLocation != location)
+        legend.Location = location;
+    legend.PreviousLocation = location;
+    if (legend.PreviousFlags != flags)
+        legend.Flags = flags;
+    legend.PreviousFlags = flags;
 }
 
 //-----------------------------------------------------------------------------
