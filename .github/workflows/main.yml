@@ -10,7 +10,13 @@ jobs:
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@main
-      - run: |
+      - name: prepare-linux
+        if: runner.os == 'Linux'
+        run: |
+            sudo apt-get update
+            sudo apt-get install mesa-common-dev xorg-dev
+      - name: build
+        run: |
           cd example
           cmake -B build
           cmake --build build
