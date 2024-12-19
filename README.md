@@ -84,7 +84,7 @@ The API for ImPlot3D is thoroughly commented in `implot3d.h`, and a comprehensiv
 #### How is ImPlot3D different from ImPlot?
 ImPlot3D is highly inspired by ImPlot, so if you're already familiar with ImPlot, you'll feel right at home. However, ImPlot3D is specifically built for 3D visualizations, offering interactive 3D rotations, panning, and scaling.
 
-### Do I need ImPlot to use ImPlot3D?
+#### Do I need ImPlot to use ImPlot3D?
 No. ImPlot3D is a standalone library and does not depend on ImPlot. You only need Dear ImGui to get started.
 
 #### Does ImPlot3D support 2D plots?
@@ -99,5 +99,41 @@ Not currently. You can use your OS's screen capturing tools to save a plot. ImPl
 #### Is ImPlot3D suitable for publication-quality visuals?
 ImPlot3D prioritizes interactivity and real-time performance. If you need high-quality visualizations, use ImPlot3D for initial exploration and then switch to tools like [MATLAB](https://www.mathworks.com/products/matlab.html), [matplotlib](https://matplotlib.org/), or [ParaView](https://www.paraview.org/) for the final output.
 
-## License
+## 🤝 Contributing
+ImPlot3D is growing quickly and I would love more people to get involved in the project. Whether you have ideas to share, bugs to report, or features to implement, your contributions are welcome!
+
+<p align="center">
+    <img src="https://api.star-history.com/svg?repos=brenocq/implot3d&type=Date" height="300"/>
+</p>
+
+### How to Contribute
+1. **Propose Ideas and Discuss Features:**
+   - Explore our [features and improvements](https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements) section.
+   - Join discussions, suggest new features, or refine existing ideas.
+
+2. **Report Bugs:**
+   - Found a bug? [Open an issue](https://github.com/brenocq/implot3d/issues/new). Include details, reproduction steps, and any relevant screenshots or logs.
+
+3. **Implement Features:**
+   - Indicate your intent to work on a feature by commenting in the [feature discussion](https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements) or starting a new one if it doesn't exist. This helps avoid duplicated efforts and allows maintainers to provide guidance.
+   - Fork the repository and branch off `dev`.
+   - Implement your feature following the project’s coding standards.
+   - [Open a pull request](https://github.com/brenocq/implot3d/compare) targeting the `dev` branch.
+
+### Code Style and Commit Messages
+- **Code Formatting:** Use `clang-format` to ensure consistency. Many editors can apply `clang-format` automatically when saving.
+- **Commit Messages:** Follow the [Conventional Commits](https://www.conventionalcommits.org/) style to maintain a clear and informative history:
+  - `feat`: New features.
+  - `fix`: Bug fixes.
+  - `docs`: Documentation updates.
+  - `style`: Code style changes.
+  - `refactor`: Refactoring without changing functionality.
+  - `test`: Adding or modifying tests.
+  - `chore`: Maintenance tasks.
+  - `merge`: Merging branches or pull requests. Examples:
+    - `merge: feature-branch-xxx into feature-branch`
+    - `merge: remote feature-branch into local feature-branch`
+    - `merge: pull request #12 from feature-branch into dev`
+
+## 📄 License
 This project is licensed under the MIT License - check [LICENSE](LICENSE) for details.
