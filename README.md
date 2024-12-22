@@ -133,7 +133,7 @@ ImPlot3D is growing quickly and I would love more people to get involved in the 
   - `merge`: Merging branches or pull requests. Examples:
     - `merge: feature-branch-xxx into feature-branch`
     - `merge: remote feature-branch into local feature-branch`
-    - `merge: pull request #12 from feature-branch into dev`
+    - `merge: pull request #12 from feature-branch`
 
 ## 📄 License
 This project is licensed under the MIT License - check [LICENSE](LICENSE) for details.
