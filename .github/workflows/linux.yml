@@ -1,0 +1,24 @@
+name: 🐧 Linux
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        compiler: [g++, clang++]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - name: Prepare Environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install mesa-common-dev xorg-dev
+      - name: Configure
+        run: |
+          cd example
+          cmake -B build -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+      - name: Build
+        run: |
+          cd example
+          cmake --build build
