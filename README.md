@@ -1,12 +1,30 @@
 # ImPlot3D
 
-<p align="center">
-<img src="https://github.com/user-attachments/assets/6d4dacc8-ddf5-445b-a595-80f83befd626" width="270"> <img src="https://github.com/user-attachments/assets/69c6d660-54c9-42aa-bac4-22bb19749e4b" width="270"> <img src="https://github.com/user-attachments/assets/93f5dfda-cf6f-4e24-ae07-11e03be27f7a" width="270">
-</p>
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/6d4dacc8-ddf5-445b-a595-80f83befd626" width="270"/>
+  <img src="https://github.com/user-attachments/assets/69c6d660-54c9-42aa-bac4-22bb19749e4b" width="270"/>
+  <img src="https://github.com/user-attachments/assets/93f5dfda-cf6f-4e24-ae07-11e03be27f7a" width="270"/>
+</div>
 
-<p align="center">
-<img src="https://github.com/user-attachments/assets/b7279508-d63e-4546-8cba-c69c7bf16c47" width="270"> <img src="https://github.com/user-attachments/assets/434187eb-3449-472b-b443-03140b7c9a9f" width="270"> <img src="https://github.com/user-attachments/assets/94cab1c6-0980-45c5-a6a1-8781f536a2ef" width="270">
-</p>
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/b7279508-d63e-4546-8cba-c69c7bf16c47" width="270"/>
+  <img src="https://github.com/user-attachments/assets/434187eb-3449-472b-b443-03140b7c9a9f" width="270"/>
+  <img src="https://github.com/user-attachments/assets/94cab1c6-0980-45c5-a6a1-8781f536a2ef" width="270"/>
+</div>
+
+<h6 align="center">
+    <a href="https://github.com/brenocq/implot3d#-demos">Demos</a>
+    ·
+    <a href="https://github.com/brenocq/implot3d/discussions">Discussions</a>
+    ·
+    <a href="https://github.com/brenocq/implot3d#-contributing">Contributing</a>
+</h6>
+
+<div align="center">
+  <img src="https://github.com/brenocq/implot3d/actions/workflows/linux.yml/badge.svg" alt="🐧 Linux"/>
+  <img src="https://github.com/brenocq/implot3d/actions/workflows/macos.yml/badge.svg" alt="🍎 MacOS"/>
+  <img src="https://github.com/brenocq/implot3d/actions/workflows/windows.yml/badge.svg" alt="🪟 Windows"/>
+</div>
 
 ImPlot3D is an extension of [Dear ImGui](https://github.com/ocornut/imgui) that provides easy-to-use, high-performance 3D plotting functionality. Inspired by [ImPlot](https://github.com/epezent/implot), it brings a familiar and intuitive API for developers already acquainted with ImPlot. ImPlot3D is designed for rendering 3D plots with customizable markers, lines, surfaces, and meshes, providing an ideal solution for applications requiring visual representation of 3D data.
 
