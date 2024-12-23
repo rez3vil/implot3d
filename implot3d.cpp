@@ -1221,6 +1221,8 @@ void ShowPlotContextMenu(ImPlot3DPlot& plot) {
         if (ImGui::MenuItem("Title", nullptr, plot.HasTitle()))
             ImFlipFlag(plot.Flags, ImPlot3DFlags_NoTitle);
         ImGui::EndDisabled();
+        if (ImGui::MenuItem("Clip", nullptr, !ImHasFlag(plot.Flags, ImPlot3DFlags_NoClip)))
+            ImFlipFlag(plot.Flags, ImPlot3DFlags_NoClip);
         ImGui::EndMenu();
     }
 }
@@ -2680,7 +2682,7 @@ ImPlot3DQuat ImPlot3DQuat::FromTwoVectors(const ImPlot3DPoint& v0, const ImPlot3
     if (ImFabs(normalized_dot + 1.0f) < epsilon) {
         // v0 and v1 are opposite; choose an arbitrary orthogonal axis
         ImPlot3DPoint arbitrary_axis = ImFabs(v0.x) > ImFabs(v0.z) ? ImPlot3DPoint(-v0.y, v0.x, 0.0f)
-                                                                         : ImPlot3DPoint(0.0f, -v0.z, v0.y);
+                                                                   : ImPlot3DPoint(0.0f, -v0.z, v0.y);
         arbitrary_axis.Normalize();
         q.x = arbitrary_axis.x;
         q.y = arbitrary_axis.y;
@@ -2784,9 +2786,9 @@ ImPlot3DQuat ImPlot3DQuat::Slerp(const ImPlot3DQuat& q1, const ImPlot3DQuat& q2,
 
     // Compute the angle and the interpolation factors
     float theta_0 = ImAcos(dot);        // Angle between input quaternions
-    float theta = theta_0 * t;             // Interpolated angle
-    float sin_theta = ImSin(theta);        // Sine of interpolated angle
-    float sin_theta_0 = ImSin(theta_0);    // Sine of original angle
+    float theta = theta_0 * t;          // Interpolated angle
+    float sin_theta = ImSin(theta);     // Sine of interpolated angle
+    float sin_theta_0 = ImSin(theta_0); // Sine of original angle
 
     float s1 = ImCos(theta) - dot * sin_theta / sin_theta_0;
     float s2 = sin_theta / sin_theta_0;
