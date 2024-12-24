@@ -8,6 +8,7 @@ jobs:
       matrix:
         compiler: [g++, clang++]
     runs-on: ubuntu-latest
+    name: 🐧 Linux (${{ matrix.compiler }})
     steps:
       - uses: actions/checkout@main
       - name: Prepare Environment
