@@ -1223,6 +1223,8 @@ void ShowPlotContextMenu(ImPlot3DPlot& plot) {
         ImGui::EndDisabled();
         if (ImGui::MenuItem("Clip", nullptr, !ImHasFlag(plot.Flags, ImPlot3DFlags_NoClip)))
             ImFlipFlag(plot.Flags, ImPlot3DFlags_NoClip);
+        if (ImGui::MenuItem("Mouse Position", nullptr, !ImHasFlag(plot.Flags, ImPlot3DFlags_NoMouseText)))
+            ImFlipFlag(plot.Flags, ImPlot3DFlags_NoMouseText);
         ImGui::EndMenu();
     }
 }
