@@ -1114,6 +1114,11 @@ void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, ImPlot3
 // [SECTION] Context Menus
 //------------------------------------------------------------------------------
 
+static const char* axis_contexts[3] = {"##XAxisContext", "##YAxisContext", "##ZAxisContext"};
+static const char* axis_labels[3] = {"X-Axis", "Y-Axis", "Z-Axis"};
+static const char* plane_contexts[3] = {"##YZPlaneContext", "##XZPlaneContext", "##XYPlaneContext"};
+static const char* plane_labels[3] = {"YZ-Plane", "XZ-Plane", "XY-Plane"};
+
 bool ShowLegendContextMenu(ImPlot3DLegend& legend, bool visible) {
     const float s = ImGui::GetFrameHeight();
     bool ret = false;
@@ -1191,13 +1196,23 @@ void ShowAxisContextMenu(ImPlot3DAxis& axis) {
         ImFlipFlag(axis.Flags, ImPlot3DAxisFlags_NoTickLabels);
 }
 
-void ShowPlotContextMenu(ImPlot3DPlot& plot) {
-    ImPlot3DContext& gp = *GImPlot3D;
-    const bool owns_legend = gp.CurrentItems == &plot.Items;
-
+void ShowPlaneContextMenu(ImPlot3DPlot& plot, int plane_idx) {
     char buf[16] = {};
+    for (int i = 0; i < 3; i++) {
+        if (i == plane_idx)
+            continue;
+        ImPlot3DAxis& axis = plot.Axes[i];
+        ImGui::PushID(i);
+        if (ImGui::BeginMenu(axis.HasLabel() ? axis.GetLabel() : axis_labels[i])) {
+            ShowAxisContextMenu(axis);
+            ImGui::EndMenu();
+        }
+        ImGui::PopID();
+    }
+}
 
-    const char* axis_labels[3] = {"X-Axis", "Y-Axis", "Z-Axis"};
+void ShowPlotContextMenu(ImPlot3DPlot& plot) {
+    char buf[16] = {};
     for (int i = 0; i < 3; i++) {
         ImPlot3DAxis& axis = plot.Axes[i];
         ImGui::PushID(i);
@@ -1347,13 +1362,23 @@ void EndPlot() {
     }
 
     // Axis context menus
-    static const char* axis_contexts[3] = {"##XAxisContext", "##YAxisContext", "##ZAxisContext"};
     for (int i = 0; i < 3; i++) {
         ImPlot3DAxis& axis = plot.Axes[i];
         if (ImGui::BeginPopup(axis_contexts[i])) {
             ImGui::Text(axis.HasLabel() ? axis.GetLabel() : "%c-Axis", 'X' + i);
             ImGui::Separator();
             ShowAxisContextMenu(axis);
+            ImGui::EndPopup();
+        }
+    }
+
+    // Plane context menus
+    for (int i = 0; i < 3; i++) {
+        ImPlot3DAxis& axis = plot.Axes[i];
+        if (ImGui::BeginPopup(plane_contexts[i])) {
+            ImGui::Text(plane_labels[i]);
+            ImGui::Separator();
+            ShowPlaneContextMenu(plot, i);
             ImGui::EndPopup();
         }
     }
@@ -1933,15 +1958,13 @@ void HandleInput(ImPlot3DPlot& plot) {
         plot.OpenContextThisFrame = true;
     }
 
-    // TODO Only open context menu if the mouse is not in the middle of double click action
-    const char* axis_contexts[3] = {"##XAxisContext", "##YAxisContext", "##ZAxisContext"};
     if (plot.OpenContextThisFrame) {
         if (plot.Items.Legend.Hovered)
             ImGui::OpenPopup("##LegendContext");
         else if (hovered_axis != -1) {
             ImGui::OpenPopup(axis_contexts[hovered_axis]);
         } else if (hovered_plane != -1) {
-            ImGui::OpenPopup(axis_contexts[hovered_plane]);
+            ImGui::OpenPopup(plane_contexts[hovered_plane]);
         } else if (plot.Hovered) {
             ImGui::OpenPopup("##PlotContext");
         }
