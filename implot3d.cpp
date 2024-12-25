@@ -1840,7 +1840,7 @@ void HandleInput(ImPlot3DPlot& plot) {
     }
 
     // Handle context click with right mouse button
-    if (plot.Held && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+    if (plot.Held && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !ImPlot3D::ImHasFlag(plot.Flags, ImPlot3DFlags_NoMenus))
         plot.ContextClick = true;
     if (rotating || ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Right))
         plot.ContextClick = false;
