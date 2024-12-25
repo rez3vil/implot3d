@@ -1856,6 +1856,8 @@ void HandleInput(ImPlot3DPlot& plot) {
             // Compute plane normal
             ImPlot3DPoint axis_normal = ImPlot3DPoint(0.0f, 0.0f, 0.0f);
             axis_normal[hovered_plane] = active_faces[hovered_plane] ? -1.0f : 1.0f;
+            if (ImPlot3D::ImHasFlag(plot.Axes[hovered_plane].Flags, ImPlot3DAxisFlags_Invert))
+                axis_normal[hovered_plane] *= -1;
 
             // Compute rotation to align the plane normal with the z-axis
             ImPlot3DQuat align_normal = ImPlot3DQuat::FromTwoVectors(plot.RotationAnimationEnd * axis_normal, ImPlot3DPoint(0.0f, 0.0f, 1.0f));
