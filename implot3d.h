@@ -15,6 +15,7 @@
 // [SECTION] Macros and Defines
 // [SECTION] Forward declarations and basic types
 // [SECTION] Flags & Enumerations
+// [SECTION] Callbacks
 // [SECTION] Context
 // [SECTION] Begin/End Plot
 // [SECTION] Setup
@@ -30,7 +31,6 @@
 // [SECTION] ImPlot3DBox
 // [SECTION] ImPlot3DQuat
 // [SECTION] ImPlot3DStyle
-// [SECTION] Callbacks
 // [SECTION] Meshes
 
 #pragma once
@@ -289,6 +289,13 @@ enum ImPlot3DColormap_ {
     ImPlot3DColormap_Greys = 15,    // White/black
 };
 
+//-----------------------------------------------------------------------------
+// [SECTION] Callbacks
+//-----------------------------------------------------------------------------
+
+// Callback signature for axis tick label formatter
+typedef int (*ImPlot3DFormatter)(float value, char* buff, int size, void* user_data);
+
 namespace ImPlot3D {
 
 //-----------------------------------------------------------------------------
@@ -359,6 +366,8 @@ IMPLOT3D_API void SetupAxes(const char* x_label, const char* y_label, const char
 
 // Sets the X/Y/Z axes range limits. If ImPlotCond_Always is used, the axes limits will be locked (shorthand for two calls to SetupAxisLimits)
 IMPLOT3D_API void SetupAxesLimits(double x_min, double x_max, double y_min, double y_max, double z_min, double z_max, ImPlot3DCond cond = ImPlot3DCond_Once);
+
+IMPLOT3D_API void SetupAxisFormat(ImAxis3D idx, ImPlot3DFormatter formatter, void* data = nullptr);
 
 IMPLOT3D_API void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags = 0);
 
@@ -712,13 +721,6 @@ struct ImPlot3DStyle {
     // Constructor
     IMPLOT3D_API ImPlot3DStyle();
 };
-
-//-----------------------------------------------------------------------------
-// [SECTION] Callbacks
-//-----------------------------------------------------------------------------
-
-// Callback signature for axis tick label formatter
-typedef int (*ImPlot3DFormatter)(float value, char* buff, int size, void* user_data);
 
 //-----------------------------------------------------------------------------
 // [SECTION] Meshes

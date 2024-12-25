@@ -1427,6 +1427,16 @@ void SetupAxesLimits(double x_min, double x_max, double y_min, double y_max, dou
         GImPlot3D->CurrentPlot->FitThisFrame = false;
 }
 
+void SetupAxisFormat(ImAxis3D idx, ImPlot3DFormatter formatter, void* data) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
+                         "Setup needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    ImPlot3DAxis& axis = plot.Axes[idx];
+    axis.Formatter = formatter;
+    axis.FormatterData = data;
+}
+
 void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
