@@ -1179,6 +1179,12 @@ void ShowAxisContextMenu(ImPlot3DAxis& axis) {
     ImGui::CheckboxFlags("Auto-Fit", (unsigned int*)&axis.Flags, ImPlot3DAxisFlags_AutoFit);
     ImGui::Separator();
 
+    bool inverted = ImPlot3D::ImHasFlag(axis.Flags, ImPlot3DAxisFlags_Invert);
+    if (ImGui::Checkbox("Invert", &inverted))
+        ImFlipFlag(axis.Flags, ImPlot3DAxisFlags_Invert);
+
+    ImGui::Separator();
+
     ImGui::BeginDisabled(axis.Label.empty());
     if (ImGui::Checkbox("Label", &label))
         ImFlipFlag(axis.Flags, ImPlot3DAxisFlags_NoLabel);
@@ -1190,12 +1196,6 @@ void ShowAxisContextMenu(ImPlot3DAxis& axis) {
         ImFlipFlag(axis.Flags, ImPlot3DAxisFlags_NoTickMarks);
     if (ImGui::Checkbox("Tick Labels", &labels))
         ImFlipFlag(axis.Flags, ImPlot3DAxisFlags_NoTickLabels);
-
-    ImGui::Separator();
-
-    bool inverted = ImPlot3D::ImHasFlag(axis.Flags, ImPlot3DAxisFlags_Invert);
-    if (ImGui::Checkbox("Invert Axis", &inverted))
-        ImFlipFlag(axis.Flags, ImPlot3DAxisFlags_Invert);
 }
 
 void ShowPlotContextMenu(ImPlot3DPlot& plot) {
@@ -1413,6 +1413,16 @@ void SetupAxisLimits(ImAxis3D idx, double min_lim, double max_lim, ImPlot3DCond 
     }
 }
 
+void SetupAxisFormat(ImAxis3D idx, ImPlot3DFormatter formatter, void* data) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
+                         "Setup needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    ImPlot3DAxis& axis = plot.Axes[idx];
+    axis.Formatter = formatter;
+    axis.FormatterData = data;
+}
+
 void SetupAxes(const char* x_label, const char* y_label, const char* z_label, ImPlot3DAxisFlags x_flags, ImPlot3DAxisFlags y_flags, ImPlot3DAxisFlags z_flags) {
     SetupAxis(ImAxis3D_X, x_label, x_flags);
     SetupAxis(ImAxis3D_Y, y_label, y_flags);
@@ -1425,16 +1435,6 @@ void SetupAxesLimits(double x_min, double x_max, double y_min, double y_max, dou
     SetupAxisLimits(ImAxis3D_Z, z_min, z_max, cond);
     if (cond == ImPlot3DCond_Once)
         GImPlot3D->CurrentPlot->FitThisFrame = false;
-}
-
-void SetupAxisFormat(ImAxis3D idx, ImPlot3DFormatter formatter, void* data) {
-    ImPlot3DContext& gp = *GImPlot3D;
-    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
-                         "Setup needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!");
-    ImPlot3DPlot& plot = *gp.CurrentPlot;
-    ImPlot3DAxis& axis = plot.Axes[idx];
-    axis.Formatter = formatter;
-    axis.FormatterData = data;
 }
 
 void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags) {
