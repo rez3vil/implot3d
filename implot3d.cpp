@@ -1766,6 +1766,19 @@ void HandleInput(ImPlot3DPlot& plot) {
         }
     }
 
+    // Compute plane that is being hovered by mouse
+    ImPlane3D mouse_plane = ImPlane3D_XY;
+    if (plane_2d != -1)
+        mouse_plane = plane_2d;
+    else if (transform_axis[1] && transform_axis[2])
+        mouse_plane = ImPlane3D_YZ;
+    else if (transform_axis[0] && transform_axis[2])
+        mouse_plane = ImPlane3D_XZ;
+    else if (transform_axis[2])
+        mouse_plane = ImPlane3D_YZ;
+    ImVec2 mouse_pos = ImGui::GetMousePos();
+    ImPlot3DPoint mouse_pos_plot = PixelsToPlotPlane(mouse_pos, mouse_plane, false);
+
     // Handle translation/zoom fit with double click
     if (plot_clicked && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) || ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Middle)) {
         plot.FitThisFrame = true;
@@ -1813,22 +1826,10 @@ void HandleInput(ImPlot3DPlot& plot) {
             // Translate along plane/axis
 
             // Mouse delta in pixels
-            ImVec2 mouse_pos = ImGui::GetMousePos();
             ImVec2 mouse_delta(IO.MouseDelta.x, IO.MouseDelta.y);
 
-            // TODO Choose best plane given transform_axis and current view
-            // For now it crashes when transforming only one axis in the 2D view
-            ImPlane3D plane = ImPlane3D_XY;
-            if (transform_axis[1] && transform_axis[2])
-                plane = ImPlane3D_YZ;
-            else if (transform_axis[0] && transform_axis[2])
-                plane = ImPlane3D_XZ;
-            else if (transform_axis[2])
-                plane = ImPlane3D_YZ;
-
-            ImPlot3DPoint mouse_plot = PixelsToPlotPlane(mouse_pos, plane, false);
-            ImPlot3DPoint mouse_delta_plot = PixelsToPlotPlane(mouse_pos + mouse_delta, plane, false);
-            ImPlot3DPoint delta_plot = mouse_delta_plot - mouse_plot;
+            ImPlot3DPoint mouse_delta_plot = PixelsToPlotPlane(mouse_pos + mouse_delta, mouse_plane, false);
+            ImPlot3DPoint delta_plot = mouse_delta_plot - mouse_pos_plot;
 
             // Apply translation to the selected axes
             for (int i = 0; i < 3; i++) {
@@ -1936,13 +1937,34 @@ void HandleInput(ImPlot3DPlot& plot) {
         float zoom = 1.0f + delta;
         for (int i = 0; i < 3; i++) {
             ImPlot3DAxis& axis = plot.Axes[i];
-            float center = (axis.Range.Min + axis.Range.Max) * 0.5f;
             float size = axis.Range.Max - axis.Range.Min;
-            size *= zoom;
+            float new_min, new_max;
+            if (hovered_axis != -1 || hovered_plane != -1) {
+                // If mouse over the plot box, zoom around the mouse plot position
+                float new_size = size * zoom;
+
+                // Calculate offset ratio of the mouse position relative to the axis range
+                float offset = mouse_pos_plot[i] - axis.Range.Min;
+                float ratio = offset / size;
+
+                // Adjust the axis range to zoom around the mouse position
+                new_min = mouse_pos_plot[i] - new_size * ratio;
+                new_max = mouse_pos_plot[i] + new_size * (1.0f - ratio);
+            } else {
+                // If mouse is not over the plot box, zoom around the plot center
+                float center = (axis.Range.Min + axis.Range.Max) * 0.5f;
+
+                // Adjust the axis range to zoom around plot center
+                new_min = center - zoom * size * 0.5f;
+                new_max = center + zoom * size * 0.5f;
+            }
+
+            // Set new range after zoom
             if (transform_axis[i]) {
-                plot.Axes[i].SetRange(center - size * 0.5f, center + size * 0.5f);
+                plot.Axes[i].SetRange(new_min, new_max);
                 plot.Axes[i].Held = true;
             }
+
             // If no axis was held before (user started zoom in this frame), set the held edge/plane indices
             if (!any_axis_held) {
                 plot.HeldEdgeIdx = hovered_edge_idx;
