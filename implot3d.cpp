@@ -867,7 +867,7 @@ void RenderAxisLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImP
 // Function to compute active faces based on the rotation
 // If the plot is close to 2D, plane_2d is set to the plane index (0 -> YZ, 1 -> XZ, 2 -> XY)
 // plane_2d is set to -1 otherwise
-void ComputeActiveFaces(bool* active_faces, const ImPlot3DQuat& rotation, int* plane_2d = nullptr) {
+void ComputeActiveFaces(bool* active_faces, const ImPlot3DQuat& rotation, const ImPlot3DAxis* axes, int* plane_2d = nullptr) {
     if (plane_2d)
         *plane_2d = -1;
 
@@ -886,7 +886,8 @@ void ComputeActiveFaces(bool* active_faces, const ImPlot3DQuat& rotation, int* p
             num_deg++;
         } else {
             // Otherwise, determine based on the Z component
-            active_faces[i] = rot_face_n[i].z < 0.0f;
+            bool is_inverted = ImHasFlag(axes[i].Flags, ImPlot3DAxisFlags_Invert);
+            active_faces[i] = is_inverted ? (rot_face_n[i].z > 0.0f) : (rot_face_n[i].z < 0.0f);
             // Set this plane as possible 2d plane
             if (plane_2d)
                 *plane_2d = i;
@@ -927,7 +928,7 @@ void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
     // Compute active faces
     bool active_faces[3];
     int plane_2d = -1;
-    ComputeActiveFaces(active_faces, rotation, &plane_2d);
+    ComputeActiveFaces(active_faces, rotation, plot.Axes, &plane_2d);
     bool is_2d = plane_2d != -1;
 
     // Compute box corners in plot space
@@ -1183,6 +1184,12 @@ void ShowAxisContextMenu(ImPlot3DAxis& axis) {
     ImGui::CheckboxFlags("Auto-Fit", (unsigned int*)&axis.Flags, ImPlot3DAxisFlags_AutoFit);
     ImGui::Separator();
 
+    bool inverted = ImPlot3D::ImHasFlag(axis.Flags, ImPlot3DAxisFlags_Invert);
+    if (ImGui::Checkbox("Invert", &inverted))
+        ImFlipFlag(axis.Flags, ImPlot3DAxisFlags_Invert);
+
+    ImGui::Separator();
+
     ImGui::BeginDisabled(axis.Label.empty());
     if (ImGui::Checkbox("Label", &label))
         ImFlipFlag(axis.Flags, ImPlot3DAxisFlags_NoLabel);
@@ -1435,6 +1442,16 @@ void SetupAxisLimits(ImAxis3D idx, double min_lim, double max_lim, ImPlot3DCond 
     }
 }
 
+void SetupAxisFormat(ImAxis3D idx, ImPlot3DFormatter formatter, void* data) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
+                         "Setup needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    ImPlot3DAxis& axis = plot.Axes[idx];
+    axis.Formatter = formatter;
+    axis.FormatterData = data;
+}
+
 void SetupAxes(const char* x_label, const char* y_label, const char* z_label, ImPlot3DAxisFlags x_flags, ImPlot3DAxisFlags y_flags, ImPlot3DAxisFlags z_flags) {
     SetupAxis(ImAxis3D_X, x_label, x_flags);
     SetupAxis(ImAxis3D_Y, y_label, y_flags);
@@ -1545,7 +1562,7 @@ ImPlot3DPoint PixelsToPlotPlane(const ImVec2& pix, ImPlane3D plane, bool mask) {
 
     // Compute which plane to intersect with
     bool active_faces[3];
-    ComputeActiveFaces(active_faces, plot.Rotation);
+    ComputeActiveFaces(active_faces, plot.Rotation, plot.Axes);
 
     // Calculate intersection point with the planes
     ImPlot3DPoint P = IntersectPlane(active_faces[plane] ? 0.5f : -0.5f);
@@ -1724,7 +1741,7 @@ void HandleInput(ImPlot3DPlot& plot) {
     ImPlot3DPoint range_max = plot.RangeMax();
     bool active_faces[3];
     int plane_2d = -1;
-    ComputeActiveFaces(active_faces, rotation, &plane_2d);
+    ComputeActiveFaces(active_faces, rotation, plot.Axes, &plane_2d);
     ImPlot3DPoint corners[8];
     ComputeBoxCorners(corners, range_min, range_max);
     ImVec2 corners_pix[8];
@@ -1810,6 +1827,12 @@ void HandleInput(ImPlot3DPlot& plot) {
             // Convert delta to plot space
             ImPlot3DPoint delta_plot = delta_NDC * (plot.RangeMax() - plot.RangeMin());
 
+            // Adjust delta for inverted axes
+            for (int i = 0; i < 3; i++) {
+                if (ImHasFlag(plot.Axes[i].Flags, ImPlot3DAxisFlags_Invert))
+                    delta_plot[i] *= -1;
+            }
+
             // Adjust plot range to translate the plot
             for (int i = 0; i < 3; i++) {
                 if (transform_axis[i]) {
@@ -1847,7 +1870,7 @@ void HandleInput(ImPlot3DPlot& plot) {
     }
 
     // Handle context click with right mouse button
-    if (plot.Held && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+    if (plot.Held && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !ImPlot3D::ImHasFlag(plot.Flags, ImPlot3DFlags_NoMenus))
         plot.ContextClick = true;
     if (rotating || ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Right))
         plot.ContextClick = false;
@@ -1863,6 +1886,8 @@ void HandleInput(ImPlot3DPlot& plot) {
             // Compute plane normal
             ImPlot3DPoint axis_normal = ImPlot3DPoint(0.0f, 0.0f, 0.0f);
             axis_normal[hovered_plane] = active_faces[hovered_plane] ? -1.0f : 1.0f;
+            if (ImPlot3D::ImHasFlag(plot.Axes[hovered_plane].Flags, ImPlot3DAxisFlags_Invert))
+                axis_normal[hovered_plane] *= -1;
 
             // Compute rotation to align the plane normal with the z-axis
             ImPlot3DQuat align_normal = ImPlot3DQuat::FromTwoVectors(plot.RotationAnimationEnd * axis_normal, ImPlot3DPoint(0.0f, 0.0f, 1.0f));
@@ -2993,11 +3018,13 @@ void ImPlot3DAxis::ApplyFit() {
 }
 
 float ImPlot3DAxis::PlotToNDC(float value) const {
-    return (value - Range.Min) / (Range.Max - Range.Min) - 0.5f;
+    float t = (value - Range.Min) / (Range.Max - Range.Min);
+    return ImPlot3D::ImHasFlag(Flags, ImPlot3DAxisFlags_Invert) ? (0.5f - t) : (t - 0.5f);
 }
 
 float ImPlot3DAxis::NDCToPlot(float value) const {
-    return Range.Min + (value + 0.5f) * (Range.Max - Range.Min);
+    float t = ImPlot3D::ImHasFlag(Flags, ImPlot3DAxisFlags_Invert) ? (0.5f - value) : (value + 0.5f);
+    return Range.Min + t * (Range.Max - Range.Min);
 }
 
 //-----------------------------------------------------------------------------
