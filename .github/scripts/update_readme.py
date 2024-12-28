@@ -1,8 +1,15 @@
-from github import Github
 import os
 import requests
 from datetime import datetime
+from google.cloud import storage
 
+# GCloud
+storage_client = storage.Client()
+bucket = storage_client.get_bucket('implot3d')
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "gcp_key.json"
+
+# GitHub token
 GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
 if not GITHUB_TOKEN:
     raise ValueError("GITHUB_TOKEN environment variable is not set")
@@ -82,7 +89,7 @@ def generate_discussion_svg(title, emoji, labels, category, upvotes, comments, a
 
     return svg
 
-def generate_recent_discussion_svgs():
+def update_svgs():
     url = "https://api.github.com/graphql"
 
     headers = {
@@ -191,9 +198,14 @@ def generate_recent_discussion_svgs():
                 f.write(svg_output)
 
             print(f"Saved SVG as {filename}")
+
+            # Upload SVG to GCloud
+            blob = bucket.blob(filename)
+            blob.upload_from_filename(filename)
+            print(f"Uploaded {filename} to google storage")
             print("-" * 60)
     else:
         print("Error or No Data Returned")
         print(f"Response: {data}")
 
-generate_recent_discussion_svgs()
+update_svgs()
