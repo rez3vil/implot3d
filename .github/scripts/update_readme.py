@@ -1,5 +1,6 @@
 import os
 import requests
+import html
 from datetime import datetime
 from google.cloud import storage
 
@@ -50,7 +51,7 @@ def generate_discussion_svg(title, emoji, labels, category, upvotes, comments, a
         <text x="{emoji_box_x + emoji_box_size/2 - emoji_size/2}" y="{(height + emoji_size)/2-4}" font-size="16">{emoji}</text>
 
         <!-- Title -->
-        <text x="100" y="40" font-size="20" fill="#9198a1" font-family="Arial" font-weight="bold">{title}</text>
+        <text x="100" y="40" font-size="20" fill="#9198a1" font-family="Arial" font-weight="bold">{html.escape(title)}</text>
 
         <!-- Labels -->
         <g transform="translate(100, 50)">
