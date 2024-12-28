@@ -1,11 +1,10 @@
-name: Update README on Discussion Events
+name: Update README
 
 on:
   discussion:
-    types: [created, edited]
+    types: [created, edited, labeled, unlabeled]
   discussion_comment:
     types: [created, edited]
-  push:
 
 jobs:
   update-readme:
