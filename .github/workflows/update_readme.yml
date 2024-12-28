@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       discussions: read
+      id-token: write
 
     steps:
       - name: Checkout Repository
