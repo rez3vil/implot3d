@@ -1,0 +1,38 @@
+name: Update README on Discussion Events
+
+on:
+  discussion:
+    types: [created, edited]
+  discussion_comment:
+    types: [created, edited]
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    permissions:
+      discussions: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set Up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.x'
+
+      - name: Authenticate using OIDC
+        uses: google-github-actions/auth@v1
+        with:
+          workload_identity_provider: "projects/392069959223/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          service_account: "github-oidc-uploader@implot3d.iam.gserviceaccount.com"
+
+      - name: Install Dependencies
+        run: |
+          pip install -r .github/scripts/requirements.txt
+
+      - name: Update README images
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python .github/scripts/update_readme.py

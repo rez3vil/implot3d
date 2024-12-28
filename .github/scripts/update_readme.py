@@ -7,8 +7,6 @@ from google.cloud import storage
 storage_client = storage.Client()
 bucket = storage_client.get_bucket('implot3d')
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "gcp_key.json"
-
 # GitHub token
 GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
 if not GITHUB_TOKEN:
@@ -31,7 +29,7 @@ def generate_discussion_svg(title, emoji, labels, category, upvotes, comments, a
     )
 
     # Build the contributor text
-    contributor_comment =  f'<tspan style="text-decoration: underline;">{author}</tspan> started on {created_at_formatted}.'
+    contributor_comment =  f'GITHUB <tspan style="text-decoration: underline;">{author}</tspan> started on {created_at_formatted}.'
     if last_comment_by and last_comment_at_formatted:
         contributor_comment = contributor_comment + f' Last comment by <tspan style="text-decoration: underline;">{last_comment_by}</tspan> on {last_comment_at_formatted}.'
 
