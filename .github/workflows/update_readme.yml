@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       discussions: read
-      id-token: write
 
     steps:
       - name: Checkout Repository
@@ -23,11 +22,12 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Authenticate using OIDC
-        uses: google-github-actions/auth@v1
-        with:
-          workload_identity_provider: "projects/392069959223/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
-          service_account: "github-oidc-uploader@implot3d.iam.gserviceaccount.com"
+      - name: Authenticate with GCP (Service Account Key)
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          echo "$GCP_SA_KEY" > /tmp/gcp-key.json
+          export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp-key.json"
 
       - name: Install Dependencies
         run: |
