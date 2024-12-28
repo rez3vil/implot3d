@@ -13,7 +13,7 @@ GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
 if not GITHUB_TOKEN:
     raise ValueError("GITHUB_TOKEN environment variable is not set")
 
-def generate_discussion_svg(title, emoji, labels, category, upvotes, comments, author, created_at, last_comment_by, last_comment_at):
+def generate_discussion_svg(title, emoji, labels, category, upvotes, comments, author, created_at, last_comment_by, last_comment_at, discussion_url):
     width = 820
     height = 120
     emoji_size = 20 # 16 font size equal 20x19 px
@@ -37,6 +37,7 @@ def generate_discussion_svg(title, emoji, labels, category, upvotes, comments, a
     # Create SVG content
     svg = f"""
     <svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
+        <!-- {discussion_url} -->
         <defs>
             <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
                 <feDropShadow dx="3" dy="3" stdDeviation="3" flood-color="black"/>
@@ -188,7 +189,8 @@ def update_svgs():
                 author=discussion['author']['login'],
                 created_at=discussion['createdAt'],
                 last_comment_by=last_comment_by,
-                last_comment_at=last_comment_at
+                last_comment_at=last_comment_at,
+                discussion_url=discussion['url']
             )
 
             # Save each SVG to a unique file
