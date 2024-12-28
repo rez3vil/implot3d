@@ -1,11 +1,13 @@
 from github import Github
 import os
+import requests
+from datetime import datetime
 
 GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
 if not GITHUB_TOKEN:
     raise ValueError("GITHUB_TOKEN environment variable is not set")
 
-def generate_github_discussion_svg(title, username, emoji, labels, category, upvotes, comments):
+def generate_discussion_svg(title, emoji, labels, category, upvotes, comments, author, created_at, last_comment_by, last_comment_at):
     width = 820
     height = 120
     emoji_size = 20 # 16 font size equal 20x19 px
@@ -14,6 +16,17 @@ def generate_github_discussion_svg(title, username, emoji, labels, category, upv
     upvote_width = len(str(upvotes)) * 10 + 30
     upvote_x_center = 760
     upvote_rect_x = upvote_x_center - upvote_width / 2
+
+    # Format dates
+    created_at_formatted = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ").strftime("%d %b %Y")
+    last_comment_at_formatted = (
+        datetime.strptime(last_comment_at, "%Y-%m-%dT%H:%M:%SZ").strftime("%d %b %Y") if last_comment_at else None
+    )
+
+    # Build the contributor text
+    contributor_comment =  f'<tspan style="text-decoration: underline;">{author}</tspan> started on {created_at_formatted}.'
+    if last_comment_by and last_comment_at_formatted:
+        contributor_comment = contributor_comment + f' Last comment by <tspan style="text-decoration: underline;">{last_comment_by}</tspan> on {last_comment_at_formatted}.'
 
     # Create SVG content
     svg = f"""
@@ -50,7 +63,7 @@ def generate_github_discussion_svg(title, username, emoji, labels, category, upv
         </g>
 
         <!-- Username -->
-        <text x="100" y="95" font-size="14" fill="#9198a1" font-family="Arial">{username} started this discussion</text>
+        <text x="100" y="95" font-size="14" fill="#9198a1" font-family="Arial">{contributor_comment}</text>
 
         <!-- Upvote Button -->
         <g transform="translate({upvote_rect_x}, 45)">
@@ -69,57 +82,118 @@ def generate_github_discussion_svg(title, username, emoji, labels, category, upv
 
     return svg
 
-def fetch_recent_discussions():
-    g = Github(GITHUB_TOKEN)
+def generate_recent_discussion_svgs():
+    url = "https://api.github.com/graphql"
 
-    #query = """
-    #{
-    #  repository(owner: "brenocq", name: "implot3d") {
-    #    discussions(first: 5, orderBy: {field: UPDATED_AT, direction: DESC}) {
-    #      nodes {
-    #        title
-    #        url
-    #        updatedAt
-    #      }
-    #    }
-    #  }
-    #}
-    #"""
+    headers = {
+        "Authorization": f"Bearer {GITHUB_TOKEN}",
+        "Content-Type": "application/json"
+    }
 
-    #result = g.graphql(query)
-    #discussions = result["data"]["repository"]["discussions"]["nodes"]
-    #for discussion in discussions:
-    #    print(f"{discussion['title']} - {discussion['url']} (Updated at: {discussion['updatedAt']})")
-    for repo in g.get_user().get_repos():
-        print(repo.name)
-        repo.edit(has_wiki=False)
-        # to see all the available attributes and methods
-        if repo.name == "implot3d":
-            print(dir(repo))
+    query = """
+    {
+      repository(owner: "brenocq", name: "implot3d") {
+        discussions(first: 5, categoryId: "DIC_kwDONQXA0M4ClSCg", orderBy: {field: UPDATED_AT, direction: DESC}) {
+          nodes {
+            title
+            url
+            createdAt
+            updatedAt
+            upvoteCount
+            comments(first: 10) {
+              totalCount
+              nodes {
+                author {
+                  login
+                }
+                createdAt
+                replies(first: 10) {
+                  totalCount
+                  nodes {
+                    author {
+                      login
+                    }
+                    createdAt
+                  }
+                }
+              }
+            }
+            labels(first: 5) {
+              nodes {
+                name
+                color
+              }
+            }
+            category {
+              name
+            }
+            author {
+              login
+            }
+          }
+        }
+      }
+    }
+    """
 
-    g.close()
+    response = requests.post(url, headers=headers, json={"query": query})
 
-fetch_recent_discussions()
+    data = response.json()
 
-# Example usage
-labels = [
-    {"text": "type:chore", "color": "#0366d6"},
-    {"text": "prio:medium", "color": "#f1c40f"},
-    {"text": "status:todo", "color": "#3498db"}
-]
+    if response.status_code == 200 and 'data' in data:
+        discussions = data["data"]["repository"]["discussions"]["nodes"]
 
-svg_output = generate_github_discussion_svg(
-    title="Hosted online demo",
-    username="brenocq",
-    emoji="💡",
-    labels=labels,
-    category="Features and improvements",
-    upvotes=3,
-    comments=2
-)
+        for i, discussion in enumerate(discussions):
+            print(f"Generating SVG for: {discussion['title']}")
 
-# Save to file
-with open("discussion_card.svg", "w") as f:
-    f.write(svg_output)
+            # Calculate total comments (including replies)
+            total_comments = 0
+            last_comment_by = None
+            last_comment_at = None
+            for comment in discussion['comments']['nodes']:
+                total_comments += 1  # Top-level comment
+                total_comments += comment['replies']['totalCount']  # Add replies
 
-fetch_recent_discussions()
+                # Track the last comment
+                if last_comment_at is None or comment['createdAt'] > last_comment_at:
+                    last_comment_by = comment['author']['login']
+                    last_comment_at = comment['createdAt']
+
+                # Track the last comment in case it is a reply
+                for reply in comment['replies']['nodes']:
+                    if reply['createdAt'] > last_comment_at:
+                        last_comment_by = reply['author']['login']
+                        last_comment_at = reply['createdAt']
+
+            # Extract labels
+            labels = [
+                {"text": label['name'], "color": f"#{label['color']}"}
+                for label in discussion['labels']['nodes']
+            ]
+
+            # Generate the SVG for each discussion
+            svg_output = generate_discussion_svg(
+                title=discussion['title'],
+                emoji="💡",
+                labels=labels,
+                category=discussion['category']['name'],
+                upvotes=discussion['upvoteCount'],
+                comments=total_comments,
+                author=discussion['author']['login'],
+                created_at=discussion['createdAt'],
+                last_comment_by=last_comment_by,
+                last_comment_at=last_comment_at
+            )
+
+            # Save each SVG to a unique file
+            filename = f"discussion_{i}.svg"
+            with open(filename, "w") as f:
+                f.write(svg_output)
+
+            print(f"Saved SVG as {filename}")
+            print("-" * 60)
+    else:
+        print("Error or No Data Returned")
+        print(f"Response: {data}")
+
+generate_recent_discussion_svgs()
