@@ -45,6 +45,34 @@ ImPlot3D is an extension of [Dear ImGui](https://github.com/ocornut/imgui) that 
 - Optional and configurable legends with toggle buttons to quickly show/hide plot items
 - Default styling based on the current ImGui theme, or completely custom plot styles
 
+## 🚧 Feature Roadmap
+- ✨ The cards below are automatically updated to reflect the discussions.
+- 💡 Click a card to explore the discussion!
+
+<div align="center">
+  <a href="https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements?discussions_q=category%3A%22Features+and+improvements%22+label%3Astatus%3Aidea+"><img src="https://storage.googleapis.com/implot3d/idea.svg"/></a>
+  <a href="https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements?discussions_q=category%3A%22Features+and+improvements%22+label%3Astatus%3Atodo+"><img src="https://storage.googleapis.com/implot3d/todo.svg"/></a>
+  <a href="https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements?discussions_q=category%3A%22Features+and+improvements%22+label%3Astatus%3Adoing+"><img src="https://storage.googleapis.com/implot3d/doing.svg"/></a>
+  <a href="https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements?discussions_q=category%3A%22Features+and+improvements%22+label%3Astatus%3Areview+"><img src="https://storage.googleapis.com/implot3d/review.svg"/></a>
+  <a href="https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements?discussions_q=category%3A%22Features+and+improvements%22+label%3Astatus%3Adone+"><img src="https://storage.googleapis.com/implot3d/done.svg"/></a>
+</div>
+
+<div align="center">
+  <a href="https://implot3d.brenocq.com/discussion_0"><img src="https://storage.googleapis.com/implot3d/discussion_0.svg"/></a>
+</div>
+<div align="center">
+  <a href="https://implot3d.brenocq.com/discussion_1"><img src="https://storage.googleapis.com/implot3d/discussion_1.svg"/></a>
+</div>
+<div align="center">
+  <a href="https://implot3d.brenocq.com/discussion_2"><img src="https://storage.googleapis.com/implot3d/discussion_2.svg"/></a>
+</div>
+<div align="center">
+  <a href="https://implot3d.brenocq.com/discussion_3"><img src="https://storage.googleapis.com/implot3d/discussion_3.svg"/></a>
+</div>
+<div align="center">
+  <a href="https://implot3d.brenocq.com/discussion_4"><img src="https://storage.googleapis.com/implot3d/discussion_4.svg"/></a>
+</div>
+
 ## 🛠️ Usage
 The ImPlot3D API is designed to feel very similar to Dear ImGui and ImPlot. You start by calling `ImPlot3D::BeginPlot()` to initialize a 3D plot, followed by plotting various data using the `PlotX` functions (e.g., `PlotLine()` , `PlotScatter()` , `PlotSurface()` ). Finally, you end the plot with ` ImPlot3D::EndPlot()` .
 
