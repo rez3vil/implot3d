@@ -2,6 +2,7 @@ import os
 import requests
 import html
 from datetime import datetime
+from collections import Counter
 from google.cloud import storage
 
 # GCloud
@@ -12,6 +13,36 @@ bucket = storage_client.get_bucket('implot3d')
 GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
 if not GITHUB_TOKEN:
     raise ValueError("GITHUB_TOKEN environment variable is not set")
+
+def generate_status_svg(label_text, label_color, count):
+    width = 140
+    height = 120
+    label_width = len(label_text) * 8 + 5
+
+    # Create SVG content
+    svg = f"""
+    <svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+                <feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="black"/>
+            </filter>
+        </defs>
+
+        <!-- Card Background with Shadow -->
+        <rect x="5" y="5" width="{width-10}" height="{height-10}" rx="12" fill="#212830" filter="url(#shadow)"/>
+
+        <!-- Label -->
+        <g transform="translate({width/2}, 20)">
+            <rect x="{-label_width/2}" y="0" width="{label_width}" height="24" rx="12" fill="{label_color}" fill-opacity="0.2" stroke="{label_color}" stroke-width="0.5"/>
+            <text x="0" y="17" font-size="14" fill="{label_color}" font-family="Arial" text-anchor="middle">{label_text}</text>
+        </g>
+
+        <!-- Text -->
+        <text x="{width/2}" y="90" font-size="40" fill="#9198a1" font-family="Arial" text-anchor="middle">{count}</text>
+    </svg>
+    """
+
+    return svg
 
 def generate_discussion_svg(title, emoji, labels, category, upvotes, comments, author, created_at, last_comment_by, last_comment_at, discussion_url):
     width = 820
@@ -39,13 +70,13 @@ def generate_discussion_svg(title, emoji, labels, category, upvotes, comments, a
     <svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
         <!-- {discussion_url} -->
         <defs>
-            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="3" dy="3" stdDeviation="3" flood-color="black"/>
+            <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+                <feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="black"/>
             </filter>
         </defs>
 
         <!-- Card Background with Shadow -->
-        <rect x="10" y="10" width="800" height="100" rx="12" fill="#212830" filter="url(#shadow)"/>
+        <rect x="5" y="5" width="{width-10}" height="{height-10}" rx="12" fill="#212830" filter="url(#shadow)"/>
 
         <!-- Emoji Icon -->
         <rect x="{emoji_box_x}" y="{(height - emoji_box_size)/2}" width="{emoji_box_size}" height="{emoji_box_size}" rx="6" fill="#57606a"/>
@@ -100,7 +131,7 @@ def update_svgs():
     query = """
     {
       repository(owner: "brenocq", name: "implot3d") {
-        discussions(first: 5, categoryId: "DIC_kwDONQXA0M4ClSCg", orderBy: {field: UPDATED_AT, direction: DESC}) {
+        discussions(first: 100, categoryId: "DIC_kwDONQXA0M4ClSCg", orderBy: {field: UPDATED_AT, direction: DESC}) {
           nodes {
             title
             url
@@ -144,13 +175,60 @@ def update_svgs():
     """
 
     response = requests.post(url, headers=headers, json={"query": query})
-
     data = response.json()
 
     if response.status_code == 200 and 'data' in data:
         discussions = data["data"]["repository"]["discussions"]["nodes"]
 
+        ############### Generate status SVGs ###############
+        # Count number of discussions by status
+        status_counter = Counter({
+            'status:idea': 0,
+            'status:todo': 0,
+            'status:doing': 0,
+            'status:review': 0,
+            'status:done': 0
+        })
+        for discussion in discussions:
+            labels = [label['name'] for label in discussion['labels']['nodes']]
+            for status in status_counter.keys():
+                if status in labels:
+                    status_counter[status] += 1
+        # Generate SVGs for Each Status
+        status_colors = {
+            'status:idea': '#5DADE2',
+            'status:todo': '#3498DB',
+            'status:doing': '#F1C40F',
+            'status:review': '#E67E22',
+            'status:done': '#27AE60'
+        }
+
+        for status, count in status_counter.items():
+            print(f"Generating SVG for: {status}")
+
+            svg_status_output = generate_status_svg(
+                label_text=status,
+                label_color=status_colors[status],
+                count=count
+            )
+
+            # Save and Upload SVG
+            filename = f"{status.split(':')[1]}.svg"
+            with open(filename, "w") as f:
+                f.write(svg_status_output)
+            print(f"Saved SVG as {filename}")
+
+            # Upload SVG to GCloud
+            blob = bucket.blob(filename)
+            blob.upload_from_filename(filename)
+            print(f"Uploaded {filename} to google storage")
+            print("-" * 60)
+
+        ############### Generate discussion SVGs ###############
+        # Generate SVGs for 5 most recent discussions
         for i, discussion in enumerate(discussions):
+            if i >= 5:
+                break
             print(f"Generating SVG for: {discussion['title']}")
 
             # Calculate total comments (including replies)
