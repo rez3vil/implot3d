@@ -29,11 +29,11 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install -r .github/scripts/requirements.txt
+          pip install -r .github/scripts/update_readme/requirements.txt
 
       - name: Update README images
         env:
           GITHUB_TOKEN: ${{ github.token }}
           GOOGLE_APPLICATION_CREDENTIALS: "/tmp/gcp-key.json"
         run: |
-          python .github/scripts/update_readme.py
+          python .github/scripts/update_readme/update_readme.py
