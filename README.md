@@ -54,7 +54,7 @@ ImPlot3D is an extension of [Dear ImGui](https://github.com/ocornut/imgui) that 
   <a href="https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements?discussions_q=category%3A%22Features+and+improvements%22+label%3Astatus%3Atodo+"><img src="https://storage.googleapis.com/implot3d/todo.svg"/></a>
   <a href="https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements?discussions_q=category%3A%22Features+and+improvements%22+label%3Astatus%3Adoing+"><img src="https://storage.googleapis.com/implot3d/doing.svg"/></a>
   <a href="https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements?discussions_q=category%3A%22Features+and+improvements%22+label%3Astatus%3Areview+"><img src="https://storage.googleapis.com/implot3d/review.svg"/></a>
-  <a href="https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements?discussions_q=category%3A%22Features+and+improvements%22+label%3Astatus%3Adone+"><img src="https://storage.googleapis.com/implot3d/done.svg"/></a>
+  <a href="https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements?discussions_q=category%3A%22Features+and+improvements%22+label%3Astatus%3Adone+is%3Aclosed"><img src="https://storage.googleapis.com/implot3d/done.svg"/></a>
 </div>
 
 <div align="center">
