@@ -46,7 +46,7 @@ ImPlot3D is an extension of [Dear ImGui](https://github.com/ocornut/imgui) that 
 - Default styling based on the current ImGui theme, or completely custom plot styles
 
 ## 🚧 Feature Roadmap
-- ✨ The cards below are automatically updated to reflect the discussions.
+- ✨ The cards below are automatically updated to reflect the [discussions](https://github.com/brenocq/implot3d/discussions).
 - 💡 Click a card to explore the discussion!
 
 <div align="center">
