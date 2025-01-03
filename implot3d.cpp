@@ -1382,7 +1382,7 @@ void EndPlot() {
     for (int i = 0; i < 3; i++) {
         ImPlot3DAxis& axis = plot.Axes[i];
         if (ImGui::BeginPopup(plane_contexts[i])) {
-            ImGui::Text(plane_labels[i]);
+            ImGui::Text("%s", plane_labels[i]);
             ImGui::Separator();
             ShowPlaneContextMenu(plot, i);
             ImGui::EndPopup();
