@@ -94,6 +94,8 @@ ImGui::End();
 ## 🎨 Demos
 A comprehensive example showcasing ImPlot3D features can be found in `implot3d_demo.cpp`. Add this file to your project and call `ImPlot3D::ShowDemoWindow()` in your update loop. This demo provides a wide variety of 3D plotting examples, serving as a reference for creating different types of 3D plots. The demo is regularly updated to reflect new features and plot types, so be sure to revisit it with each release!
 
+This demo in also [available online](https://traineq.org/implot_demo/src/implot_demo.html), thanks to [this project](https://github.com/pthom/implot_demo): this way, you can to test ImPlot3D, and ImPlot right away.
+
 ## ⚙️ Integration
 To integrate ImPlot3D into your application, follow these steps:
 
