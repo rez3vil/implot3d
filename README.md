@@ -13,7 +13,7 @@
 </div>
 
 <h6 align="center">
-    <a href="https://github.com/brenocq/implot3d#-demos">Demos</a>
+    <a href="https://traineq.org/implot_demo/src/implot_demo.html">Online Demo</a>
     ·
     <a href="https://github.com/brenocq/implot3d/discussions">Discussions</a>
     ·
