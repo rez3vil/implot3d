@@ -546,12 +546,21 @@ void DemoNaNValues() {
 //-----------------------------------------------------------------------------
 
 void DemoBoxScale() {
-    static float scale[3] = {1.0f, 1.0f, 1.0f};
+    constexpr int N = 100;
+    float xs[N], ys[N], zs[N];
+    for (int i = 0; i < N; ++i) {
+        float t = i / (float)(N - 1);
+        xs[i] = sinf(t * 2.0f * IM_PI);
+        ys[i] = cosf(t * 4.0f * IM_PI);
+        zs[i] = t * 2.0f - 1.0f;
+    }
 
-    ImGui::SliderFloat3("Box Scale", scale, 0.1f, 5.0f, "%.2f");
+    static float scale[3] = {1.0f, 1.0f, 1.0f};
+    ImGui::SliderFloat3("Box Scale", scale, 0.1f, 2.0f, "%.2f");
 
     if (ImPlot3D::BeginPlot("##BoxScale")) {
         ImPlot3D::SetupBoxScale(scale[0], scale[1], scale[2]);
+        ImPlot3D::PlotLine("3D Curve", xs, ys, zs, N);
         ImPlot3D::EndPlot();
     }
 }
