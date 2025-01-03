@@ -713,8 +713,8 @@ void RenderTickMarks(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPl
         tick_dir.Normalize();
 
         // Tick lengths in NDC units
-        const float major_size_ndc = 0.06f;
-        const float minor_size_ndc = 0.03f;
+        const float major_size_ndc = 0.06f / plot.BoxScale;
+        const float minor_size_ndc = 0.03f / plot.BoxScale;
 
         for (int t = 0; t < axis.Ticker.TickCount(); ++t) {
             const ImPlot3DTick& tick = axis.Ticker.Ticks[t];
