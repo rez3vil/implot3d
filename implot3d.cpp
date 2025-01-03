@@ -1581,21 +1581,21 @@ ImPlot3DPoint PixelsToPlotPlane(const ImVec2& pix, ImPlane3D plane, bool mask) {
         return O + D * t;
     };
 
-    // Helper lambda to check if point P is within the plot box
-    auto InRange = [&](const ImPlot3DPoint& P) {
-        return P.x >= -0.5 && P.x <= 0.5 &&
-               P.y >= -0.5 && P.y <= 0.5 &&
-               P.z >= -0.5 && P.z <= 0.5;
-    };
-
     // Compute which plane to intersect with
     bool active_faces[3];
     ComputeActiveFaces(active_faces, plot.Rotation, plot.Axes);
 
     // Calculate intersection point with the planes
-    ImPlot3DPoint P = IntersectPlane(active_faces[plane] ? 0.5f : -0.5f);
+    ImPlot3DPoint P = IntersectPlane(active_faces[plane] ? 0.5f * plot.BoxScale[plane] : -0.5f * plot.BoxScale[plane]);
     if (P.IsNaN())
         return P;
+
+    // Helper lambda to check if point P is within the plot box
+    auto InRange = [&](const ImPlot3DPoint& P) {
+        return P.x >= -0.5f * plot.BoxScale.x && P.x <= 0.5f * plot.BoxScale.x &&
+               P.y >= -0.5f * plot.BoxScale.y && P.y <= 0.5f * plot.BoxScale.y &&
+               P.z >= -0.5f * plot.BoxScale.z && P.z <= 0.5f * plot.BoxScale.z;
+    };
 
     // Handle mask (if one of the intersections is out of range, set it to NAN)
     if (mask) {
@@ -1848,11 +1848,11 @@ void HandleInput(ImPlot3DPlot& plot) {
             ImPlot3DPoint delta_pixels(delta.x, -delta.y, 0.0f);
 
             // Convert delta to NDC space
-            float zoom = ImMin(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
+            float zoom = plot.GetBoxZoom();
             ImPlot3DPoint delta_NDC = plot.Rotation.Inverse() * (delta_pixels / zoom);
 
             // Convert delta to plot space
-            ImPlot3DPoint delta_plot = delta_NDC * (plot.RangeMax() - plot.RangeMin());
+            ImPlot3DPoint delta_plot = delta_NDC * (plot.RangeMax() - plot.RangeMin()) / plot.BoxScale;
 
             // Adjust delta for inverted axes
             for (int i = 0; i < 3; i++) {
