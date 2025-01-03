@@ -48,6 +48,11 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #endif
 
+// We define this to avoid accidentally using the deprecated API
+#ifndef IMPLOT_DISABLE_OBSOLETE_FUNCTIONS
+#define IMPLOT_DISABLE_OBSOLETE_FUNCTIONS
+#endif
+
 #include "implot3d.h"
 #include "implot3d_internal.h"
 
@@ -1465,6 +1470,25 @@ void SetupAxesLimits(double x_min, double x_max, double y_min, double y_max, dou
         GImPlot3D->CurrentPlot->FitThisFrame = false;
 }
 
+void SetupBoxAspect(float x, float y, float z) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
+                         "SetupBoxAspect() needs to be called after BeginPlot() and before any setup locking functions (e.g. PlotX)!");
+    IM_ASSERT_USER_ERROR(x > 0.0f && y > 0.0f && z > 0.0f, "SetupBoxAspect() requires all aspect ratios to be greater than 0!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    plot.BoxAspect = ImPlot3DPoint(x, y, z);
+    float max = ImMax(x, ImMax(y, z));
+    plot.BoxAspect /= max;
+}
+
+void SetupBoxScale(float scale) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
+                         "SetupBoxScale() needs to be called after BeginPlot() and before any setup locking functions (e.g. PlotX)!");
+    IM_ASSERT_USER_ERROR(scale > 0.0f, "SetupBoxScale() requires the scale to greater than 0!");
+    gp.CurrentPlot->BoxScale = ImMax(0.1f, scale); // Prevent negative or zero scaling
+}
+
 void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
@@ -1478,16 +1502,6 @@ void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags) {
     if (legend.PreviousFlags != flags)
         legend.Flags = flags;
     legend.PreviousFlags = flags;
-}
-
-void SetupBoxAspect(float x, float y, float z) {
-    ImPlot3DContext& gp = *GImPlot3D;
-    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
-                         "SetupBoxAspect() needs to be called after BeginPlot() and before any setup locking functions (e.g. PlotX)!");
-    ImPlot3DPlot& plot = *gp.CurrentPlot;
-    plot.BoxAspect = ImPlot3DPoint(x, y, z);
-    float max = ImMax(x, ImMax(y, z));
-    plot.BoxAspect /= max;
 }
 
 //-----------------------------------------------------------------------------
@@ -1637,7 +1651,7 @@ ImPlot3DPoint PlotToNDC(const ImPlot3DPoint& point) {
 
     ImPlot3DPoint ndc_point;
     for (int i = 0; i < 3; i++)
-        ndc_point[i] = plot.Axes[i].PlotToNDC(point[i]);
+        ndc_point[i] = plot.Axes[i].PlotToNDC(point[i]) * plot.BoxAspect[i];
     return ndc_point;
 }
 
@@ -1649,7 +1663,7 @@ ImPlot3DPoint NDCToPlot(const ImPlot3DPoint& point) {
 
     ImPlot3DPoint plot_point;
     for (int i = 0; i < 3; i++)
-        plot_point[i] = plot.Axes[i].NDCToPlot(point[i]);
+        plot_point[i] = plot.Axes[i].NDCToPlot(point[i]) / plot.BoxAspect[i];
     return plot_point;
 }
 
@@ -1659,9 +1673,8 @@ ImVec2 NDCToPixels(const ImPlot3DPoint& point) {
     ImPlot3DPlot& plot = *gp.CurrentPlot;
     SetupLock();
 
-    float zoom = ImMin(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
     ImVec2 center = plot.PlotRect.GetCenter();
-    ImPlot3DPoint point_pix = zoom * (plot.Rotation * point);
+    ImPlot3DPoint point_pix = plot.GetBoxZoom() * (plot.Rotation * point);
     point_pix.y *= -1.0f; // Invert y-axis
     point_pix.x += center.x;
     point_pix.y += center.y;
@@ -1676,7 +1689,7 @@ ImPlot3DRay PixelsToNDCRay(const ImVec2& pix) {
     SetupLock();
 
     // Calculate zoom factor and plot center
-    float zoom = ImMin(plot.PlotRect.GetWidth(), plot.PlotRect.GetHeight()) / 1.8f;
+    float zoom = plot.GetBoxZoom();
     ImVec2 center = plot.PlotRect.GetCenter();
 
     // Undo screen transformations to get back to NDC space
@@ -3066,6 +3079,10 @@ void ImPlot3DPlot::SetRange(const ImPlot3DPoint& min, const ImPlot3DPoint& max) 
     Axes[0].SetRange(min.x, max.x);
     Axes[1].SetRange(min.y, max.y);
     Axes[2].SetRange(min.z, max.z);
+}
+
+float ImPlot3DPlot::GetBoxZoom() const {
+    return ImMin(PlotRect.GetWidth(), PlotRect.GetHeight()) / 1.8f * BoxScale;
 }
 
 //-----------------------------------------------------------------------------

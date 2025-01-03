@@ -15,10 +15,16 @@
 // [SECTION] User Namespace
 // [SECTION] Helpers
 // [SECTION] Plots
+// [SECTION] Axes
 // [SECTION] Custom
 // [SECTION] Demo Window
 // [SECTION] Style Editor
 // [SECTION] User Namespace Implementation
+
+// We define this to avoid accidentally using the deprecated API
+#ifndef IMPLOT_DISABLE_OBSOLETE_FUNCTIONS
+#define IMPLOT_DISABLE_OBSOLETE_FUNCTIONS
+#endif
 
 #include "implot3d.h"
 #include "implot3d_internal.h"
@@ -536,6 +542,24 @@ void DemoNaNValues() {
 }
 
 //-----------------------------------------------------------------------------
+// [SECTION] Axes
+//-----------------------------------------------------------------------------
+
+void DemoBoxAspectScale() {
+    static float aspect[3] = {1.0f, 1.0f, 1.0f};
+    static float scale = 1.0f;
+
+    ImGui::SliderFloat3("Box Aspect Ratio", aspect, 0.1f, 5.0f, "%.1f");
+    ImGui::SliderFloat("Box Scale", &scale, 0.1f, 5.0f, "%.1f");
+
+    if (ImPlot3D::BeginPlot("##BoxAspectRatio")) {
+        ImPlot3D::SetupBoxAspect(aspect[0], aspect[1], aspect[2]);
+        ImPlot3D::SetupBoxScale(scale);
+        ImPlot3D::EndPlot();
+    }
+}
+
+//-----------------------------------------------------------------------------
 // [SECTION] Custom
 //-----------------------------------------------------------------------------
 
@@ -719,6 +743,10 @@ void ShowDemoWindow(bool* p_open) {
             DemoHeader("Realtime Plots", DemoRealtimePlots);
             DemoHeader("Markers and Text", DemoMarkersAndText);
             DemoHeader("NaN Values", DemoNaNValues);
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Axes")) {
+            DemoHeader("Box Aspect & Scale", DemoBoxAspectScale);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Custom")) {
