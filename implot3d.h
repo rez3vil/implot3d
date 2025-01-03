@@ -372,6 +372,8 @@ IMPLOT3D_API void SetupAxesLimits(double x_min, double x_max, double y_min, doub
 
 IMPLOT3D_API void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags = 0);
 
+IMPLOT3D_API void SetupBoxAspect(float x, float y, float z);
+
 //-----------------------------------------------------------------------------
 // [SECTION] Plot Items
 //-----------------------------------------------------------------------------

@@ -1480,6 +1480,16 @@ void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags) {
     legend.PreviousFlags = flags;
 }
 
+void SetupBoxAspect(float x, float y, float z) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
+                         "SetupBoxAspect() needs to be called after BeginPlot() and before any setup locking functions (e.g. PlotX)!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    plot.BoxAspect = ImPlot3DPoint(x, y, z);
+    float max = ImMax(x, ImMax(y, z));
+    plot.BoxAspect /= max;
+}
+
 //-----------------------------------------------------------------------------
 // [SECTION] Plot Utils
 //-----------------------------------------------------------------------------

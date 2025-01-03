@@ -521,9 +521,10 @@ struct ImPlot3DPlot {
     ImRect FrameRect;  // Outermost bounding rectangle that encapsulates whole the plot/title/padding/etc
     ImRect CanvasRect; // Frame rectangle reduced by padding
     ImRect PlotRect;   // Bounding rectangle for the actual plot area
-    // Rotation & Axes
-    ImPlot3DQuat Rotation;
-    ImPlot3DAxis Axes[3];
+    // Plot box state
+    ImPlot3DQuat Rotation;   // Current rotation quaternion
+    ImPlot3DAxis Axes[3];    // X, Y, Z axes
+    ImPlot3DPoint BoxAspect; // Aspect ratio of the plot box
     // Animation
     float AnimationTime;               // Remaining animation time
     ImPlot3DQuat RotationAnimationEnd; // End rotation for animation
@@ -551,6 +552,7 @@ struct ImPlot3DPlot {
         Rotation = ImPlot3DQuat(0.0f, 0.0f, 0.0f, 1.0f);
         for (int i = 0; i < 3; i++)
             Axes[i] = ImPlot3DAxis();
+        BoxAspect = ImPlot3DPoint(1.0f, 1.0f, 1.0f);
         AnimationTime = 0.0f;
         RotationAnimationEnd = Rotation;
         SetupLocked = false;
