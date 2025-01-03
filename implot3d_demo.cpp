@@ -545,16 +545,13 @@ void DemoNaNValues() {
 // [SECTION] Axes
 //-----------------------------------------------------------------------------
 
-void DemoBoxAspectScale() {
-    static float aspect[3] = {1.0f, 1.0f, 1.0f};
-    static float scale = 1.0f;
+void DemoBoxScale() {
+    static float scale[3] = {1.0f, 1.0f, 1.0f};
 
-    ImGui::SliderFloat3("Box Aspect Ratio", aspect, 0.1f, 5.0f, "%.2f");
-    ImGui::SliderFloat("Box Scale", &scale, 0.1f, 3.0f, "%.2f");
+    ImGui::SliderFloat3("Box Scale", scale, 0.1f, 5.0f, "%.2f");
 
-    if (ImPlot3D::BeginPlot("##BoxAspectRatio")) {
-        ImPlot3D::SetupBoxAspect(aspect[0], aspect[1], aspect[2]);
-        ImPlot3D::SetupBoxScale(scale);
+    if (ImPlot3D::BeginPlot("##BoxScale")) {
+        ImPlot3D::SetupBoxScale(scale[0], scale[1], scale[2]);
         ImPlot3D::EndPlot();
     }
 }
@@ -746,7 +743,7 @@ void ShowDemoWindow(bool* p_open) {
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Axes")) {
-            DemoHeader("Box Aspect & Scale", DemoBoxAspectScale);
+            DemoHeader("Box Scale", DemoBoxScale);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Custom")) {

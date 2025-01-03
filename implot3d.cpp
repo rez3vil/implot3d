@@ -713,8 +713,8 @@ void RenderTickMarks(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPl
         tick_dir.Normalize();
 
         // Tick lengths in NDC units
-        const float major_size_ndc = 0.06f / plot.BoxScale;
-        const float minor_size_ndc = 0.03f / plot.BoxScale;
+        const float major_size_ndc = 0.06f;
+        const float minor_size_ndc = 0.03f;
 
         for (int t = 0; t < axis.Ticker.TickCount(); ++t) {
             const ImPlot3DTick& tick = axis.Ticker.Ticks[t];
@@ -1235,6 +1235,22 @@ void ShowPlotContextMenu(ImPlot3DPlot& plot) {
     }
 
     ImGui::Separator();
+
+    if ((ImGui::BeginMenu("Box"))) {
+        ImGui::PushItemWidth(75);
+        float temp_scale[3] = {plot.BoxScale[0], plot.BoxScale[1], plot.BoxScale[2]};
+        if (ImGui::DragFloat("Scale X", &temp_scale[0], 0.01f, 0.1f, 3.0f))
+            plot.BoxScale[0] = ImMax(temp_scale[0], 0.01f);
+        if (ImGui::DragFloat("Scale Y", &temp_scale[1], 0.01f, 0.1f, 3.0f))
+            plot.BoxScale[1] = ImMax(temp_scale[1], 0.01f);
+        if (ImGui::DragFloat("Scale Z", &temp_scale[2], 0.01f, 0.1f, 3.0f))
+            plot.BoxScale[2] = ImMax(temp_scale[2], 0.01f);
+        ImGui::PopItemWidth();
+        ImGui::EndMenu();
+    }
+
+    ImGui::Separator();
+
     if ((ImGui::BeginMenu("Legend"))) {
         if (ShowLegendContextMenu(plot.Items.Legend, !ImPlot3D::ImHasFlag(plot.Flags, ImPlot3DFlags_NoLegend)))
             ImFlipFlag(plot.Flags, ImPlot3DFlags_NoLegend);
@@ -1469,23 +1485,13 @@ void SetupAxesLimits(double x_min, double x_max, double y_min, double y_max, dou
         GImPlot3D->CurrentPlot->FitThisFrame = false;
 }
 
-void SetupBoxAspect(float x, float y, float z) {
-    ImPlot3DContext& gp = *GImPlot3D;
-    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
-                         "SetupBoxAspect() needs to be called after BeginPlot() and before any setup locking functions (e.g. PlotX)!");
-    IM_ASSERT_USER_ERROR(x > 0.0f && y > 0.0f && z > 0.0f, "SetupBoxAspect() requires all aspect ratios to be greater than 0!");
-    ImPlot3DPlot& plot = *gp.CurrentPlot;
-    plot.BoxAspect = ImPlot3DPoint(x, y, z);
-    float max = ImMax(x, ImMax(y, z));
-    plot.BoxAspect /= max;
-}
-
-void SetupBoxScale(float scale) {
+void SetupBoxScale(float x, float y, float z) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
                          "SetupBoxScale() needs to be called after BeginPlot() and before any setup locking functions (e.g. PlotX)!");
-    IM_ASSERT_USER_ERROR(scale > 0.0f, "SetupBoxScale() requires the scale to greater than 0!");
-    gp.CurrentPlot->BoxScale = scale;
+    IM_ASSERT_USER_ERROR(x > 0.0f && y > 0.0f && z > 0.0f, "SetupBoxScale() requires all aspect ratios to be greater than 0!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    plot.BoxScale = ImPlot3DPoint(x, y, z);
 }
 
 void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags) {
@@ -1650,7 +1656,7 @@ ImPlot3DPoint PlotToNDC(const ImPlot3DPoint& point) {
 
     ImPlot3DPoint ndc_point;
     for (int i = 0; i < 3; i++)
-        ndc_point[i] = plot.Axes[i].PlotToNDC(point[i]) * plot.BoxAspect[i];
+        ndc_point[i] = plot.Axes[i].PlotToNDC(point[i]) * plot.BoxScale[i];
     return ndc_point;
 }
 
@@ -1662,7 +1668,7 @@ ImPlot3DPoint NDCToPlot(const ImPlot3DPoint& point) {
 
     ImPlot3DPoint plot_point;
     for (int i = 0; i < 3; i++)
-        plot_point[i] = plot.Axes[i].NDCToPlot(point[i]) / plot.BoxAspect[i];
+        plot_point[i] = plot.Axes[i].NDCToPlot(point[i]) / plot.BoxScale[i];
     return plot_point;
 }
 
@@ -2082,7 +2088,7 @@ void SetupLock() {
     for (int i = 0; i < 3; i++) {
         ImPlot3DAxis& axis = plot.Axes[i];
         axis.Ticker.Reset();
-        float pixels = plot.GetBoxZoom() * plot.BoxAspect[i];
+        float pixels = plot.GetBoxZoom() * plot.BoxScale[i];
         axis.Locator(axis.Ticker, axis.Range, pixels, axis.Formatter, axis.FormatterData);
     }
 
@@ -3082,7 +3088,7 @@ void ImPlot3DPlot::SetRange(const ImPlot3DPoint& min, const ImPlot3DPoint& max) 
 }
 
 float ImPlot3DPlot::GetBoxZoom() const {
-    return ImMin(PlotRect.GetWidth(), PlotRect.GetHeight()) / 1.8f * BoxScale;
+    return ImMin(PlotRect.GetWidth(), PlotRect.GetHeight()) / 1.8f;
 }
 
 //-----------------------------------------------------------------------------
