@@ -549,8 +549,8 @@ void DemoBoxAspectScale() {
     static float aspect[3] = {1.0f, 1.0f, 1.0f};
     static float scale = 1.0f;
 
-    ImGui::SliderFloat3("Box Aspect Ratio", aspect, 0.1f, 5.0f, "%.1f");
-    ImGui::SliderFloat("Box Scale", &scale, 0.1f, 5.0f, "%.1f");
+    ImGui::SliderFloat3("Box Aspect Ratio", aspect, 0.1f, 5.0f, "%.2f");
+    ImGui::SliderFloat("Box Scale", &scale, 0.1f, 3.0f, "%.2f");
 
     if (ImPlot3D::BeginPlot("##BoxAspectRatio")) {
         ImPlot3D::SetupBoxAspect(aspect[0], aspect[1], aspect[2]);

@@ -109,7 +109,7 @@ struct ImPlot3DTicker;
 // [SECTION] Callbacks
 //------------------------------------------------------------------------------
 
-typedef void (*ImPlot3DLocator)(ImPlot3DTicker& ticker, const ImPlot3DRange& range, ImPlot3DFormatter formatter, void* formatter_data);
+typedef void (*ImPlot3DLocator)(ImPlot3DTicker& ticker, const ImPlot3DRange& range, float pixels, ImPlot3DFormatter formatter, void* formatter_data);
 
 //-----------------------------------------------------------------------------
 // [SECTION] Structs
@@ -686,7 +686,7 @@ int Formatter_Default(float value, char* buff, int size, void* data);
 // [SECTION] Locator
 //------------------------------------------------------------------------------
 
-void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, ImPlot3DFormatter formatter, void* formatter_data);
+void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, float pixels, ImPlot3DFormatter formatter, void* formatter_data);
 
 } // namespace ImPlot3D
 

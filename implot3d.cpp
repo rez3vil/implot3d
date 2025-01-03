@@ -1073,11 +1073,11 @@ double NiceNum(double x, bool round) {
     return nf * ImPow(10.0, expv);
 }
 
-void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, ImPlot3DFormatter formatter, void* formatter_data) {
+void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, float pixels, ImPlot3DFormatter formatter, void* formatter_data) {
     if (range.Min == range.Max)
         return;
-    const int nMinor = 5;
-    const int nMajor = 3;
+    const int nMinor = ImMin(ImMax(1, (int)IM_ROUND(pixels / 30.0f)), 5);
+    const int nMajor = ImMax(2, (int)IM_ROUND(pixels / 80.0f));
     const int max_ticks_labels = 7;
     const double nice_range = NiceNum(range.Size() * 0.99, false);
     const double interval = NiceNum(nice_range / (nMajor - 1), true);
@@ -1085,10 +1085,9 @@ void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, ImPlot3
     const double graphmax = ceil(range.Max / interval) * interval;
     bool first_major_set = false;
     int first_major_idx = 0;
-    const int idx0 = ticker.TickCount(); // ticker may have user custom ticks
-    ImVec2 total_size(0, 0);
+    const int idx0 = ticker.TickCount(); // Ticker may have user custom ticks
     for (double major = graphmin; major < graphmax + 0.5 * interval; major += interval) {
-        // is this zero? combat zero formatting issues
+        // Is this zero? combat zero formatting issues
         if (major - interval < 0 && major + interval > 0)
             major = 0;
         if (range.Contains((float)major)) {
@@ -1096,12 +1095,12 @@ void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, ImPlot3
                 first_major_idx = ticker.TickCount();
                 first_major_set = true;
             }
-            total_size += ticker.AddTick(major, true, true, formatter, formatter_data).LabelSize;
+            ticker.AddTick(major, true, true, formatter, formatter_data);
         }
         for (int i = 1; i < nMinor; ++i) {
             double minor = major + i * interval / nMinor;
             if (range.Contains((float)minor)) {
-                total_size += ticker.AddTick(minor, false, true, formatter, formatter_data).LabelSize;
+                ticker.AddTick(minor, false, true, formatter, formatter_data);
             }
         }
     }
@@ -1486,7 +1485,7 @@ void SetupBoxScale(float scale) {
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
                          "SetupBoxScale() needs to be called after BeginPlot() and before any setup locking functions (e.g. PlotX)!");
     IM_ASSERT_USER_ERROR(scale > 0.0f, "SetupBoxScale() requires the scale to greater than 0!");
-    gp.CurrentPlot->BoxScale = ImMax(0.1f, scale); // Prevent negative or zero scaling
+    gp.CurrentPlot->BoxScale = scale;
 }
 
 void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags flags) {
@@ -2083,7 +2082,8 @@ void SetupLock() {
     for (int i = 0; i < 3; i++) {
         ImPlot3DAxis& axis = plot.Axes[i];
         axis.Ticker.Reset();
-        axis.Locator(axis.Ticker, axis.Range, axis.Formatter, axis.FormatterData);
+        float pixels = plot.GetBoxZoom() * plot.BoxAspect[i];
+        axis.Locator(axis.Ticker, axis.Range, pixels, axis.Formatter, axis.FormatterData);
     }
 
     // Render title
