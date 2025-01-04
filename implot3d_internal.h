@@ -109,7 +109,7 @@ struct ImPlot3DTicker;
 // [SECTION] Callbacks
 //------------------------------------------------------------------------------
 
-typedef void (*ImPlot3DLocator)(ImPlot3DTicker& ticker, const ImPlot3DRange& range, ImPlot3DFormatter formatter, void* formatter_data);
+typedef void (*ImPlot3DLocator)(ImPlot3DTicker& ticker, const ImPlot3DRange& range, float pixels, ImPlot3DFormatter formatter, void* formatter_data);
 
 //-----------------------------------------------------------------------------
 // [SECTION] Structs
@@ -505,8 +505,6 @@ struct ImPlot3DAxis {
     bool IsAutoFitting() const;
     void ExtendFit(float value);
     void ApplyFit();
-    float PlotToNDC(float value) const;
-    float NDCToPlot(float value) const;
 };
 
 // Holds plot state information that must persist after EndPlot
@@ -521,9 +519,10 @@ struct ImPlot3DPlot {
     ImRect FrameRect;  // Outermost bounding rectangle that encapsulates whole the plot/title/padding/etc
     ImRect CanvasRect; // Frame rectangle reduced by padding
     ImRect PlotRect;   // Bounding rectangle for the actual plot area
-    // Rotation & Axes
-    ImPlot3DQuat Rotation;
-    ImPlot3DAxis Axes[3];
+    // Rotation & axes & box
+    ImPlot3DQuat Rotation;  // Current rotation quaternion
+    ImPlot3DAxis Axes[3];   // X, Y, Z axes
+    ImPlot3DPoint BoxScale; // Scale factor for plot box X, Y, Z axes
     // Animation
     float AnimationTime;               // Remaining animation time
     ImPlot3DQuat RotationAnimationEnd; // End rotation for animation
@@ -551,6 +550,7 @@ struct ImPlot3DPlot {
         Rotation = ImPlot3DQuat(0.0f, 0.0f, 0.0f, 1.0f);
         for (int i = 0; i < 3; i++)
             Axes[i] = ImPlot3DAxis();
+        BoxScale = ImPlot3DPoint(1.0f, 1.0f, 1.0f);
         AnimationTime = 0.0f;
         RotationAnimationEnd = Rotation;
         SetupLocked = false;
@@ -576,6 +576,7 @@ struct ImPlot3DPlot {
     ImPlot3DPoint RangeMax() const;
     ImPlot3DPoint RangeCenter() const;
     void SetRange(const ImPlot3DPoint& min, const ImPlot3DPoint& max);
+    float GetBoxZoom() const;
 };
 
 struct ImPlot3DContext {
@@ -681,7 +682,7 @@ int Formatter_Default(float value, char* buff, int size, void* data);
 // [SECTION] Locator
 //------------------------------------------------------------------------------
 
-void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, ImPlot3DFormatter formatter, void* formatter_data);
+void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, float pixels, ImPlot3DFormatter formatter, void* formatter_data);
 
 } // namespace ImPlot3D
 
