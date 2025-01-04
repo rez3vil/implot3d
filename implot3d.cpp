@@ -829,7 +829,6 @@ void RenderTickLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImP
 }
 
 void RenderAxisLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DPoint* corners, const ImVec2* corners_pix, const int axis_corners[3][2]) {
-    ImPlot3DPoint range_center = plot.RangeCenter();
     for (int a = 0; a < 3; a++) {
         const ImPlot3DAxis& axis = plot.Axes[a];
         if (!axis.HasLabel())
@@ -846,12 +845,13 @@ void RenderAxisLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImP
             continue;
 
         // Position at the end of the axis
-        ImPlot3DPoint label_pos = (corners[idx0] + corners[idx1]) * 0.5f;
+        ImPlot3DPoint label_pos = (PlotToNDC(corners[idx0]) + PlotToNDC(corners[idx1])) * 0.5f;
+        ImPlot3DPoint center_dir = label_pos.Normalized();
         // Add offset
-        label_pos += (label_pos - range_center) * 0.4f;
+        label_pos += center_dir * 0.3f;
 
         // Convert to pixel coordinates
-        ImVec2 label_pos_pix = PlotToPixels(label_pos);
+        ImVec2 label_pos_pix = NDCToPixels(label_pos);
 
         // Adjust label position and angle
         ImU32 col_ax_txt = GetStyleColorU32(ImPlot3DCol_AxisText);
