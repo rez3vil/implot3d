@@ -505,8 +505,6 @@ struct ImPlot3DAxis {
     bool IsAutoFitting() const;
     void ExtendFit(float value);
     void ApplyFit();
-    float PlotToNDC(float value) const;
-    float NDCToPlot(float value) const;
 };
 
 // Holds plot state information that must persist after EndPlot

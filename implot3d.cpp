@@ -1655,8 +1655,13 @@ ImPlot3DPoint PlotToNDC(const ImPlot3DPoint& point) {
     SetupLock();
 
     ImPlot3DPoint ndc_point;
-    for (int i = 0; i < 3; i++)
-        ndc_point[i] = plot.Axes[i].PlotToNDC(point[i]) * plot.BoxScale[i];
+    for (int i = 0; i < 3; i++) {
+        ImPlot3DAxis& axis = plot.Axes[i];
+        float ndc_range = 0.5f * plot.BoxScale[i];
+        float t = (point[i] - axis.Range.Min) / (axis.Range.Max - axis.Range.Min);
+        t *= plot.BoxScale[i];
+        ndc_point[i] = ImPlot3D::ImHasFlag(axis.Flags, ImPlot3DAxisFlags_Invert) ? (ndc_range - t) : (t - ndc_range);
+    }
     return ndc_point;
 }
 
@@ -1667,8 +1672,13 @@ ImPlot3DPoint NDCToPlot(const ImPlot3DPoint& point) {
     SetupLock();
 
     ImPlot3DPoint plot_point;
-    for (int i = 0; i < 3; i++)
-        plot_point[i] = plot.Axes[i].NDCToPlot(point[i]) / plot.BoxScale[i];
+    for (int i = 0; i < 3; i++) {
+        ImPlot3DAxis& axis = plot.Axes[i];
+        float ndc_range = 0.5f * plot.BoxScale[i];
+        float t = ImPlot3D::ImHasFlag(axis.Flags, ImPlot3DAxisFlags_Invert) ? (ndc_range - point[i]) : (point[i] + ndc_range);
+        t /= plot.BoxScale[i];
+        plot_point[i] = axis.Range.Min + t * (axis.Range.Max - axis.Range.Min);
+    }
     return plot_point;
 }
 
@@ -3043,16 +3053,6 @@ void ImPlot3DAxis::ApplyFit() {
     }
     FitExtents.Min = HUGE_VAL;
     FitExtents.Max = -HUGE_VAL;
-}
-
-float ImPlot3DAxis::PlotToNDC(float value) const {
-    float t = (value - Range.Min) / (Range.Max - Range.Min);
-    return ImPlot3D::ImHasFlag(Flags, ImPlot3DAxisFlags_Invert) ? (0.5f - t) : (t - 0.5f);
-}
-
-float ImPlot3DAxis::NDCToPlot(float value) const {
-    float t = ImPlot3D::ImHasFlag(Flags, ImPlot3DAxisFlags_Invert) ? (0.5f - value) : (value + 0.5f);
-    return Range.Min + t * (Range.Max - Range.Min);
 }
 
 //-----------------------------------------------------------------------------
