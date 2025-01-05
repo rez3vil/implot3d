@@ -44,15 +44,30 @@ def generate_status_svg(label_text, label_color, count):
 
     return svg
 
-def generate_discussion_svg(title, emoji, labels, category, upvotes, comments, author, created_at, last_comment_by, last_comment_at, discussion_url):
+def generate_discussion_svg(title, emoji, labels, category, upvotes, comments, author, created_at, last_comment_by, last_comment_at, discussion_url, participants):
     width = 820
     height = 120
+
+    # Emoji
     emoji_size = 20 # 16 font size equal 20x19 px
     emoji_box_x = 30
     emoji_box_size = 54
+
+    # Upvotes
     upvote_width = len(str(upvotes)) * 10 + 30
-    upvote_x_center = 760
+    upvote_x_center = 768
     upvote_rect_x = upvote_x_center - upvote_width / 2
+
+    # Comments
+    comment_width = len(str(comments)) * 10 + 20
+    comment_x_center = 768
+    comment_rect_x = comment_x_center - comment_width / 2
+
+    # Profile pictures
+    profile_size = 40
+    profile_gap = 20
+    profile_x = 710
+    profile_y = height / 2
 
     # Format dates
     created_at_formatted = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ").strftime("%d %b %Y")
@@ -73,6 +88,9 @@ def generate_discussion_svg(title, emoji, labels, category, upvotes, comments, a
             <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
                 <feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="black"/>
             </filter>
+            <clipPath id="circle-clip">
+                <circle cx="0" cy="0" r="{profile_size / 2}" />
+            </clipPath>
         </defs>
 
         <!-- Card Background with Shadow -->
@@ -111,12 +129,27 @@ def generate_discussion_svg(title, emoji, labels, category, upvotes, comments, a
         </g>
 
         <!-- Comments -->
-        <g transform="translate(747, 75)">
+        <g transform="translate({comment_rect_x}, 75)">
             <path d="M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h4.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z" fill="#8b949e" transform="scale(1.14, 1.14)"/>
             <text x="20" y="14" font-size="16" fill="#8b949e" font-family="Arial">{comments}</text>
         </g>
-    </svg>
     """
+
+    # Render participant avatars
+    svg += """
+        <!-- Avatars -->
+        """
+    for participant in participants[:10]:
+        svg += f"""
+        <!-- Test {participant} -->
+        <g transform="translate({profile_x}, {profile_y})">
+            <image x="{-profile_size / 2}" y="{-profile_size / 2}" width="{profile_size}" height="{profile_size}" href="{html.escape(participant)}" clip-path="url(#circle-clip)" />
+        </g>
+        """
+        profile_x -= profile_gap
+    svg += """
+    </svg>
+        """
 
     return svg
 
@@ -138,18 +171,20 @@ def update_svgs():
             createdAt
             updatedAt
             upvoteCount
-            comments(first: 10) {
+            comments(first: 20) {
               totalCount
               nodes {
                 author {
                   login
+                  avatarUrl(size: 40)
                 }
                 createdAt
-                replies(first: 10) {
+                replies(first: 20) {
                   totalCount
                   nodes {
                     author {
                       login
+                      avatarUrl(size: 40)
                     }
                     createdAt
                   }
@@ -167,6 +202,7 @@ def update_svgs():
             }
             author {
               login
+              avatarUrl(size: 40)
             }
           }
         }
@@ -231,6 +267,14 @@ def update_svgs():
                 break
             print(f"Generating SVG for: {discussion['title']}")
 
+            # List all participants
+            participants = {}
+            participants[discussion['author']['login']] = discussion['author']['avatarUrl']
+            for comment in discussion['comments']['nodes']:
+                participants[comment['author']['login']] = comment['author']['avatarUrl']
+                for reply in comment['replies']['nodes']:
+                    participants[reply['author']['login']] = reply['author']['avatarUrl']
+
             # Calculate total comments (including replies)
             total_comments = 0
             last_comment_by = None
@@ -268,7 +312,8 @@ def update_svgs():
                 created_at=discussion['createdAt'],
                 last_comment_by=last_comment_by,
                 last_comment_at=last_comment_at,
-                discussion_url=discussion['url']
+                discussion_url=discussion['url'],
+                participants=list(participants.values())
             )
 
             # Save each SVG to a unique file
