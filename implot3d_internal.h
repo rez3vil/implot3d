@@ -444,6 +444,7 @@ struct ImPlot3DAxis {
     bool FitThisFrame;
     ImPlot3DRange FitExtents;
     // User input
+    bool Hovered;
     bool Held;
 
     // Constructor
@@ -462,6 +463,7 @@ struct ImPlot3DAxis {
         FitExtents.Min = HUGE_VAL;
         FitExtents.Max = -HUGE_VAL;
         // User input
+        Hovered = false;
         Held = false;
     }
 
