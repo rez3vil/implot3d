@@ -1861,8 +1861,10 @@ void HandleInput(ImPlot3DPlot& plot) {
             // Adjust plot range to translate the plot
             for (int i = 0; i < 3; i++) {
                 if (plot.Axes[i].Hovered) {
-                    plot.Axes[i].SetMin(plot.Axes[i].Range.Min - delta_plot[i]);
-                    plot.Axes[i].SetMax(plot.Axes[i].Range.Max - delta_plot[i]);
+                    if (!plot.Axes[i].IsInputLocked()) {
+                        plot.Axes[i].SetMin(plot.Axes[i].Range.Min - delta_plot[i]);
+                        plot.Axes[i].SetMax(plot.Axes[i].Range.Max - delta_plot[i]);
+                    }
                     plot.Axes[i].Held = true;
                 }
                 // If no axis was held before (user started translating in this frame), set the held edge/plane indices
@@ -1883,8 +1885,10 @@ void HandleInput(ImPlot3DPlot& plot) {
             // Apply translation to the selected axes
             for (int i = 0; i < 3; i++) {
                 if (plot.Axes[i].Hovered) {
-                    plot.Axes[i].SetMin(plot.Axes[i].Range.Min - delta_plot[i]);
-                    plot.Axes[i].SetMax(plot.Axes[i].Range.Max - delta_plot[i]);
+                    if (!plot.Axes[i].IsInputLocked()) {
+                        plot.Axes[i].SetMin(plot.Axes[i].Range.Min - delta_plot[i]);
+                        plot.Axes[i].SetMax(plot.Axes[i].Range.Max - delta_plot[i]);
+                    }
                     plot.Axes[i].Held = true;
                 }
                 if (!any_axis_held) {
@@ -2012,8 +2016,10 @@ void HandleInput(ImPlot3DPlot& plot) {
 
             // Set new range after zoom
             if (plot.Axes[i].Hovered) {
-                plot.Axes[i].SetMin(new_min);
-                plot.Axes[i].SetMax(new_max);
+                if (!plot.Axes[i].IsInputLocked()) {
+                    plot.Axes[i].SetMin(new_min);
+                    plot.Axes[i].SetMax(new_max);
+                }
                 plot.Axes[i].Held = true;
             }
 
