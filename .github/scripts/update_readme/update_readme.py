@@ -1,5 +1,6 @@
 import os
 import requests
+import base64
 import html
 from datetime import datetime
 from collections import Counter
@@ -43,6 +44,16 @@ def generate_status_svg(label_text, label_color, count):
     """
 
     return svg
+
+def fetch_base64_image(url):
+    """
+    Fetch an image from the given URL and return its Base64-encoded representation.
+    """
+    response = requests.get(url)
+    if response.status_code == 200:
+        return base64.b64encode(response.content).decode('utf-8')
+    else:
+        raise ValueError(f"Failed to fetch image from {url}, status code: {response.status_code}")
 
 def generate_discussion_svg(title, emoji, labels, category, upvotes, comments, author, created_at, last_comment_by, last_comment_at, discussion_url, participants):
     width = 820
@@ -140,13 +151,16 @@ def generate_discussion_svg(title, emoji, labels, category, upvotes, comments, a
         <!-- Avatars -->
         """
     for participant in participants[:10]:
-        svg += f"""
-        <!-- Test {participant} -->
-        <g transform="translate({profile_x}, {profile_y})">
-            <image x="{-profile_size / 2}" y="{-profile_size / 2}" width="{profile_size}" height="{profile_size}" href="{html.escape(participant)}" clip-path="url(#circle-clip)" />
-        </g>
-        """
-        profile_x -= profile_gap
+        try:
+            base64_image = fetch_base64_image(participant)
+            svg += f"""
+            <g transform="translate({profile_x}, {profile_y})">
+                <image x="{-profile_size / 2}" y="{-profile_size / 2}" width="{profile_size}" height="{profile_size}" href="data:image/png;base64,{base64_image}" clip-path="url(#circle-clip)" />
+            </g>
+            """
+            profile_x -= profile_gap
+        except ValueError as e:
+            print(f"Failed to fetch image for participant: {participant}, error: {e}")
     svg += """
     </svg>
         """
