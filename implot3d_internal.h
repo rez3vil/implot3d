@@ -453,7 +453,7 @@ struct ImPlot3DAxis {
         Formatter = nullptr;
         FormatterData = nullptr;
         Locator = nullptr;
-	ShowDefaultTicks = true;
+        ShowDefaultTicks = true;
         // Fit data
         FitThisFrame = true;
         FitExtents.Min = HUGE_VAL;
@@ -469,7 +469,7 @@ struct ImPlot3DAxis {
         ShowDefaultTicks = true;
         FitExtents.Min = HUGE_VAL;
         FitExtents.Max = -HUGE_VAL;
-	Ticker.Reset();
+        Ticker.Reset();
     }
 
     inline void SetRange(double v1, double v2) {
