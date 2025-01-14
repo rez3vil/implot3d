@@ -1795,17 +1795,16 @@ void HandleInput(ImPlot3DPlot& plot) {
 
     // Check which axes should be transformed (fit/zoom/translate)
     bool any_axis_held = plot.Axes[0].Held || plot.Axes[1].Held || plot.Axes[2].Held;
-    static bool transform_axis[3] = {false, false, false};
     if (!any_axis_held) {
         // Only update the transformation axes if the user is not already performing a transformation
-        transform_axis[0] = transform_axis[1] = transform_axis[2] = false;
+        plot.Axes[0].Hovered = plot.Axes[1].Hovered = plot.Axes[2].Hovered = false;
         if (hovered_axis != -1) {
-            transform_axis[hovered_axis] = true;
+            plot.Axes[hovered_axis].Hovered = true;
         } else if (hovered_plane != -1) {
-            transform_axis[(hovered_plane + 1) % 3] = true;
-            transform_axis[(hovered_plane + 2) % 3] = true;
+            plot.Axes[(hovered_plane + 1) % 3].Hovered = true;
+            plot.Axes[(hovered_plane + 2) % 3].Hovered = true;
         } else {
-            transform_axis[0] = transform_axis[1] = transform_axis[2] = true;
+            plot.Axes[0].Hovered = plot.Axes[1].Hovered = plot.Axes[2].Hovered = true;
         }
     }
 
@@ -1813,11 +1812,11 @@ void HandleInput(ImPlot3DPlot& plot) {
     ImPlane3D mouse_plane = ImPlane3D_XY;
     if (plane_2d != -1)
         mouse_plane = plane_2d;
-    else if (transform_axis[1] && transform_axis[2])
+    else if (plot.Axes[1].Hovered && plot.Axes[2].Hovered)
         mouse_plane = ImPlane3D_YZ;
-    else if (transform_axis[0] && transform_axis[2])
+    else if (plot.Axes[0].Hovered && plot.Axes[2].Hovered)
         mouse_plane = ImPlane3D_XZ;
-    else if (transform_axis[2])
+    else if (plot.Axes[2].Hovered)
         mouse_plane = ImPlane3D_YZ;
     ImVec2 mouse_pos = ImGui::GetMousePos();
     ImPlot3DPoint mouse_pos_plot = PixelsToPlotPlane(mouse_pos, mouse_plane, false);
@@ -1826,7 +1825,7 @@ void HandleInput(ImPlot3DPlot& plot) {
     if (plot_clicked && (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) || ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Middle))) {
         plot.FitThisFrame = true;
         for (int i = 0; i < 3; i++)
-            plot.Axes[i].FitThisFrame = transform_axis[i];
+            plot.Axes[i].FitThisFrame = plot.Axes[i].Hovered;
     }
 
     // Handle auto fit
@@ -1840,7 +1839,7 @@ void HandleInput(ImPlot3DPlot& plot) {
     if (plot.Held && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
         ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
 
-        if (transform_axis[0] && transform_axis[1] && transform_axis[2]) {
+        if (plot.Axes[0].Hovered && plot.Axes[1].Hovered && plot.Axes[2].Hovered) {
             // Perform unconstrained translation (translate on the viewer plane)
 
             // Compute delta_pixels in 3D (invert y-axis)
@@ -1861,7 +1860,7 @@ void HandleInput(ImPlot3DPlot& plot) {
 
             // Adjust plot range to translate the plot
             for (int i = 0; i < 3; i++) {
-                if (transform_axis[i]) {
+                if (plot.Axes[i].Hovered) {
                     plot.Axes[i].SetRange(plot.Axes[i].Range.Min - delta_plot[i], plot.Axes[i].Range.Max - delta_plot[i]);
                     plot.Axes[i].Held = true;
                 }
@@ -1871,7 +1870,7 @@ void HandleInput(ImPlot3DPlot& plot) {
                     plot.HeldPlaneIdx = hovered_plane_idx;
                 }
             }
-        } else if (transform_axis[0] || transform_axis[1] || transform_axis[2]) {
+        } else if (plot.Axes[0].Hovered || plot.Axes[1].Hovered || plot.Axes[2].Hovered) {
             // Translate along plane/axis
 
             // Mouse delta in pixels
@@ -1882,7 +1881,7 @@ void HandleInput(ImPlot3DPlot& plot) {
 
             // Apply translation to the selected axes
             for (int i = 0; i < 3; i++) {
-                if (transform_axis[i]) {
+                if (plot.Axes[i].Hovered) {
                     plot.Axes[i].SetRange(plot.Axes[i].Range.Min - delta_plot[i],
                                           plot.Axes[i].Range.Max - delta_plot[i]);
                     plot.Axes[i].Held = true;
@@ -2011,7 +2010,7 @@ void HandleInput(ImPlot3DPlot& plot) {
             }
 
             // Set new range after zoom
-            if (transform_axis[i]) {
+            if (plot.Axes[i].Hovered) {
                 plot.Axes[i].SetRange(new_min, new_max);
                 plot.Axes[i].Held = true;
             }
