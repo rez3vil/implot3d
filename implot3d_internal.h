@@ -435,6 +435,7 @@ struct ImPlot3DAxis {
     ImPlot3DFormatter Formatter;
     void* FormatterData;
     ImPlot3DLocator Locator;
+    bool ShowDefaultTicks;
     // Fit data
     bool FitThisFrame;
     ImPlot3DRange FitExtents;
@@ -452,12 +453,23 @@ struct ImPlot3DAxis {
         Formatter = nullptr;
         FormatterData = nullptr;
         Locator = nullptr;
+	ShowDefaultTicks = true;
         // Fit data
         FitThisFrame = true;
         FitExtents.Min = HUGE_VAL;
         FitExtents.Max = -HUGE_VAL;
         // User input
         Held = false;
+    }
+
+    inline void Reset() {
+        Formatter = nullptr;
+        FormatterData = nullptr;
+        Locator = nullptr;
+        ShowDefaultTicks = true;
+        FitExtents.Min = HUGE_VAL;
+        FitExtents.Max = -HUGE_VAL;
+	Ticker.Reset();
     }
 
     inline void SetRange(double v1, double v2) {
