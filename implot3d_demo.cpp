@@ -128,7 +128,7 @@ void DemoScatterPlots() {
         ImPlot3D::PlotScatter("Data 1", xs1, ys1, zs1, 100);
         ImPlot3D::PushStyleVar(ImPlot3DStyleVar_FillAlpha, 0.25f);
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 6, ImPlot3D::GetColormapColor(1), IMPLOT3D_AUTO, ImPlot3D::GetColormapColor(1));
-        ImPlot3D::PlotScatter("Data 2", xs2, ys2, zs1, 50);
+        ImPlot3D::PlotScatter("Data 2", xs2, ys2, zs2, 50);
         ImPlot3D::PopStyleVar();
         ImPlot3D::EndPlot();
     }
