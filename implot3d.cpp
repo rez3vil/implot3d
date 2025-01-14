@@ -246,7 +246,6 @@ void ShowLegendEntries(ImPlot3DItemGroup& items, const ImRect& legend_bb, bool h
     const int num_items = items.GetLegendCount();
     if (num_items == 0)
         return;
-    ImPlot3DContext& gp = *GImPlot3D;
 
     // Render legend items
     for (int i = 0; i < num_items; i++) {
@@ -533,8 +532,6 @@ void RenderPlotBackground(ImDrawList* draw_list, const ImPlot3DPlot& plot, const
 }
 
 void RenderPlotBorder(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImVec2* corners_pix, const bool* active_faces, const int plane_2d) {
-    ImGuiIO& io = ImGui::GetIO();
-
     int hovered_edge = -1;
     if (!plot.Held)
         GetMouseOverAxis(plot, active_faces, corners_pix, plane_2d, &hovered_edge);
@@ -577,13 +574,11 @@ void RenderGrid(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DP
         // Get the two axes (u and v) that define the face plane
         int idx0 = faces[face_idx][0];
         int idx1 = faces[face_idx][1];
-        int idx2 = faces[face_idx][2];
         int idx3 = faces[face_idx][3];
 
         // Corners of the face in plot space
         ImPlot3DPoint p0 = corners[idx0];
         ImPlot3DPoint p1 = corners[idx1];
-        ImPlot3DPoint p2 = corners[idx2];
         ImPlot3DPoint p3 = corners[idx3];
 
         // Vectors along the edges
@@ -738,7 +733,6 @@ void RenderTickMarks(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPl
 }
 
 void RenderTickLabels(ImDrawList* draw_list, const ImPlot3DPlot& plot, const ImPlot3DPoint* corners, const ImVec2* corners_pix, const int axis_corners[3][2]) {
-    ImVec2 box_center_pix = PlotToPixels(plot.RangeCenter());
     ImU32 col_tick_txt = GetStyleColorU32(ImPlot3DCol_AxisText);
 
     for (int a = 0; a < 3; a++) {
@@ -923,11 +917,9 @@ void ComputeBoxCornersPix(ImVec2* corners_pix, const ImPlot3DPoint* corners) {
 
 void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
     // Get plot parameters
-    const ImRect& plot_area = plot.PlotRect;
     const ImPlot3DQuat& rotation = plot.Rotation;
     ImPlot3DPoint range_min = plot.RangeMin();
     ImPlot3DPoint range_max = plot.RangeMax();
-    ImPlot3DPoint range_center = plot.RangeCenter();
 
     // Compute active faces
     bool active_faces[3];
@@ -1207,7 +1199,6 @@ void ShowAxisContextMenu(ImPlot3DAxis& axis) {
 }
 
 void ShowPlaneContextMenu(ImPlot3DPlot& plot, int plane_idx) {
-    char buf[16] = {};
     for (int i = 0; i < 3; i++) {
         if (i == plane_idx)
             continue;
@@ -1400,7 +1391,6 @@ void EndPlot() {
 
     // Plane context menus
     for (int i = 0; i < 3; i++) {
-        ImPlot3DAxis& axis = plot.Axes[i];
         if (ImGui::BeginPopup(plane_contexts[i])) {
             ImGui::Text("%s", plane_labels[i]);
             ImGui::Separator();
@@ -1726,7 +1716,6 @@ ImPlot3DRay PixelsToNDCRay(const ImVec2& pix) {
 ImPlot3DRay NDCRayToPlotRay(const ImPlot3DRay& ray) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "NDCRayToPlotRay() needs to be called between BeginPlot() and EndPlot()!");
-    ImPlot3DPlot& plot = *gp.CurrentPlot;
     SetupLock();
 
     // Convert NDC origin and a point along the ray to plot coordinates
@@ -1834,7 +1823,7 @@ void HandleInput(ImPlot3DPlot& plot) {
     ImPlot3DPoint mouse_pos_plot = PixelsToPlotPlane(mouse_pos, mouse_plane, false);
 
     // Handle translation/zoom fit with double click
-    if (plot_clicked && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) || ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Middle)) {
+    if (plot_clicked && (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) || ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Middle))) {
         plot.FitThisFrame = true;
         for (int i = 0; i < 3; i++)
             plot.Axes[i].FitThisFrame = transform_axis[i];
@@ -2994,7 +2983,6 @@ void ImDrawList3D::SortedMoveToImGuiDrawList() {
     // Copy indices with triangle sorting based on distance from viewer
     ImDrawIdx* idx_out = draw_list._IdxWritePtr;
     ImDrawIdx* idx_in = IdxBuffer.Data;
-    int triangles_added = 0;
     for (int i = 0; i < tri_count; i++) {
         int tri_i = tris[i].tri_idx;
         int base_idx = tri_i * 3;
@@ -3011,7 +2999,6 @@ void ImDrawList3D::SortedMoveToImGuiDrawList() {
         idx_out[2] = (ImDrawIdx)(i2 + idx_offset);
 
         idx_out += 3;
-        triangles_added++;
     }
     draw_list._IdxWritePtr = idx_out;
 

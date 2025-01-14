@@ -127,7 +127,12 @@ struct ImDrawList3D {
     ImDrawListSharedData* _SharedData; // [Internal] shared draw list data
 
     ImDrawList3D() {
-        memset(this, 0, sizeof(*this));
+        _VtxCurrentIdx = 0;
+        _VtxWritePtr = nullptr;
+        _IdxWritePtr = nullptr;
+        _ZWritePtr = nullptr;
+        _Flags = ImDrawListFlags_None;
+        _SharedData = nullptr;
     }
 
     void PrimReserve(int idx_count, int vtx_count);
