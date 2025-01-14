@@ -496,6 +496,9 @@ struct ImPlot3DAxis {
     inline bool IsLockedMin() const { return IsRangeLocked() || ImPlot3D::ImHasFlag(Flags, ImPlot3DAxisFlags_LockMin); }
     inline bool IsLockedMax() const { return IsRangeLocked() || ImPlot3D::ImHasFlag(Flags, ImPlot3DAxisFlags_LockMax); }
     inline bool IsLocked() const { return IsLockedMin() && IsLockedMax(); }
+    inline bool IsInputLockedMin() const { return IsLockedMin() || IsAutoFitting(); }
+    inline bool IsInputLockedMax() const { return IsLockedMax() || IsAutoFitting(); }
+    inline bool IsInputLocked() const { return IsLocked() || IsAutoFitting(); }
 
     inline void SetLabel(const char* label) {
         Label.Buf.shrink(0);
