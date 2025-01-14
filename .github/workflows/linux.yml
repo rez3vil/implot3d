@@ -18,7 +18,7 @@ jobs:
       - name: Configure
         run: |
           cd example
-          cmake -B build -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} -DCMAKE_CXX_FLAGS="-Werror"
+          cmake -B build -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} -DCMAKE_CXX_FLAGS="-Wall -Werror"
       - name: Build
         run: |
           cd example
