@@ -1502,13 +1502,13 @@ void SetupAxisFormat(ImAxis3D idx, ImPlot3DFormatter formatter, void* data) {
     axis.FormatterData = data;
 }
 
-void SetupAxisTicks(ImAxis3D idx, const double* values, int n_ticks, const char* const labels[]) {
+void SetupAxisTicks(ImAxis3D idx, const double* values, int n_ticks, const char* const labels[], bool keep_default) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
                          "Setup needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!");
     ImPlot3DPlot& plot = *gp.CurrentPlot;
     ImPlot3DAxis& axis = plot.Axes[idx];
-    axis.ShowDefaultTicks = false;
+    axis.ShowDefaultTicks = keep_default;
     AddTicksCustom(values,
                    labels,
                    n_ticks,
