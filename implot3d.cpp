@@ -1522,8 +1522,9 @@ void SetupAxisTicks(ImAxis3D idx, double v_min, double v_max, int n_ticks, const
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
                          "Setup needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!");
     n_ticks = n_ticks < 2 ? 2 : n_ticks;
-    FillRange(gp.TempDouble1, n_ticks, v_min, v_max);
-    SetupAxisTicks(idx, gp.TempDouble1.Data, n_ticks, labels, keep_default);
+    ImVector<double> temp;
+    FillRange(temp, n_ticks, v_min, v_max);
+    SetupAxisTicks(idx, temp.Data, n_ticks, labels, keep_default);
 }
 
 void SetupAxes(const char* x_label, const char* y_label, const char* z_label, ImPlot3DAxisFlags x_flags, ImPlot3DAxisFlags y_flags, ImPlot3DAxisFlags z_flags) {

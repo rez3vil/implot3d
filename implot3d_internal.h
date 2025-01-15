@@ -611,9 +611,6 @@ struct ImPlot3DContext {
     ImVector<ImGuiStyleMod> StyleModifiers;
     ImVector<ImPlot3DColormap> ColormapModifiers;
     ImPlot3DColormapData ColormapData;
-
-    // Temp data for general use
-    ImVector<double> TempDouble1, TempDouble2;
 };
 
 //-----------------------------------------------------------------------------
