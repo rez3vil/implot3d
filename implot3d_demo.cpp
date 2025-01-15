@@ -575,16 +575,14 @@ void DemoTickLabels() {
     }
     const double pi = 3.14;
     const char* pi_str[] = {"PI"};
-    static double yticks[] = {100, 300, 700, 900};
-    static const char* ylabels[] = {"One", "Three", "Seven", "Nine"};
-    static double zticks[] = {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
-    static const char* zlabels[] = {"A", "B", "C", "D", "E", "F"};
+    static double letters_ticks[] = {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
+    static const char* letters_labels[] = {"A", "B", "C", "D", "E", "F"};
     if (ImPlot3D::BeginPlot("##Ticks")) {
-        ImPlot3D::SetupAxesLimits(3, 5, 0, 1000, 0, 1);
+        ImPlot3D::SetupAxesLimits(2, 5, 0, 1, 0, 1);
         if (custom_ticks) {
             ImPlot3D::SetupAxisTicks(ImAxis3D_X, &pi, 1, custom_labels ? pi_str : nullptr, true);
-            ImPlot3D::SetupAxisTicks(ImAxis3D_Y, yticks, 4, custom_labels ? ylabels : nullptr, false);
-            ImPlot3D::SetupAxisTicks(ImAxis3D_Z, zticks, 6, custom_labels ? zlabels : nullptr, false);
+            ImPlot3D::SetupAxisTicks(ImAxis3D_Y, letters_ticks, 6, custom_labels ? letters_labels : nullptr, false);
+            ImPlot3D::SetupAxisTicks(ImAxis3D_Z, 0, 1, 6, custom_labels ? letters_labels : nullptr, false);
         }
         ImPlot3D::EndPlot();
     }

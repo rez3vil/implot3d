@@ -364,10 +364,10 @@ IMPLOT3D_API void SetupAxisLimits(ImAxis3D axis, double v_min, double v_max, ImP
 
 IMPLOT3D_API void SetupAxisFormat(ImAxis3D idx, ImPlot3DFormatter formatter, void* data = nullptr);
 
-// Sets an axis' ticks and optionally the labels. To keep the default ticks, set #keep_default=true.
+// Sets an axis' ticks and optionally the labels. To keep the default ticks, set #keep_default=true
 IMPLOT3D_API void SetupAxisTicks(ImAxis3D axis, const double* values, int n_ticks, const char* const labels[] = nullptr, bool keep_default = false);
 
-// Sets an axis' ticks and optionally the labels for the next plot. To keep the default ticks, set #keep_default=true.
+// Sets an axis' ticks and optionally the labels for the next plot. To keep the default ticks, set #keep_default=true
 IMPLOT3D_API void SetupAxisTicks(ImAxis3D axis, double v_min, double v_max, int n_ticks, const char* const labels[] = nullptr, bool keep_default = false);
 
 // Sets the label and/or flags for primary X/Y/Z axes (shorthand for three calls to SetupAxis)
