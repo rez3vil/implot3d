@@ -97,6 +97,16 @@ static inline ImU32 ImMixU32(ImU32 a, ImU32 b, ImU32 s) {
 #endif
 }
 
+// Fills a buffer with n samples linear interpolated from vmin to vmax
+template <typename T>
+void FillRange(ImVector<T>& buffer, int n, T vmin, T vmax) {
+    buffer.resize(n);
+    T step = (vmax - vmin) / (n - 1);
+    for (int i = 0; i < n; ++i) {
+        buffer[i] = vmin + i * step;
+    }
+}
+
 } // namespace ImPlot3D
 
 //-----------------------------------------------------------------------------
@@ -601,6 +611,9 @@ struct ImPlot3DContext {
     ImVector<ImGuiStyleMod> StyleModifiers;
     ImVector<ImPlot3DColormap> ColormapModifiers;
     ImPlot3DColormapData ColormapData;
+
+    // Temp data for general use
+    ImVector<double> TempDouble1, TempDouble2;
 };
 
 //-----------------------------------------------------------------------------
