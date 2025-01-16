@@ -97,6 +97,16 @@ static inline ImU32 ImMixU32(ImU32 a, ImU32 b, ImU32 s) {
 #endif
 }
 
+// Fills a buffer with n samples linear interpolated from vmin to vmax
+template <typename T>
+void FillRange(ImVector<T>& buffer, int n, T vmin, T vmax) {
+    buffer.resize(n);
+    T step = (vmax - vmin) / (n - 1);
+    for (int i = 0; i < n; ++i) {
+        buffer[i] = vmin + i * step;
+    }
+}
+
 } // namespace ImPlot3D
 
 //-----------------------------------------------------------------------------
@@ -440,6 +450,7 @@ struct ImPlot3DAxis {
     ImPlot3DFormatter Formatter;
     void* FormatterData;
     ImPlot3DLocator Locator;
+    bool ShowDefaultTicks;
     // Fit data
     bool FitThisFrame;
     ImPlot3DRange FitExtents;
@@ -458,6 +469,7 @@ struct ImPlot3DAxis {
         Formatter = nullptr;
         FormatterData = nullptr;
         Locator = nullptr;
+        ShowDefaultTicks = true;
         // Fit data
         FitThisFrame = true;
         FitExtents.Min = HUGE_VAL;
@@ -465,6 +477,16 @@ struct ImPlot3DAxis {
         // User input
         Hovered = false;
         Held = false;
+    }
+
+    inline void Reset() {
+        Formatter = nullptr;
+        FormatterData = nullptr;
+        Locator = nullptr;
+        ShowDefaultTicks = true;
+        FitExtents.Min = HUGE_VAL;
+        FitExtents.Max = -HUGE_VAL;
+        Ticker.Reset();
     }
 
     inline void SetRange(double v1, double v2) {

@@ -565,6 +565,29 @@ void DemoBoxScale() {
     }
 }
 
+void DemoTickLabels() {
+    static bool custom_ticks = false;
+    static bool custom_labels = true;
+    ImGui::Checkbox("Show Custom Ticks", &custom_ticks);
+    if (custom_ticks) {
+        ImGui::SameLine();
+        ImGui::Checkbox("Show Custom Labels", &custom_labels);
+    }
+    const double pi = 3.14;
+    const char* pi_str[] = {"PI"};
+    static double letters_ticks[] = {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
+    static const char* letters_labels[] = {"A", "B", "C", "D", "E", "F"};
+    if (ImPlot3D::BeginPlot("##Ticks")) {
+        ImPlot3D::SetupAxesLimits(2, 5, 0, 1, 0, 1);
+        if (custom_ticks) {
+            ImPlot3D::SetupAxisTicks(ImAxis3D_X, &pi, 1, custom_labels ? pi_str : nullptr, true);
+            ImPlot3D::SetupAxisTicks(ImAxis3D_Y, letters_ticks, 6, custom_labels ? letters_labels : nullptr, false);
+            ImPlot3D::SetupAxisTicks(ImAxis3D_Z, 0, 1, 6, custom_labels ? letters_labels : nullptr, false);
+        }
+        ImPlot3D::EndPlot();
+    }
+}
+
 //-----------------------------------------------------------------------------
 // [SECTION] Custom
 //-----------------------------------------------------------------------------
@@ -753,6 +776,7 @@ void ShowDemoWindow(bool* p_open) {
         }
         if (ImGui::BeginTabItem("Axes")) {
             DemoHeader("Box Scale", DemoBoxScale);
+            DemoHeader("Tick Labels", DemoTickLabels);
             ImGui::EndTabItem();
         }
         if (ImGui::BeginTabItem("Custom")) {
