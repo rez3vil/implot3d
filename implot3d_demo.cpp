@@ -569,19 +569,33 @@ void DemoBoxRotation() {
     float origin[2] = {0.0f, 0.0f};
     float axis[2] = {0.0f, 1.0f};
 
-    // Static variables for elevation and azimuth
+    // Sliders for rotation angles
     static float elevation = 45.0f;
     static float azimuth = -135.0f;
+    ImGui::Text("Rotation");
+    bool changed = false;
+    if (ImGui::SliderFloat("Elevation", &elevation, -90.0f, 90.0f, "%.1f degrees"))
+        changed = true;
+    if (ImGui::SliderFloat("Azimuth", &azimuth, -180.0f, 180.0f, "%.1f degrees"))
+        changed = true;
 
-    // Sliders for rotation angles
-    ImGui::SliderFloat("Elevation", &elevation, -90.0f, 90.0f, "%.1f degrees");
-    ImGui::SliderFloat("Azimuth", &azimuth, -180.0f, 180.0f, "%.1f degrees");
+    ImGui::Text("Initial Rotation");
+    ImGui::SameLine();
+    HelpMarker("The rotation will be reset to the initial rotation when you double right-click");
+    static float init_elevation = 45.0f;
+    static float init_azimuth = -135.0f;
+    ImGui::SliderFloat("Initial Elevation", &init_elevation, -90.0f, 90.0f, "%.1f degrees");
+    ImGui::SliderFloat("Initial Azimuth", &init_azimuth, -180.0f, 180.0f, "%.1f degrees");
 
     if (ImPlot3D::BeginPlot("##BoxRotation")) {
         ImPlot3D::SetupAxesLimits(-1, 1, -1, 1, -1, 1, ImPlot3DCond_Always);
 
+        // Set initial rotation
+        ImPlot3D::SetupBoxInitialRotation(init_elevation, init_azimuth);
+
         // Set the rotation using the specified elevation and azimuth
-        ImPlot3D::SetupBoxRotation(elevation, azimuth, ImPlot3DCond_Always);
+        if (changed)
+            ImPlot3D::SetupBoxRotation(elevation, azimuth, ImPlot3DCond_Always);
 
         // Plot axis lines
         ImPlot3D::SetNextLineStyle(ImVec4(0.8f, 0.2f, 0.2f, 1));

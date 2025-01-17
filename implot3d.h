@@ -382,6 +382,12 @@ IMPLOT3D_API void SetupBoxRotation(float elevation, float azimuth, ImPlot3DCond 
 // Sets the plot box rotation given a quaternion. If ImPlot3DCond_Always is used, the rotation will be locked
 IMPLOT3D_API void SetupBoxRotation(ImPlot3DQuat rotation, ImPlot3DCond cond = ImPlot3DCond_Once);
 
+// Sets the plot box initial rotation given the elevation and azimuth angles in degrees. The initial rotation is the rotation the plot goes back to when a left mouse button double click happens
+IMPLOT3D_API void SetupBoxInitialRotation(float elevation, float azimuth);
+
+// Sets the plot box initial rotation given a quaternion. The initial rotation is the rotation the plot goes back to when a left mouse button double click happens
+IMPLOT3D_API void SetupBoxInitialRotation(ImPlot3DQuat rotation);
+
 // Sets the plot box X/Y/Z scale. A scale of 1.0 is the default. Values greater than 1.0 enlarge the plot, while values between 0.0 and 1.0 shrink it
 IMPLOT3D_API void SetupBoxScale(float x, float y, float z);
 
@@ -674,6 +680,9 @@ struct ImPlot3DQuat {
 
     // Set quaternion from two vectors
     IMPLOT3D_API static ImPlot3DQuat FromTwoVectors(const ImPlot3DPoint& v0, const ImPlot3DPoint& v1);
+
+    // Set quaternion given elevation and azimuth angles in radians
+    IMPLOT3D_API static ImPlot3DQuat FromElAz(float elevation, float azimuth);
 
     // Get quaternion length
     IMPLOT3D_API float Length() const;
