@@ -1472,7 +1472,7 @@ void SetupAxis(ImAxis3D idx, const char* label, ImPlot3DAxisFlags flags) {
 void SetupAxisLimits(ImAxis3D idx, double min_lim, double max_lim, ImPlot3DCond cond) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
-                         "SetupAxisLimits() needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!"); // get plot and axis
+                         "SetupAxisLimits() needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!");
     ImPlot3DPlot& plot = *gp.CurrentPlot;
     ImPlot3DAxis& axis = plot.Axes[idx];
     if (!plot.Initialized || cond == ImPlot3DCond_Always) {
@@ -1529,6 +1529,34 @@ void SetupAxesLimits(double x_min, double x_max, double y_min, double y_max, dou
     SetupAxisLimits(ImAxis3D_Z, z_min, z_max, cond);
     if (cond == ImPlot3DCond_Once)
         GImPlot3D->CurrentPlot->FitThisFrame = false;
+}
+
+void SetupBoxRotation(float elevation, float azimuth, ImPlot3DCond cond) {
+    // Convert angles from degrees to radians
+    float elev_rad = elevation * IM_PI / 180.0f;
+    float azim_rad = azimuth * IM_PI / 180.0f;
+
+    // Create quaternions for azimuth and elevation
+    ImPlot3DQuat azimuth_quat(azim_rad, ImPlot3DPoint(0.0f, 0.0f, 1.0f));   // Rotate around Z-axis
+    ImPlot3DQuat elevation_quat(elev_rad, ImPlot3DPoint(1.0f, 0.0f, 0.0f)); // Rotate around X-axis
+    ImPlot3DQuat zero_quat(-IM_PI / 2, ImPlot3DPoint(1.0f, 0.0f, 0.0f));    // Rotate to zero azimuth/elevation orientation
+
+    // Combine rotations
+    ImPlot3DQuat rotation = elevation_quat * zero_quat * azimuth_quat;
+
+    // Call SetupRotation with quaternion
+    SetupBoxRotation(rotation, cond);
+}
+
+void SetupBoxRotation(ImPlot3DQuat rotation, ImPlot3DCond cond) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
+                         "SetupRotation() needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    if (!plot.Initialized || cond == ImPlot3DCond_Always) {
+        plot.Rotation = rotation;
+        plot.AnimationTime = 0.0f;
+    }
 }
 
 void SetupBoxScale(float x, float y, float z) {

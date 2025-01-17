@@ -565,6 +565,37 @@ void DemoBoxScale() {
     }
 }
 
+void DemoBoxRotation() {
+    constexpr int N = 100;
+    float origin[2] = {0.0f, 0.0f};
+    float axis[2] = {0.0f, 1.0f};
+
+    // Static variables for elevation and azimuth
+    static float elevation = 45.0f;
+    static float azimuth = -135.0f;
+
+    // Sliders for rotation angles
+    ImGui::SliderFloat("Elevation", &elevation, -90.0f, 90.0f, "%.1f degrees");
+    ImGui::SliderFloat("Azimuth", &azimuth, -180.0f, 180.0f, "%.1f degrees");
+
+    if (ImPlot3D::BeginPlot("##BoxRotation")) {
+        ImPlot3D::SetupAxesLimits(-1, 1, -1, 1, -1, 1, ImPlot3DCond_Always);
+
+        // Set the rotation using the specified elevation and azimuth
+        ImPlot3D::SetupBoxRotation(elevation, azimuth, ImPlot3DCond_Always);
+
+        // Plot axis lines
+        ImPlot3D::SetNextLineStyle(ImVec4(0.8f, 0.2f, 0.2f, 1));
+        ImPlot3D::PlotLine("X-Axis", axis, origin, origin, 2);
+        ImPlot3D::SetNextLineStyle(ImVec4(0.2f, 0.8f, 0.2f, 1));
+        ImPlot3D::PlotLine("Y-Axis", origin, axis, origin, 2);
+        ImPlot3D::SetNextLineStyle(ImVec4(0.2f, 0.2f, 0.8f, 1));
+        ImPlot3D::PlotLine("Z-Axis", origin, origin, axis, 2);
+
+        ImPlot3D::EndPlot();
+    }
+}
+
 void DemoTickLabels() {
     static bool custom_ticks = false;
     static bool custom_labels = true;
@@ -776,6 +807,7 @@ void ShowDemoWindow(bool* p_open) {
         }
         if (ImGui::BeginTabItem("Axes")) {
             DemoHeader("Box Scale", DemoBoxScale);
+            DemoHeader("Box Rotation", DemoBoxRotation);
             DemoHeader("Tick Labels", DemoTickLabels);
             ImGui::EndTabItem();
         }
