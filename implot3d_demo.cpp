@@ -566,7 +566,6 @@ void DemoBoxScale() {
 }
 
 void DemoBoxRotation() {
-    constexpr int N = 100;
     float origin[2] = {0.0f, 0.0f};
     float axis[2] = {0.0f, 1.0f};
 

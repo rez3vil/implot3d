@@ -1555,6 +1555,7 @@ void SetupBoxRotation(ImPlot3DQuat rotation, ImPlot3DCond cond) {
     ImPlot3DPlot& plot = *gp.CurrentPlot;
     if (!plot.Initialized || cond == ImPlot3DCond_Always) {
         plot.Rotation = rotation;
+        plot.RotationCond = cond;
         plot.AnimationTime = 0.0f;
     }
 }
@@ -1990,7 +1991,7 @@ void HandleInput(ImPlot3DPlot& plot) {
         plot.ContextClick = false;
 
     // Handle reset rotation with left mouse double click
-    if (plot.Held && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Right)) {
+    if (plot.Held && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Right) && !plot.IsRotationLocked()) {
         plot.RotationAnimationEnd = plot.Rotation;
 
         // Calculate rotation to align the z-axis with the camera direction
@@ -2054,7 +2055,7 @@ void HandleInput(ImPlot3DPlot& plot) {
     }
 
     // Handle rotation with left mouse dragging
-    if (plot.Held && ImGui::IsMouseDown(ImGuiMouseButton_Right)) {
+    if (plot.Held && ImGui::IsMouseDown(ImGuiMouseButton_Right) && !plot.IsRotationLocked()) {
         ImVec2 delta(IO.MouseDelta.x, IO.MouseDelta.y);
 
         // Map delta to rotation angles (in radians)

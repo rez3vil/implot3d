@@ -552,7 +552,8 @@ struct ImPlot3DPlot {
     ImRect CanvasRect; // Frame rectangle reduced by padding
     ImRect PlotRect;   // Bounding rectangle for the actual plot area
     // Rotation & axes & box
-    ImPlot3DQuat Rotation;  // Current rotation quaternion
+    ImPlot3DQuat Rotation; // Current rotation quaternion
+    ImPlot3DCond RotationCond;
     ImPlot3DAxis Axes[3];   // X, Y, Z axes
     ImPlot3DPoint BoxScale; // Scale factor for plot box X, Y, Z axes
     // Animation
@@ -580,6 +581,7 @@ struct ImPlot3DPlot {
         JustCreated = true;
         Initialized = false;
         Rotation = ImPlot3DQuat(0.0f, 0.0f, 0.0f, 1.0f);
+        RotationCond = ImPlot3DCond_None;
         for (int i = 0; i < 3; i++)
             Axes[i] = ImPlot3DAxis();
         BoxScale = ImPlot3DPoint(1.0f, 1.0f, 1.0f);
@@ -602,6 +604,7 @@ struct ImPlot3DPlot {
     }
     inline bool HasTitle() const { return !Title.empty() && !ImPlot3D::ImHasFlag(Flags, ImPlot3DFlags_NoTitle); }
     inline const char* GetTitle() const { return Title.Buf.Data; }
+    inline bool IsRotationLocked() const { return RotationCond == ImPlot3DCond_Always; }
 
     void ExtendFit(const ImPlot3DPoint& point);
     ImPlot3DPoint RangeMin() const;
