@@ -893,7 +893,7 @@ void ComputeActiveFaces(bool* active_faces, const ImPlot3DQuat& rotation, const 
     };
 
     int num_deg = 0; // Check number of planes that are degenerate (seen as a line)
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < 3; i++) {
         // Determine the active face based on the Z component
         if (fabs(rot_face_n[i].z) < 0.025) {
             // If aligned with the plane, choose the min face for bottom/left
@@ -1106,7 +1106,7 @@ void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, float p
             }
             ticker.AddTick(major, true, true, formatter, formatter_data);
         }
-        for (int i = 1; i < nMinor; ++i) {
+        for (int i = 1; i < nMinor; i++) {
             double minor = major + i * interval / nMinor;
             if (range.Contains((float)minor)) {
                 ticker.AddTick(minor, false, true, formatter, formatter_data);
@@ -1124,7 +1124,7 @@ void Locator_Default(ImPlot3DTicker& ticker, const ImPlot3DRange& range, float p
 }
 
 void AddTicksCustom(const double* values, const char* const labels[], int n, ImPlot3DTicker& ticker, ImPlot3DFormatter formatter, void* data) {
-    for (int i = 0; i < n; ++i) {
+    for (int i = 0; i < n; i++) {
         if (labels != nullptr)
             ticker.AddTick(values[i], false, true, labels[i]);
         else
@@ -1356,7 +1356,7 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     plot.Items.Legend.Reset();
 
     // Reset axes
-    for (int i = 0; i < ImAxis3D_COUNT; ++i) {
+    for (int i = 0; i < ImAxis3D_COUNT; i++) {
         plot.Axes[i].Reset();
     }
 
@@ -2005,7 +2005,7 @@ void HandleInput(ImPlot3DPlot& plot) {
 
                 // Find the candidate with the maximum dot product
                 AxisAlignment* best_candidate = &candidates[0];
-                for (int i = 1; i < 4; ++i) {
+                for (int i = 1; i < 4; i++) {
                     if (candidates[i].dot > best_candidate->dot) {
                         best_candidate = &candidates[i];
                     }
@@ -2424,7 +2424,7 @@ ImPlot3DColormap AddColormap(const char* name, const ImVec4* colormap, int size,
     IM_ASSERT_USER_ERROR(gp.ColormapData.GetIndex(name) == -1, "The colormap name has already been used!");
     ImVector<ImU32> buffer;
     buffer.resize(size);
-    for (int i = 0; i < size; ++i)
+    for (int i = 0; i < size; i++)
         buffer[i] = ImGui::ColorConvertFloat4ToU32(colormap[i]);
     return gp.ColormapData.Append(name, buffer.Data, size, qual);
 }
