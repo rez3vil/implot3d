@@ -572,12 +572,14 @@ void DemoBoxRotation() {
     // Sliders for rotation angles
     static float elevation = 45.0f;
     static float azimuth = -135.0f;
+    static bool animate = false;
     ImGui::Text("Rotation");
     bool changed = false;
     if (ImGui::SliderFloat("Elevation", &elevation, -90.0f, 90.0f, "%.1f degrees"))
         changed = true;
     if (ImGui::SliderFloat("Azimuth", &azimuth, -180.0f, 180.0f, "%.1f degrees"))
         changed = true;
+    ImGui::Checkbox("Animate", &animate);
 
     ImGui::Text("Initial Rotation");
     ImGui::SameLine();
@@ -595,7 +597,7 @@ void DemoBoxRotation() {
 
         // Set the rotation using the specified elevation and azimuth
         if (changed)
-            ImPlot3D::SetupBoxRotation(elevation, azimuth, ImPlot3DCond_Always);
+            ImPlot3D::SetupBoxRotation(elevation, azimuth, animate, ImPlot3DCond_Always);
 
         // Plot axis lines
         ImPlot3D::SetNextLineStyle(ImVec4(0.8f, 0.2f, 0.2f, 1));

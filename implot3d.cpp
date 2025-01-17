@@ -1453,6 +1453,17 @@ void EndPlot() {
 // [SECTION] Setup
 //-----------------------------------------------------------------------------
 
+static const float ANIMATION_ANGULAR_VELOCITY = 2 * 3.1415f;
+
+float CalcAnimationTime(ImPlot3DQuat q0, ImPlot3DQuat q1) {
+    // Compute the angular distance between orientations
+    float dot_product = ImClamp(q0.Dot(q1), -1.0f, 1.0f);
+    float angle = 2.0f * acosf(fabsf(dot_product));
+
+    // Calculate animation time for constant the angular velocity
+    return angle / ANIMATION_ANGULAR_VELOCITY;
+}
+
 void SetupAxis(ImAxis3D idx, const char* label, ImPlot3DAxisFlags flags) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
@@ -1529,25 +1540,30 @@ void SetupAxesLimits(double x_min, double x_max, double y_min, double y_max, dou
         GImPlot3D->CurrentPlot->FitThisFrame = false;
 }
 
-void SetupBoxRotation(float elevation, float azimuth, ImPlot3DCond cond) {
+void SetupBoxRotation(float elevation, float azimuth, bool animate, ImPlot3DCond cond) {
     // Convert angles from degrees to radians
     float elev_rad = elevation * IM_PI / 180.0f;
     float azim_rad = azimuth * IM_PI / 180.0f;
 
     // Call quaternion SetupBoxRotation
-    SetupBoxRotation(ImPlot3DQuat::FromElAz(elev_rad, azim_rad), cond);
+    SetupBoxRotation(ImPlot3DQuat::FromElAz(elev_rad, azim_rad), animate, cond);
 }
 
-void SetupBoxRotation(ImPlot3DQuat rotation, ImPlot3DCond cond) {
+void SetupBoxRotation(ImPlot3DQuat rotation, bool animate, ImPlot3DCond cond) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
                          "SetupBoxRotation() needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!");
     ImPlot3DPlot& plot = *gp.CurrentPlot;
 
     if (!plot.Initialized || cond == ImPlot3DCond_Always) {
-        plot.Rotation = rotation;
+        if (!animate) {
+            plot.Rotation = rotation;
+            plot.AnimationTime = 0.0f; // Force any running rotation animation to stop
+        } else {
+            plot.RotationAnimationEnd = rotation;
+            plot.AnimationTime = CalcAnimationTime(plot.Rotation, plot.RotationAnimationEnd);
+        }
         plot.RotationCond = cond;
-        plot.AnimationTime = 0.0f; // Force any running rotation animation to stop
     }
 }
 
@@ -1833,7 +1849,6 @@ ImPlot3DRay NDCRayToPlotRay(const ImPlot3DRay& ray) {
 //-----------------------------------------------------------------------------
 
 static const float MOUSE_CURSOR_DRAG_THRESHOLD = 5.0f;
-static const float ANIMATION_ANGULAR_VELOCITY = 2 * 3.1415f;
 
 void HandleInput(ImPlot3DPlot& plot) {
     ImGuiIO& IO = ImGui::GetIO();
@@ -2055,12 +2070,8 @@ void HandleInput(ImPlot3DPlot& plot) {
             }
         }
 
-        // Compute the angular distance between current and target rotation
-        float dot_product = ImClamp(plot.Rotation.Dot(plot.RotationAnimationEnd), -1.0f, 1.0f);
-        float angle = 2.0f * acosf(fabsf(dot_product));
-
-        // Calculate animation time for constant the angular velocity
-        plot.AnimationTime = angle / ANIMATION_ANGULAR_VELOCITY;
+        // Calculate animation time
+        plot.AnimationTime = CalcAnimationTime(plot.Rotation, plot.RotationAnimationEnd);
     }
 
     // Handle rotation with left mouse dragging

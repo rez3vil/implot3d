@@ -377,10 +377,10 @@ IMPLOT3D_API void SetupAxes(const char* x_label, const char* y_label, const char
 IMPLOT3D_API void SetupAxesLimits(double x_min, double x_max, double y_min, double y_max, double z_min, double z_max, ImPlot3DCond cond = ImPlot3DCond_Once);
 
 // Sets the plot box rotation given the elevation and azimuth angles in degrees. If ImPlot3DCond_Always is used, the rotation will be locked
-IMPLOT3D_API void SetupBoxRotation(float elevation, float azimuth, ImPlot3DCond cond = ImPlot3DCond_Once);
+IMPLOT3D_API void SetupBoxRotation(float elevation, float azimuth, bool animate = false, ImPlot3DCond cond = ImPlot3DCond_Once);
 
 // Sets the plot box rotation given a quaternion. If ImPlot3DCond_Always is used, the rotation will be locked
-IMPLOT3D_API void SetupBoxRotation(ImPlot3DQuat rotation, ImPlot3DCond cond = ImPlot3DCond_Once);
+IMPLOT3D_API void SetupBoxRotation(ImPlot3DQuat rotation, bool animate = false, ImPlot3DCond cond = ImPlot3DCond_Once);
 
 // Sets the plot box initial rotation given the elevation and azimuth angles in degrees. The initial rotation is the rotation the plot goes back to when a left mouse button double click happens
 IMPLOT3D_API void SetupBoxInitialRotation(float elevation, float azimuth);
