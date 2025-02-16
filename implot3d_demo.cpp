@@ -1,5 +1,5 @@
 //--------------------------------------------------
-// ImPlot3D v0.1
+// ImPlot3D v0.2
 // implot3d_demo.cpp
 // Date: 2024-11-17
 // Author: Breno Cunha Queiroz (brenocq.com)
@@ -1031,7 +1031,7 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
                 alpha_flags = ImGuiColorEditFlags_AlphaPreviewHalf;
             ImGui::SameLine();
 #else
-            if (ImGui::RadioButton("Opaque", alpha_flags == ImGuiColorEditFlags_AlphaOpaque))      
+            if (ImGui::RadioButton("Opaque", alpha_flags == ImGuiColorEditFlags_AlphaOpaque))
                 alpha_flags = ImGuiColorEditFlags_AlphaOpaque;
             ImGui::SameLine();
             if (ImGui::RadioButton("Alpha",  alpha_flags == ImGuiColorEditFlags_None))

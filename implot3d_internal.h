@@ -1,5 +1,5 @@
 //--------------------------------------------------
-// ImPlot3D v0.1
+// ImPlot3D v0.2
 // implot3d_internal.h
 // Date: 2024-11-17
 // Author: Breno Cunha Queiroz (brenocq.com)
