@@ -46,6 +46,7 @@
 #endif
 
 #define IMPLOT3D_VERSION "0.2"                // ImPlot3D version
+#define IMPLOT3D_VERSION_NUM 200              // Integer encoded version
 #define IMPLOT3D_AUTO -1                      // Deduce variable automatically
 #define IMPLOT3D_AUTO_COL ImVec4(0, 0, 0, -1) // Deduce color automatically
 #define IMPLOT3D_TMP template <typename T> IMPLOT3D_API
