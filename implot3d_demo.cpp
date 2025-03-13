@@ -430,6 +430,43 @@ void DemoMeshPlots() {
     }
 }
 
+void DemoImagePlots() {
+    ImGui::BulletText("Below we are displaying the font texture, which is the only texture we have\naccess to in this demo.");
+    ImGui::BulletText("Use the 'ImTextureID' type as storage to pass pointers or identifiers to your\nown texture data.");
+    ImGui::BulletText("See ImGui Wiki page 'Image Loading and Displaying Examples'.");
+
+    static ImPlot3DPoint p0(-1, -1, 0);
+    static ImPlot3DPoint p1(1, -1, 0);
+    static ImPlot3DPoint p2(1, 1, 0);
+    static ImPlot3DPoint p3(-1, 1, 0);
+    static ImVec2 uv0(0, 0);
+    static ImVec2 uv1(1, 0);
+    static ImVec2 uv2(1, 1);
+    static ImVec2 uv3(0, 1);
+    static ImVec4 tint(1, 1, 1, 1);
+
+    // Positions
+    ImGui::SliderFloat3("P0", &p0.x, -2, 2, "%.1f");
+    ImGui::SliderFloat3("P1", &p1.x, -2, 2, "%.1f");
+    ImGui::SliderFloat3("P2", &p2.x, -2, 2, "%.1f");
+    ImGui::SliderFloat3("P3", &p3.x, -2, 2, "%.1f");
+
+    // UV
+    ImGui::SliderFloat3("UV0", &uv0.x, -2, 2, "%.1f");
+    ImGui::SliderFloat3("UV1", &uv1.x, -2, 2, "%.1f");
+    ImGui::SliderFloat3("UV2", &uv2.x, -2, 2, "%.1f");
+    ImGui::SliderFloat3("UV3", &uv3.x, -2, 2, "%.1f");
+
+    // Tint
+    ImGui::ColorEdit4("Tint", &tint.x);
+
+    // Plot
+    if (ImPlot3D::BeginPlot("Image Plot")) {
+        ImPlot3D::PlotImage("My Image", ImGui::GetIO().Fonts->TexID, p0, p1, p2, p3, uv0, uv1, uv2, uv3, tint);
+        ImPlot3D::EndPlot();
+    }
+}
+
 void DemoRealtimePlots() {
     ImGui::BulletText("Move your mouse to change the data!");
     static ScrollingBuffer sdata1, sdata2, sdata3;
@@ -816,6 +853,7 @@ void ShowDemoWindow(bool* p_open) {
             DemoHeader("Surface Plots", DemoSurfacePlots);
             DemoHeader("Mesh Plots", DemoMeshPlots);
             DemoHeader("Realtime Plots", DemoRealtimePlots);
+            DemoHeader("Image Plots", DemoImagePlots);
             DemoHeader("Markers and Text", DemoMarkersAndText);
             DemoHeader("NaN Values", DemoNaNValues);
             ImGui::EndTabItem();
@@ -1034,10 +1072,10 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
             if (ImGui::RadioButton("Opaque", alpha_flags == ImGuiColorEditFlags_AlphaOpaque))
                 alpha_flags = ImGuiColorEditFlags_AlphaOpaque;
             ImGui::SameLine();
-            if (ImGui::RadioButton("Alpha",  alpha_flags == ImGuiColorEditFlags_None))
+            if (ImGui::RadioButton("Alpha", alpha_flags == ImGuiColorEditFlags_None))
                 alpha_flags = ImGuiColorEditFlags_None;
             ImGui::SameLine();
-            if (ImGui::RadioButton("Both",   alpha_flags == ImGuiColorEditFlags_AlphaPreviewHalf))
+            if (ImGui::RadioButton("Both", alpha_flags == ImGuiColorEditFlags_AlphaPreviewHalf))
                 alpha_flags = ImGuiColorEditFlags_AlphaPreviewHalf;
             ImGui::SameLine();
 #endif
