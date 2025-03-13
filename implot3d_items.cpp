@@ -1393,13 +1393,11 @@ IMPLOT3D_API void PlotImage(const char* label_id, ImTextureID user_texture_id, c
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PlotImage() needs to be called between BeginPlot() and EndPlot()!");
     SetupLock();
-    ImPlot3DPlot& plot = *gp.CurrentPlot;
 
     ImPlot3DPoint corners[4] = {p0, p1, p2, p3};
     Getter3DPoints getter(corners, 4);
 
     if (BeginItemEx(label_id, getter, flags)) {
-        const ImPlot3DNextItemData& n = GetItemData();
         ImU32 tint_col32 = ImGui::ColorConvertFloat4ToU32(tint_col);
         GetCurrentItem()->Color = tint_col32;
 
