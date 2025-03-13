@@ -307,8 +307,7 @@ void DemoSurfacePlots() {
     ImGui::Text("Fill color");
     static int selected_fill = 1; // Colormap by default
     static ImVec4 solid_color = ImVec4(0.8f, 0.8f, 0.2f, 0.6f);
-    const char* colormaps[] = {"Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet",
-                               "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys"};
+    const char* colormaps[] = {"Viridis", "Plasma", "Hot", "Cool", "Pink", "Jet", "Twilight", "RdBu", "BrBG", "PiYG", "Spectral", "Greys"};
     static int sel_colormap = 5; // Jet by default
     {
         ImGui::Indent();
@@ -452,10 +451,10 @@ void DemoImagePlots() {
     ImGui::SliderFloat3("P3", &p3.x, -2, 2, "%.1f");
 
     // UV
-    ImGui::SliderFloat3("UV0", &uv0.x, -2, 2, "%.1f");
-    ImGui::SliderFloat3("UV1", &uv1.x, -2, 2, "%.1f");
-    ImGui::SliderFloat3("UV2", &uv2.x, -2, 2, "%.1f");
-    ImGui::SliderFloat3("UV3", &uv3.x, -2, 2, "%.1f");
+    ImGui::SliderFloat2("UV0", &uv0.x, -2, 2, "%.1f");
+    ImGui::SliderFloat2("UV1", &uv1.x, -2, 2, "%.1f");
+    ImGui::SliderFloat2("UV2", &uv2.x, -2, 2, "%.1f");
+    ImGui::SliderFloat2("UV3", &uv3.x, -2, 2, "%.1f");
 
     // Tint
     ImGui::ColorEdit4("Tint", &tint.x);
@@ -507,7 +506,8 @@ void DemoMarkersAndText() {
 
     if (ImPlot3D::BeginPlot("##MarkerStyles", ImVec2(-1, 0), ImPlot3DFlags_CanvasOnly)) {
 
-        ImPlot3D::SetupAxes(nullptr, nullptr, nullptr, ImPlot3DAxisFlags_NoDecorations, ImPlot3DAxisFlags_NoDecorations, ImPlot3DAxisFlags_NoDecorations);
+        ImPlot3D::SetupAxes(nullptr, nullptr, nullptr, ImPlot3DAxisFlags_NoDecorations, ImPlot3DAxisFlags_NoDecorations,
+                            ImPlot3DAxisFlags_NoDecorations);
         ImPlot3D::SetupAxesLimits(-0.5, 1.5, -0.5, 1.5, 0, ImPlot3DMarker_COUNT + 1);
 
         float xs[2] = {0, 0};
@@ -707,14 +707,8 @@ void DemoCustomRendering() {
 
         // Draw box
         ImPlot3DPoint corners[8] = {
-            ImPlot3DPoint(0, 0, 0),
-            ImPlot3DPoint(1, 0, 0),
-            ImPlot3DPoint(1, 1, 0),
-            ImPlot3DPoint(0, 1, 0),
-            ImPlot3DPoint(0, 0, 1),
-            ImPlot3DPoint(1, 0, 1),
-            ImPlot3DPoint(1, 1, 1),
-            ImPlot3DPoint(0, 1, 1),
+            ImPlot3DPoint(0, 0, 0), ImPlot3DPoint(1, 0, 0), ImPlot3DPoint(1, 1, 0), ImPlot3DPoint(0, 1, 0),
+            ImPlot3DPoint(0, 0, 1), ImPlot3DPoint(1, 0, 1), ImPlot3DPoint(1, 1, 1), ImPlot3DPoint(0, 1, 1),
         };
         ImVec2 corners_px[8];
         for (int i = 0; i < 8; i++)
@@ -930,7 +924,9 @@ void RenderColorBar(const ImU32* colors, int size, ImDrawList& DrawList, const I
     }
 }
 
-static inline ImU32 CalcTextColor(const ImVec4& bg) { return (bg.x * 0.299f + bg.y * 0.587f + bg.z * 0.114f) > 0.5f ? IM_COL32_BLACK : IM_COL32_WHITE; }
+static inline ImU32 CalcTextColor(const ImVec4& bg) {
+    return (bg.x * 0.299f + bg.y * 0.587f + bg.z * 0.114f) > 0.5f ? IM_COL32_BLACK : IM_COL32_WHITE;
+}
 static inline ImU32 CalcTextColor(ImU32 bg) { return CalcTextColor(ImGui::ColorConvertU32ToFloat4(bg)); }
 
 bool ColormapButton(const char* label, const ImVec2& size_arg, ImPlot3DColormap cmap) {
@@ -1005,9 +1001,8 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
     if (ImGui::Button("Revert Ref"))
         style = *ref;
     ImGui::SameLine();
-    HelpMarker(
-        "Save/Revert in local non-persistent storage. Default Colors definition are not affected. "
-        "Use \"Export\" below to save them somewhere.");
+    HelpMarker("Save/Revert in local non-persistent storage. Default Colors definition are not affected. "
+               "Use \"Export\" below to save them somewhere.");
 
     ImGui::Separator();
 
@@ -1043,8 +1038,8 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
                     const ImVec4& col = style.Colors[i];
                     const char* name = ImPlot3D::GetStyleColorName(i);
                     if (!output_only_modified || memcmp(&col, &ref->Colors[i], sizeof(ImVec4)) != 0)
-                        ImGui::LogText("colors[ImPlot3DCol_%s]%*s= ImVec4(%.2ff, %.2ff, %.2ff, %.2ff);\n",
-                                       name, 15 - (int)strlen(name), "", col.x, col.y, col.z, col.w);
+                        ImGui::LogText("colors[ImPlot3DCol_%s]%*s= ImVec4(%.2ff, %.2ff, %.2ff, %.2ff);\n", name, 15 - (int)strlen(name), "", col.x,
+                                       col.y, col.z, col.w);
                 }
                 ImGui::LogFinish();
             }
@@ -1079,10 +1074,9 @@ void ShowStyleEditor(ImPlot3DStyle* ref) {
                 alpha_flags = ImGuiColorEditFlags_AlphaPreviewHalf;
             ImGui::SameLine();
 #endif
-            HelpMarker(
-                "In the color list:\n"
-                "Left-click on color square to open color picker,\n"
-                "Right-click to open edit options menu.");
+            HelpMarker("In the color list:\n"
+                       "Left-click on color square to open color picker,\n"
+                       "Right-click to open edit options menu.");
 
             ImGui::Separator();
 
