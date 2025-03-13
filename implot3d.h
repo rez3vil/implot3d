@@ -377,13 +377,16 @@ IMPLOT3D_API void SetupAxisFormat(ImAxis3D idx, ImPlot3DFormatter formatter, voi
 IMPLOT3D_API void SetupAxisTicks(ImAxis3D axis, const double* values, int n_ticks, const char* const labels[] = nullptr, bool keep_default = false);
 
 // Sets an axis' ticks and optionally the labels for the next plot. To keep the default ticks, set #keep_default=true
-IMPLOT3D_API void SetupAxisTicks(ImAxis3D axis, double v_min, double v_max, int n_ticks, const char* const labels[] = nullptr, bool keep_default = false);
+IMPLOT3D_API void SetupAxisTicks(ImAxis3D axis, double v_min, double v_max, int n_ticks, const char* const labels[] = nullptr,
+                                 bool keep_default = false);
 
 // Sets the label and/or flags for primary X/Y/Z axes (shorthand for three calls to SetupAxis)
-IMPLOT3D_API void SetupAxes(const char* x_label, const char* y_label, const char* z_label, ImPlot3DAxisFlags x_flags = 0, ImPlot3DAxisFlags y_flags = 0, ImPlot3DAxisFlags z_flags = 0);
+IMPLOT3D_API void SetupAxes(const char* x_label, const char* y_label, const char* z_label, ImPlot3DAxisFlags x_flags = 0,
+                            ImPlot3DAxisFlags y_flags = 0, ImPlot3DAxisFlags z_flags = 0);
 
 // Sets the X/Y/Z axes range limits. If ImPlot3DCond_Always is used, the axes limits will be locked (shorthand for two calls to SetupAxisLimits)
-IMPLOT3D_API void SetupAxesLimits(double x_min, double x_max, double y_min, double y_max, double z_min, double z_max, ImPlot3DCond cond = ImPlot3DCond_Once);
+IMPLOT3D_API void SetupAxesLimits(double x_min, double x_max, double y_min, double y_max, double z_min, double z_max,
+                                  ImPlot3DCond cond = ImPlot3DCond_Once);
 
 // Sets the plot box rotation given the elevation and azimuth angles in degrees. If ImPlot3DCond_Always is used, the rotation will be locked
 IMPLOT3D_API void SetupBoxRotation(float elevation, float azimuth, bool animate = false, ImPlot3DCond cond = ImPlot3DCond_Once);
@@ -391,10 +394,12 @@ IMPLOT3D_API void SetupBoxRotation(float elevation, float azimuth, bool animate 
 // Sets the plot box rotation given a quaternion. If ImPlot3DCond_Always is used, the rotation will be locked
 IMPLOT3D_API void SetupBoxRotation(ImPlot3DQuat rotation, bool animate = false, ImPlot3DCond cond = ImPlot3DCond_Once);
 
-// Sets the plot box initial rotation given the elevation and azimuth angles in degrees. The initial rotation is the rotation the plot goes back to when a left mouse button double click happens
+// Sets the plot box initial rotation given the elevation and azimuth angles in degrees. The initial rotation is the rotation the plot goes back to
+// when a left mouse button double click happens
 IMPLOT3D_API void SetupBoxInitialRotation(float elevation, float azimuth);
 
-// Sets the plot box initial rotation given a quaternion. The initial rotation is the rotation the plot goes back to when a left mouse button double click happens
+// Sets the plot box initial rotation given a quaternion. The initial rotation is the rotation the plot goes back to when a left mouse button double
+// click happens
 IMPLOT3D_API void SetupBoxInitialRotation(ImPlot3DQuat rotation);
 
 // Sets the plot box X/Y/Z scale. A scale of 1.0 is the default. Values greater than 1.0 enlarge the plot, while values between 0.0 and 1.0 shrink it
@@ -406,30 +411,30 @@ IMPLOT3D_API void SetupLegend(ImPlot3DLocation location, ImPlot3DLegendFlags fla
 // [SECTION] Plot Items
 //-----------------------------------------------------------------------------
 
-IMPLOT3D_TMP void PlotScatter(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DScatterFlags flags = 0, int offset = 0, int stride = sizeof(T));
+IMPLOT3D_TMP void PlotScatter(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DScatterFlags flags = 0, int offset = 0,
+                              int stride = sizeof(T));
 
-IMPLOT3D_TMP void PlotLine(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DLineFlags flags = 0, int offset = 0, int stride = sizeof(T));
+IMPLOT3D_TMP void PlotLine(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DLineFlags flags = 0, int offset = 0,
+                           int stride = sizeof(T));
 
-IMPLOT3D_TMP void PlotTriangle(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DTriangleFlags flags = 0, int offset = 0, int stride = sizeof(T));
+IMPLOT3D_TMP void PlotTriangle(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DTriangleFlags flags = 0,
+                               int offset = 0, int stride = sizeof(T));
 
-IMPLOT3D_TMP void PlotQuad(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DQuadFlags flags = 0, int offset = 0, int stride = sizeof(T));
+IMPLOT3D_TMP void PlotQuad(const char* label_id, const T* xs, const T* ys, const T* zs, int count, ImPlot3DQuadFlags flags = 0, int offset = 0,
+                           int stride = sizeof(T));
 
-// Plot the surface defined by a grid of vertices. The grid is defined by the x and y arrays, and the z array contains the height of each vertex. A total of x_count * y_count vertices are expected for each array. Leave #scale_min and #scale_max both at 0 for automatic color scaling, or set them to a predefined range
-IMPLOT3D_TMP void PlotSurface(const char* label_id, const T* xs, const T* ys, const T* zs, int x_count, int y_count, double scale_min = 0.0, double scale_max = 0.0, ImPlot3DSurfaceFlags flags = 0, int offset = 0, int stride = sizeof(T));
+// Plot the surface defined by a grid of vertices. The grid is defined by the x and y arrays, and the z array contains the height of each vertex. A
+// total of x_count * y_count vertices are expected for each array. Leave #scale_min and #scale_max both at 0 for automatic color scaling, or set them
+// to a predefined range
+IMPLOT3D_TMP void PlotSurface(const char* label_id, const T* xs, const T* ys, const T* zs, int x_count, int y_count, double scale_min = 0.0,
+                              double scale_max = 0.0, ImPlot3DSurfaceFlags flags = 0, int offset = 0, int stride = sizeof(T));
 
-IMPLOT3D_API void PlotMesh(const char* label_id, const ImPlot3DPoint* vtx, const unsigned int* idx, int vtx_count, int idx_count, ImPlot3DMeshFlags flags = 0);
+IMPLOT3D_API void PlotMesh(const char* label_id, const ImPlot3DPoint* vtx, const unsigned int* idx, int vtx_count, int idx_count,
+                           ImPlot3DMeshFlags flags = 0);
 
-IMPLOT3D_API void PlotImage(const char* label_id,
-                            ImTextureID user_texture_id,
-                            const ImPlot3DPoint& p0,
-                            const ImPlot3DPoint& p1,
-                            const ImPlot3DPoint& p2,
-                            const ImPlot3DPoint& p3,
-                            const ImVec2& uv0 = ImVec2(0, 1),
-                            const ImVec2& uv1 = ImVec2(1, 1),
-                            const ImVec2& uv2 = ImVec2(1, 0),
-                            const ImVec2& uv3 = ImVec2(0, 0),
-                            const ImVec4& tint_col = ImVec4(1, 1, 1, 1),
+IMPLOT3D_API void PlotImage(const char* label_id, ImTextureID user_texture_id, const ImPlot3DPoint& p0, const ImPlot3DPoint& p1,
+                            const ImPlot3DPoint& p2, const ImPlot3DPoint& p3, const ImVec2& uv0 = ImVec2(0, 1), const ImVec2& uv1 = ImVec2(1, 1),
+                            const ImVec2& uv2 = ImVec2(1, 0), const ImVec2& uv3 = ImVec2(0, 0), const ImVec4& tint_col = ImVec4(1, 1, 1, 1),
                             ImPlot3DImageFlags flags = 0);
 
 // Plots a centered text label at point x,y,z. It is possible to set the text angle in radians and offset in pixels
@@ -491,7 +496,8 @@ IMPLOT3D_API void SetNextLineStyle(const ImVec4& col = IMPLOT3D_AUTO_COL, float 
 // Set the fill color for the next item only
 IMPLOT3D_API void SetNextFillStyle(const ImVec4& col = IMPLOT3D_AUTO_COL, float alpha_mod = IMPLOT3D_AUTO);
 // Set the marker style for the next item only
-IMPLOT3D_API void SetNextMarkerStyle(ImPlot3DMarker marker = IMPLOT3D_AUTO, float size = IMPLOT3D_AUTO, const ImVec4& fill = IMPLOT3D_AUTO_COL, float weight = IMPLOT3D_AUTO, const ImVec4& outline = IMPLOT3D_AUTO_COL);
+IMPLOT3D_API void SetNextMarkerStyle(ImPlot3DMarker marker = IMPLOT3D_AUTO, float size = IMPLOT3D_AUTO, const ImVec4& fill = IMPLOT3D_AUTO_COL,
+                                     float weight = IMPLOT3D_AUTO, const ImVec4& outline = IMPLOT3D_AUTO_COL);
 
 // Get color
 IMPLOT3D_API ImVec4 GetStyleColorVec4(ImPlot3DCol idx);
@@ -526,9 +532,11 @@ IMPLOT3D_API const char* GetColormapName(ImPlot3DColormap cmap);
 // Returns an index number for a colormap given a valid string name. Returns -1 if name is invalid
 IMPLOT3D_API ImPlot3DColormap GetColormapIndex(const char* name);
 
-// Temporarily switch to one of the built-in (i.e. ImPlot3DColormap_XXX) or user-added colormaps (i.e. a return value of AddColormap). Don't forget to call PopColormap!
+// Temporarily switch to one of the built-in (i.e. ImPlot3DColormap_XXX) or user-added colormaps (i.e. a return value of AddColormap). Don't forget to
+// call PopColormap!
 IMPLOT3D_API void PushColormap(ImPlot3DColormap cmap);
-// Push a colormap by string name. Use built-in names such as "Default", "Deep", "Jet", etc. or a string you provided to AddColormap. Don't forget to call PopColormap!
+// Push a colormap by string name. Use built-in names such as "Default", "Deep", "Jet", etc. or a string you provided to AddColormap. Don't forget to
+// call PopColormap!
 IMPLOT3D_API void PushColormap(const char* name);
 // Undo temporary colormap modification(s). Undo multiple pushes at once by increasing count
 IMPLOT3D_API void PopColormap(int count = 1);
@@ -625,7 +633,8 @@ struct ImPlot3DPoint {
     IMPLOT3D_API bool IsNaN() const;
 
 #ifdef IMPLOT3D_POINT_CLASS_EXTRA
-    IMPLOT3D_POINT_CLASS_EXTRA // Define additional constructors and implicit cast operators in imconfig.h to convert back and forth between your math types and ImPlot3DPoint
+    IMPLOT3D_POINT_CLASS_EXTRA // Define additional constructors and implicit cast operators in imconfig.h to convert back and forth between your math
+                               // types and ImPlot3DPoint
 #endif
 };
 
@@ -738,7 +747,8 @@ struct ImPlot3DQuat {
     IMPLOT3D_API float Dot(const ImPlot3DQuat& rhs) const;
 
 #ifdef IMPLOT3D_QUAT_CLASS_EXTRA
-    IMPLOT3D_QUAT_CLASS_EXTRA // Define additional constructors and implicit cast operators in imconfig.h to convert back and forth between your math types and ImPlot3DQuat
+    IMPLOT3D_QUAT_CLASS_EXTRA // Define additional constructors and implicit cast operators in imconfig.h to convert back and forth between your math
+                              // types and ImPlot3DQuat
 #endif
 };
 
