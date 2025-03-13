@@ -25,6 +25,10 @@
 // [SECTION] PlotScatter
 // [SECTION] PlotLine
 // [SECTION] PlotTriangle
+// [SECTION] PlotQuad
+// [SECTION] PlotSurface
+// [SECTION] PlotMesh
+// [SECTION] PlotImage
 // [SECTION] PlotText
 
 //-----------------------------------------------------------------------------
@@ -148,6 +152,8 @@ bool BeginItem(const char* label_id, ImPlot3DItemFlags flags, ImPlot3DCol recolo
     // Register item
     bool just_created;
     ImPlot3DItem* item = RegisterOrGetItem(label_id, flags, &just_created);
+    // Set current item
+    gp.CurrentItem = item;
 
     // Set/override item color
     if (recolor_from != -1) {
@@ -222,6 +228,7 @@ bool BeginItemEx(const char* label_id, const _Getter& getter, ImPlot3DItemFlags 
 void EndItem() {
     ImPlot3DContext& gp = *GImPlot3D;
     gp.NextItemData.Reset();
+    gp.CurrentItem = nullptr;
 }
 
 ImPlot3DItem* RegisterOrGetItem(const char* label_id, ImPlot3DItemFlags flags, bool* just_created) {
@@ -246,6 +253,11 @@ ImPlot3DItem* RegisterOrGetItem(const char* label_id, ImPlot3DItemFlags flags, b
         Items.Legend.Labels.append(label_id, label_id + strlen(label_id) + 1);
     }
     return item;
+}
+
+ImPlot3DItem* GetCurrentItem() {
+    ImPlot3DContext& gp = *GImPlot3D;
+    return gp.CurrentItem;
 }
 
 void BustItemCache() {
@@ -830,7 +842,7 @@ IMPLOT3D_INLINE T IndexData(const T* data, int idx, int count, int offset, int s
     switch (s) {
         case 3: return data[idx];
         case 2: return data[(offset + idx) % count];
-        case 1: return *(const T*)(const void*)((const unsigned char*)data + (size_t)((idx)) * stride);
+        case 1: return *(const T*)(const void*)((const unsigned char*)data + (size_t)((idx))*stride);
         case 0: return *(const T*)(const void*)((const unsigned char*)data + (size_t)((offset + idx) % count) * stride);
         default: return T(0);
     }
@@ -1288,6 +1300,10 @@ IMPLOT3D_TMP void PlotSurface(const char* label_id, const T* xs, const T* ys, co
 CALL_INSTANTIATE_FOR_NUMERIC_TYPES()
 #undef INSTANTIATE_MACRO
 
+//-----------------------------------------------------------------------------
+// [SECTION] PlotMesh
+//-----------------------------------------------------------------------------
+
 void PlotMesh(const char* label_id, const ImPlot3DPoint* vtx, const unsigned int* idx, int vtx_count, int idx_count, ImPlot3DMeshFlags flags) {
     Getter3DPoints getter(vtx, vtx_count);                     // Get vertices
     GetterMeshTriangles getter_triangles(vtx, idx, idx_count); // Get triangle vertices
@@ -1312,6 +1328,41 @@ void PlotMesh(const char* label_id, const ImPlot3DPoint* vtx, const unsigned int
             const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerFill]);
             RenderMarkers(getter, n.Marker, n.MarkerSize, n.RenderMarkerFill, col_fill, n.RenderMarkerLine, col_line, n.MarkerWeight);
         }
+
+        EndItem();
+    }
+}
+
+//-----------------------------------------------------------------------------
+// [SECTION] PlotImage
+//-----------------------------------------------------------------------------
+
+IMPLOT3D_API void PlotImage(const char* label_id,
+                            ImTextureID user_texture_id,
+                            const ImPlot3DPoint& p0,
+                            const ImPlot3DPoint& p1,
+                            const ImPlot3DPoint& p2,
+                            const ImPlot3DPoint& p3,
+                            const ImVec2& uv0,
+                            const ImVec2& uv1,
+                            const ImVec2& uv2,
+                            const ImVec2& uv3,
+                            const ImVec4& tint_col,
+                            ImPlot3DImageFlags flags) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PlotImage() needs to be called between BeginPlot() and EndPlot()!");
+    SetupLock();
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+
+    ImPlot3DPoint corners[4] = {p0, p1, p2, p3};
+    Getter3DPoints getter(corners, 4);
+
+    if (BeginItemEx(label_id, getter, flags)) {
+        const ImPlot3DNextItemData& n = GetItemData();
+        ImU32 tint_col32 = ImGui::ColorConvertFloat4ToU32(tint_col);
+        GetCurrentItem()->Color = tint_col32;
+
+        // TODO Render image
 
         EndItem();
     }

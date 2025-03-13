@@ -1347,6 +1347,7 @@ bool BeginPlot(const char* title_id, const ImVec2& size, ImPlot3DFlags flags) {
     if (!ImGui::ItemAdd(plot.FrameRect, plot.ID, &plot.FrameRect)) {
         gp.CurrentPlot = nullptr;
         gp.CurrentItems = nullptr;
+        gp.CurrentItem = nullptr;
         ImGui::EndChild();
         return false;
     }
@@ -1443,6 +1444,7 @@ void EndPlot() {
     // Reset current plot
     gp.CurrentPlot = nullptr;
     gp.CurrentItems = nullptr;
+    gp.CurrentItem = nullptr;
 
     // Reset the plot items for the next frame
     for (int i = 0; i < plot.Items.GetItemCount(); i++)
@@ -2617,6 +2619,7 @@ void ResetContext(ImPlot3DContext* ctx) {
     ctx->Plots.Clear();
     ctx->CurrentPlot = nullptr;
     ctx->CurrentItems = nullptr;
+    ctx->CurrentItem = nullptr;
     ctx->NextItemData.Reset();
     ctx->Style = ImPlot3DStyle();
 }

@@ -571,7 +571,6 @@ struct ImPlot3DPlot {
     bool FitThisFrame;
     // Items
     ImPlot3DItemGroup Items;
-    ImPlot3DItem* CurrentItem;
     // 3D draw list
     ImDrawList3D DrawList;
     // Misc
@@ -595,7 +594,6 @@ struct ImPlot3DPlot {
         HeldEdgeIdx = -1;
         HeldPlaneIdx = -1;
         FitThisFrame = true;
-        CurrentItem = nullptr;
         ContextClick = false;
         OpenContextThisFrame = false;
     }
@@ -621,6 +619,7 @@ struct ImPlot3DContext {
     ImPool<ImPlot3DPlot> Plots;
     ImPlot3DPlot* CurrentPlot;
     ImPlot3DItemGroup* CurrentItems;
+    ImPlot3DItem* CurrentItem;
     ImPlot3DNextItemData NextItemData;
     ImPlot3DStyle Style;
     ImVector<ImGuiColorMod> ColorModifiers;
@@ -674,6 +673,9 @@ IMPLOT3D_API void EndItem();
 // Register or get an existing item from the current plot
 IMPLOT3D_API ImPlot3DItem* RegisterOrGetItem(const char* label_id, ImPlot3DItemFlags flags, bool* just_created = nullptr);
 
+// Gets the current item from ImPlot3DContext
+IMPLOT3D_API ImPlot3DItem* GetCurrentItem();
+
 // Busts the cache for every item for every plot in the current context
 IMPLOT3D_API void BustItemCache();
 
@@ -684,7 +686,7 @@ IMPLOT3D_API void AddTextRotated(ImDrawList* draw_list, ImVec2 pos, float angle,
 // [SECTION] Plot Utils
 //-----------------------------------------------------------------------------
 
-// Gets the current plot from the current ImPlot3DContext
+// Gets the current plot from ImPlot3DContext
 IMPLOT3D_API ImPlot3DPlot* GetCurrentPlot();
 
 // Busts the cache for every plot in the current context

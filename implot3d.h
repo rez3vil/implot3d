@@ -84,6 +84,7 @@ typedef int ImPlot3DTriangleFlags; // -> ImPlot3DTriangleFlags_ // Flags: Triang
 typedef int ImPlot3DQuadFlags;     // -> ImPlot3DQuadFlags_     // Flags: QuadFplot flags
 typedef int ImPlot3DSurfaceFlags;  // -> ImPlot3DSurfaceFlags_  // Flags: Surface plot flags
 typedef int ImPlot3DMeshFlags;     // -> ImPlot3DMeshFlags_     // Flags: Mesh plot flags
+typedef int ImPlot3DImageFlags;    // -> ImPlot3DImageFlags_    // Flags: Image plot flags
 typedef int ImPlot3DLegendFlags;   // -> ImPlot3DLegendFlags_   // Flags: Legend flags
 typedef int ImPlot3DAxisFlags;     // -> ImPlot3DAxisFlags_     // Flags: Axis flags
 
@@ -217,6 +218,13 @@ enum ImPlot3DMeshFlags_ {
     ImPlot3DMeshFlags_None = 0, // Default
     ImPlot3DMeshFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
     ImPlot3DMeshFlags_NoFit = ImPlot3DItemFlags_NoFit,
+};
+
+// Flags for PlotImage
+enum ImPlot3DImageFlags_ {
+    ImPlot3DImageFlags_None = 0, // Default
+    ImPlot3DImageFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
+    ImPlot3DImageFlags_NoFit = ImPlot3DItemFlags_NoFit,
 };
 
 // Flags for legends
@@ -410,6 +418,19 @@ IMPLOT3D_TMP void PlotQuad(const char* label_id, const T* xs, const T* ys, const
 IMPLOT3D_TMP void PlotSurface(const char* label_id, const T* xs, const T* ys, const T* zs, int x_count, int y_count, double scale_min = 0.0, double scale_max = 0.0, ImPlot3DSurfaceFlags flags = 0, int offset = 0, int stride = sizeof(T));
 
 IMPLOT3D_API void PlotMesh(const char* label_id, const ImPlot3DPoint* vtx, const unsigned int* idx, int vtx_count, int idx_count, ImPlot3DMeshFlags flags = 0);
+
+IMPLOT3D_API void PlotImage(const char* label_id,
+                            ImTextureID user_texture_id,
+                            const ImPlot3DPoint& p0,
+                            const ImPlot3DPoint& p1,
+                            const ImPlot3DPoint& p2,
+                            const ImPlot3DPoint& p3,
+                            const ImVec2& uv0 = ImVec2(0, 1),
+                            const ImVec2& uv1 = ImVec2(1, 1),
+                            const ImVec2& uv2 = ImVec2(1, 0),
+                            const ImVec2& uv3 = ImVec2(0, 0),
+                            const ImVec4& tint_col = ImVec4(1, 1, 1, 1),
+                            ImPlot3DImageFlags flags = 0);
 
 // Plots a centered text label at point x,y,z. It is possible to set the text angle in radians and offset in pixels
 IMPLOT3D_API void PlotText(const char* text, float x, float y, float z, float angle = 0.0f, const ImVec2& pix_offset = ImVec2(0, 0));
