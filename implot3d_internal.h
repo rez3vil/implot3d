@@ -121,6 +121,12 @@ typedef void (*ImPlot3DLocator)(ImPlot3DTicker& ticker, const ImPlot3DRange& ran
 //-----------------------------------------------------------------------------
 
 struct ImDrawList3D {
+    // [Internal] Define which ImTextureID should be used when rendering triangles.
+    struct ImTextureBufferItem {
+        ImTextureID TextureID;
+        unsigned int VtxIdx;
+    };
+
     ImVector<ImDrawIdx> IdxBuffer;  // Index buffer
     ImVector<ImDrawVert> VtxBuffer; // Vertex buffer
     ImVector<float> ZBuffer;        // Z buffer. Depth value for each triangle
@@ -129,21 +135,34 @@ struct ImDrawList3D {
     ImDrawIdx* _IdxWritePtr;  // [Internal] point within IdxBuffer.Data after each add command (to avoid using the ImVector<> operators too much)
     float* _ZWritePtr;        // [Internal] point within ZBuffer.Data after each add command (to avoid using the ImVector<> operators too much)
     ImDrawListFlags _Flags;   // [Internal] draw list flags
-    ImDrawListSharedData* _SharedData; // [Internal] shared draw list data
+    ImVector<ImTextureBufferItem> _TextureBuffer; // [Internal] stack for SetTextureID/ResetTextureID
+    ImDrawListSharedData* _SharedData;            // [Internal] shared draw list data
 
     ImDrawList3D() {
-        _VtxCurrentIdx = 0;
-        _VtxWritePtr = nullptr;
-        _IdxWritePtr = nullptr;
-        _ZWritePtr = nullptr;
         _Flags = ImDrawListFlags_None;
         _SharedData = nullptr;
+        ResetBuffers();
     }
 
     void PrimReserve(int idx_count, int vtx_count);
     void PrimUnreserve(int idx_count, int vtx_count);
 
+    void SetTextureID(ImTextureID texture_id);
+    void ResetTextureID();
+
     void SortedMoveToImGuiDrawList();
+
+    void ResetBuffers() {
+        IdxBuffer.clear();
+        VtxBuffer.clear();
+        ZBuffer.clear();
+        _VtxCurrentIdx = 0;
+        _VtxWritePtr = VtxBuffer.Data;
+        _IdxWritePtr = IdxBuffer.Data;
+        _ZWritePtr = ZBuffer.Data;
+        _TextureBuffer.clear();
+        ResetTextureID();
+    }
 
     constexpr static unsigned int MaxIdx() { return sizeof(ImDrawIdx) == 2 ? 65535 : 4294967295; }
 };

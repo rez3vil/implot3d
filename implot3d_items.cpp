@@ -365,6 +365,7 @@ struct RendererBase {
 template <class _Getter> struct RendererMarkersFill : RendererBase {
     RendererMarkersFill(const _Getter& getter, const ImVec2* marker, int count, float size, ImU32 col)
         : RendererBase(getter.Count, (count - 2) * 3, count), Getter(getter), Marker(marker), Count(count), Size(size), Col(col) {}
+
     void Init(ImDrawList3D& draw_list_3d) const { UV = draw_list_3d._SharedData->TexUvWhitePixel; }
 
     IMPLOT3D_INLINE bool Render(ImDrawList3D& draw_list_3d, const ImPlot3DBox& cull_box, int prim) const {
@@ -556,6 +557,7 @@ template <class _Getter> struct RendererLineSegments : RendererBase {
 
 template <class _Getter> struct RendererTriangleFill : RendererBase {
     RendererTriangleFill(const _Getter& getter, ImU32 col) : RendererBase(getter.Count / 3, 3, 3), Getter(getter), Col(col) {}
+
     void Init(ImDrawList3D& draw_list_3d) const { UV = draw_list_3d._SharedData->TexUvWhitePixel; }
 
     IMPLOT3D_INLINE bool Render(ImDrawList3D& draw_list_3d, const ImPlot3DBox& cull_box, int prim) const {
@@ -611,6 +613,7 @@ template <class _Getter> struct RendererTriangleFill : RendererBase {
 
 template <class _Getter> struct RendererQuadFill : RendererBase {
     RendererQuadFill(const _Getter& getter, ImU32 col) : RendererBase(getter.Count / 4, 6, 4), Getter(getter), Col(col) {}
+
     void Init(ImDrawList3D& draw_list_3d) const { UV = draw_list_3d._SharedData->TexUvWhitePixel; }
 
     IMPLOT3D_INLINE bool Render(ImDrawList3D& draw_list_3d, const ImPlot3DBox& cull_box, int prim) const {
@@ -685,6 +688,7 @@ template <class _Getter> struct RendererQuadImage : RendererBase {
     RendererQuadImage(const _Getter& getter, ImTextureID user_texture_id, const ImVec2& uv0, const ImVec2& uv1, const ImVec2& uv2, const ImVec2& uv3,
                       ImU32 col)
         : RendererBase(getter.Count / 4, 6, 4), Getter(getter), UserTextureID(user_texture_id), UV0(uv0), UV1(uv1), UV2(uv2), UV3(uv3), Col(col) {}
+
     void Init(ImDrawList3D& draw_list_3d) const {}
 
     IMPLOT3D_INLINE bool Render(ImDrawList3D& draw_list_3d, const ImPlot3DBox& cull_box, int prim) const {
@@ -697,7 +701,9 @@ template <class _Getter> struct RendererQuadImage : RendererBase {
         // Check if the quad is outside the culling box
         if (!cull_box.Contains(p_plot[0]) && !cull_box.Contains(p_plot[1]) && !cull_box.Contains(p_plot[2]) && !cull_box.Contains(p_plot[3]))
             return false;
-        // TODO Handle textures
+
+        // Set texture ID to be used when rendering this quad
+        draw_list_3d.SetTextureID(UserTextureID);
 
         // Project the quad vertices to screen space
         ImVec2 p[4];
@@ -747,6 +753,9 @@ template <class _Getter> struct RendererQuadImage : RendererBase {
 
         // Update vertex count
         draw_list_3d._VtxCurrentIdx += 4;
+
+        // Reset texture ID
+        draw_list_3d.ResetTextureID();
 
         return true;
     }

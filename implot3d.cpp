@@ -3005,19 +3005,32 @@ void ImDrawList3D::PrimUnreserve(int idx_count, int vtx_count) {
     ZBuffer.shrink(ZBuffer.Size - idx_count / 3);
 }
 
+void ImDrawList3D::SetTextureID(ImTextureID texture_id) {
+    if (_TextureBuffer.empty()) {
+        // First texture assignment
+        _TextureBuffer.push_back({texture_id, _VtxCurrentIdx});
+        return;
+    }
+
+    ImTextureBufferItem& prev_item = _TextureBuffer.back();
+    if (prev_item.VtxIdx == _VtxCurrentIdx) {
+        // Same vertex index: update existing texture ID
+        prev_item.TextureID = texture_id;
+    } else if (prev_item.TextureID != texture_id) {
+        // New vertex index and different texture: insert new item
+        _TextureBuffer.push_back({texture_id, _VtxCurrentIdx});
+    }
+}
+
+void ImDrawList3D::ResetTextureID() { SetTextureID(0); }
+
 void ImDrawList3D::SortedMoveToImGuiDrawList() {
     ImDrawList& draw_list = *ImGui::GetWindowDrawList();
 
     const int tri_count = ZBuffer.Size;
     if (tri_count == 0) {
-        // No triangles, just clear and return
-        VtxBuffer.clear();
-        IdxBuffer.clear();
-        ZBuffer.clear();
-        _VtxCurrentIdx = 0;
-        _VtxWritePtr = VtxBuffer.Data;
-        _IdxWritePtr = IdxBuffer.Data;
-        _ZWritePtr = ZBuffer.Data;
+        // No triangles, just reset buffers and return
+        ResetBuffers();
         return;
     }
 
@@ -3073,14 +3086,8 @@ void ImDrawList3D::SortedMoveToImGuiDrawList() {
     }
     draw_list._IdxWritePtr = idx_out;
 
-    // Clear local buffers since we've moved them
-    VtxBuffer.clear();
-    IdxBuffer.clear();
-    ZBuffer.clear();
-    _VtxCurrentIdx = 0;
-    _VtxWritePtr = VtxBuffer.Data;
-    _IdxWritePtr = IdxBuffer.Data;
-    _ZWritePtr = ZBuffer.Data;
+    // Reset buffers since we've moved them
+    ResetBuffers();
 
     IM_FREE(tris);
 }
