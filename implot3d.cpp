@@ -3016,6 +3016,13 @@ void ImDrawList3D::SetTextureID(ImTextureID texture_id) {
     if (prev_item.VtxIdx == _VtxCurrentIdx) {
         // Same vertex index: update existing texture ID
         prev_item.TextureID = texture_id;
+
+        // If the previous texture was the same, remove current texture
+        if (_TextureBuffer.Size >= 2) {
+            if (_TextureBuffer[_TextureBuffer.Size - 2].TextureID == texture_id) {
+                _TextureBuffer.pop_back();
+            }
+        }
     } else if (prev_item.TextureID != texture_id) {
         // New vertex index and different texture: insert new item
         _TextureBuffer.push_back({texture_id, _VtxCurrentIdx});
@@ -3065,7 +3072,8 @@ void ImDrawList3D::SortedMoveToImGuiDrawList() {
     unsigned int max_index_allowed = MaxIdx() - idx_offset;
 
     // Copy indices with triangle sorting based on distance from viewer
-    ImDrawIdx* idx_out = draw_list._IdxWritePtr;
+    ImDrawIdx* idx_out_begin = draw_list._IdxWritePtr;
+    ImDrawIdx* idx_out = idx_out_begin;
     ImDrawIdx* idx_in = IdxBuffer.Data;
     for (int i = 0; i < tri_count; i++) {
         int tri_i = tris[i].tri_idx;
@@ -3076,7 +3084,7 @@ void ImDrawList3D::SortedMoveToImGuiDrawList() {
 
         // Check if after adding offset any of these indices exceed max_index_allowed
         if (i0 > max_index_allowed || i1 > max_index_allowed || i2 > max_index_allowed)
-            break;
+            continue;
 
         idx_out[0] = (ImDrawIdx)(i0 + idx_offset);
         idx_out[1] = (ImDrawIdx)(i1 + idx_offset);
@@ -3084,7 +3092,62 @@ void ImDrawList3D::SortedMoveToImGuiDrawList() {
 
         idx_out += 3;
     }
-    draw_list._IdxWritePtr = idx_out;
+    ImDrawIdx* idx_out_end = idx_out;
+    draw_list._IdxWritePtr = idx_out_end;
+
+    // If multiple textures were used (e.g. PlotImage was called), generate multiple ImDrawCmd
+    if (_TextureBuffer.Size > 1) {
+        ImTextureID default_tex = draw_list._CmdHeader.TextureId;
+        ImTextureID curr_tex = default_tex;
+
+        // Remove elements reserved from PrimReserve
+        draw_list.CmdBuffer.back().ElemCount -= IdxBuffer.Size;
+        ImDrawIdx* last_cmd_buffer_idx = idx_out_begin;
+
+        // For each triangle added to the draw_list
+        for (idx_out = idx_out_begin; idx_out < idx_out_end; idx_out += 3) {
+            // Get index of first vertex in the triangle
+            unsigned int idx_in = (unsigned int)(*idx_out - idx_offset);
+
+            // Get the texture for this triangle
+            ImTextureID tri_tex = 0;
+            for (int j = 0; j < _TextureBuffer.Size; j++)
+                if (idx_in >= _TextureBuffer[j].VtxIdx)
+                    tri_tex = _TextureBuffer[j].TextureID;
+            // If tri_tex is 0, it means the texture is the default texture
+            if (tri_tex == 0)
+                tri_tex = default_tex;
+
+            if (tri_tex != curr_tex) {
+                // Update element count of previous draw cmd
+                draw_list.CmdBuffer.back().ElemCount += (unsigned int)(idx_out - last_cmd_buffer_idx);
+                last_cmd_buffer_idx = idx_out;
+
+                // Set custom texture
+                curr_tex = tri_tex;
+                draw_list._CmdHeader.TextureId = curr_tex;
+
+                // Add new draw cmd for the new texture
+                ImDrawCmd draw_cmd;
+                draw_cmd.ClipRect = draw_list._CmdHeader.ClipRect;
+                draw_cmd.TextureId = draw_list._CmdHeader.TextureId;
+                draw_cmd.VtxOffset = draw_list._CmdHeader.VtxOffset;
+                draw_cmd.IdxOffset = (unsigned int)(idx_out - draw_list.IdxBuffer.Data);
+                draw_list.CmdBuffer.push_back(draw_cmd);
+            }
+        }
+        // Flush last elements to cmd buffer
+        draw_list.CmdBuffer.back().ElemCount += (unsigned int)(&draw_list.IdxBuffer.back() - last_cmd_buffer_idx + 1);
+
+        // Check if the last texture was not the default texture
+        if (curr_tex != default_tex) {
+            // Restore default texture
+            draw_list._CmdHeader.TextureId = default_tex;
+
+            // Flush last draw cmd with custom texture
+            draw_list.AddDrawCmd();
+        }
+    }
 
     // Reset buffers since we've moved them
     ResetBuffers();
