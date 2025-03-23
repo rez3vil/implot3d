@@ -481,7 +481,7 @@ void DemoImagePlots() {
     }
 
     // Plot
-    if (ImPlot3D::BeginPlot("Image Plot")) {
+    if (ImPlot3D::BeginPlot("Image Plot", ImVec2(-1, 0), ImPlot3DFlags_NoClip)) {
         ImTextureID tex = ImGui::GetIO().Fonts->TexID;
 
         ImPlot3D::PlotImage("Image 1", tex, center1, axis_u1, axis_v1, uv0_1, uv1_1, tint1);
