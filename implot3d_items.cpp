@@ -1396,6 +1396,24 @@ void PlotMesh(const char* label_id, const ImPlot3DPoint* vtx, const unsigned int
 // [SECTION] PlotImage
 //-----------------------------------------------------------------------------
 
+IMPLOT3D_API void PlotImage(const char* label_id, ImTextureID user_texture_id, const ImPlot3DPoint& center, const ImPlot3DPoint& axis_u,
+                            const ImPlot3DPoint& axis_v, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, ImPlot3DImageFlags flags) {
+    // Compute corners from center and axes
+    ImPlot3DPoint p0 = center - axis_u - axis_v; // Bottom-left
+    ImPlot3DPoint p1 = center + axis_u - axis_v; // Bottom-right
+    ImPlot3DPoint p2 = center + axis_u + axis_v; // Top-right
+    ImPlot3DPoint p3 = center - axis_u + axis_v; // Top-left
+
+    // Map ImPlot-style 2-point UVs into full 4-corner UVs
+    ImVec2 uv_0 = uv0;
+    ImVec2 uv_1 = ImVec2(uv1.x, uv0.y);
+    ImVec2 uv_2 = uv1;
+    ImVec2 uv_3 = ImVec2(uv0.x, uv1.y);
+
+    // Delegate to full quad version
+    PlotImage(label_id, user_texture_id, p0, p1, p2, p3, uv_0, uv_1, uv_2, uv_3, tint_col, flags);
+}
+
 IMPLOT3D_API void PlotImage(const char* label_id, ImTextureID user_texture_id, const ImPlot3DPoint& p0, const ImPlot3DPoint& p1,
                             const ImPlot3DPoint& p2, const ImPlot3DPoint& p3, const ImVec2& uv0, const ImVec2& uv1, const ImVec2& uv2,
                             const ImVec2& uv3, const ImVec4& tint_col, ImPlot3DImageFlags flags) {
@@ -1406,6 +1424,12 @@ IMPLOT3D_API void PlotImage(const char* label_id, ImTextureID user_texture_id, c
     ImPlot3DPoint corners[4] = {p0, p1, p2, p3};
     Getter3DPoints getter(corners, 4);
 
+    // Invert Y from UVs
+    ImVec2 uv_0 = ImVec2(uv0.x, 1 - uv0.y);
+    ImVec2 uv_1 = ImVec2(uv1.x, 1 - uv1.y);
+    ImVec2 uv_2 = ImVec2(uv2.x, 1 - uv2.y);
+    ImVec2 uv_3 = ImVec2(uv3.x, 1 - uv3.y);
+
     if (BeginItemEx(label_id, getter, flags)) {
         ImU32 tint_col32 = ImGui::ColorConvertFloat4ToU32(tint_col);
         GetCurrentItem()->Color = tint_col32;
@@ -1413,7 +1437,7 @@ IMPLOT3D_API void PlotImage(const char* label_id, ImTextureID user_texture_id, c
         // Render image
         bool is_transparent = (tint_col32 & IM_COL32_A_MASK) == 0;
         if (!is_transparent)
-            RenderPrimitives<RendererQuadImage>(getter, user_texture_id, uv0, uv1, uv2, uv3, tint_col32);
+            RenderPrimitives<RendererQuadImage>(getter, user_texture_id, uv_0, uv_1, uv_2, uv_3, tint_col32);
 
         EndItem();
     }

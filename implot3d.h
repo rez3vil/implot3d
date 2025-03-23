@@ -432,9 +432,24 @@ IMPLOT3D_TMP void PlotSurface(const char* label_id, const T* xs, const T* ys, co
 IMPLOT3D_API void PlotMesh(const char* label_id, const ImPlot3DPoint* vtx, const unsigned int* idx, int vtx_count, int idx_count,
                            ImPlot3DMeshFlags flags = 0);
 
+// Plots a rectangular image in 3D defined by its center and two direction vectors (axes).
+// #center is the center of the rectangle in plot coordinates.
+// #axis_u and #axis_v define the local axes and half-extents of the rectangle in 3D space.
+// The rectangle is formed by moving from the center along ±axis_u and ±axis_v.
+// #uv0 and #uv1 define the texture mapping.
+// #tint_col can be used to tint the image.
+IMPLOT3D_API void PlotImage(const char* label_id, ImTextureID user_texture_id, const ImPlot3DPoint& center, const ImPlot3DPoint& axis_u,
+                            const ImPlot3DPoint& axis_v, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1),
+                            const ImVec4& tint_col = ImVec4(1, 1, 1, 1), ImPlot3DImageFlags flags = 0);
+
+// Plots an image using four arbitrary 3D points that define a quad in space.
+// Each corner (p0 to p3) corresponds to a corner in the image, and #uv0 to #uv3 are the texture coordinates for each.
+// This overload allows full control over orientation, shape, and distortion.
+// Note: The quad is internally split into two triangles, so non-rectangular quads may produce rendering artifacts
+// since distortion is interpolated per triangle rather than over the full quad.
 IMPLOT3D_API void PlotImage(const char* label_id, ImTextureID user_texture_id, const ImPlot3DPoint& p0, const ImPlot3DPoint& p1,
-                            const ImPlot3DPoint& p2, const ImPlot3DPoint& p3, const ImVec2& uv0 = ImVec2(0, 1), const ImVec2& uv1 = ImVec2(1, 1),
-                            const ImVec2& uv2 = ImVec2(1, 0), const ImVec2& uv3 = ImVec2(0, 0), const ImVec4& tint_col = ImVec4(1, 1, 1, 1),
+                            const ImPlot3DPoint& p2, const ImPlot3DPoint& p3, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 0),
+                            const ImVec2& uv2 = ImVec2(1, 1), const ImVec2& uv3 = ImVec2(0, 1), const ImVec4& tint_col = ImVec4(1, 1, 1, 1),
                             ImPlot3DImageFlags flags = 0);
 
 // Plots a centered text label at point x,y,z. It is possible to set the text angle in radians and offset in pixels

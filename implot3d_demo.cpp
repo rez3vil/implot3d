@@ -434,34 +434,59 @@ void DemoImagePlots() {
     ImGui::BulletText("Use the 'ImTextureID' type as storage to pass pointers or identifiers to your\nown texture data.");
     ImGui::BulletText("See ImGui Wiki page 'Image Loading and Displaying Examples'.");
 
+    static ImVec4 tint1(1, 1, 1, 1);
+    static ImVec4 tint2(1, 1, 1, 1);
+
+    static ImPlot3DPoint center1(0, 0, 1);
+    static ImPlot3DPoint axis_u1(1, 0, 0);
+    static ImPlot3DPoint axis_v1(0, 1, 0);
+    static ImVec2 uv0_1(0, 0), uv1_1(1, 1);
+
     static ImPlot3DPoint p0(-1, -1, 0);
     static ImPlot3DPoint p1(1, -1, 0);
     static ImPlot3DPoint p2(1, 1, 0);
     static ImPlot3DPoint p3(-1, 1, 0);
-    static ImVec2 uv0(0, 0);
-    static ImVec2 uv1(1, 0);
-    static ImVec2 uv2(1, 1);
-    static ImVec2 uv3(0, 1);
-    static ImVec4 tint(1, 1, 1, 1);
+    static ImVec2 uv0(0, 0), uv1(1, 0), uv2(1, 1), uv3(0, 1);
 
-    // Positions
-    ImGui::SliderFloat3("P0", &p0.x, -2, 2, "%.1f");
-    ImGui::SliderFloat3("P1", &p1.x, -2, 2, "%.1f");
-    ImGui::SliderFloat3("P2", &p2.x, -2, 2, "%.1f");
-    ImGui::SliderFloat3("P3", &p3.x, -2, 2, "%.1f");
+    // Spacing
+    ImGui::Dummy(ImVec2(0, 10));
 
-    // UV
-    ImGui::SliderFloat2("UV0", &uv0.x, -2, 2, "%.1f");
-    ImGui::SliderFloat2("UV1", &uv1.x, -2, 2, "%.1f");
-    ImGui::SliderFloat2("UV2", &uv2.x, -2, 2, "%.1f");
-    ImGui::SliderFloat2("UV3", &uv3.x, -2, 2, "%.1f");
+    // Image 1 Controls
+    if (ImGui::TreeNodeEx("Image 1 Controls: Center + Axes")) {
+        ImGui::SliderFloat3("Center", &center1.x, -2, 2, "%.1f");
+        ImGui::SliderFloat3("Axis U", &axis_u1.x, -2, 2, "%.1f");
+        ImGui::SliderFloat3("Axis V", &axis_v1.x, -2, 2, "%.1f");
+        ImGui::SliderFloat2("UV0", &uv0_1.x, 0, 1, "%.2f");
+        ImGui::SliderFloat2("UV1", &uv1_1.x, 0, 1, "%.2f");
+        ImGui::ColorEdit4("Tint", &tint1.x);
 
-    // Tint
-    ImGui::ColorEdit4("Tint", &tint.x);
+        ImGui::TreePop();
+    }
+
+    // Image 2 Controls
+    if (ImGui::TreeNodeEx("Image 2 Controls: Full Quad")) {
+        ImGui::SliderFloat3("P0", &p0.x, -2, 2, "%.1f");
+        ImGui::SliderFloat3("P1", &p1.x, -2, 2, "%.1f");
+        ImGui::SliderFloat3("P2", &p2.x, -2, 2, "%.1f");
+        ImGui::SliderFloat3("P3", &p3.x, -2, 2, "%.1f");
+
+        ImGui::SliderFloat2("UV0", &uv0.x, 0, 1, "%.2f");
+        ImGui::SliderFloat2("UV1", &uv1.x, 0, 1, "%.2f");
+        ImGui::SliderFloat2("UV2", &uv2.x, 0, 1, "%.2f");
+        ImGui::SliderFloat2("UV3", &uv3.x, 0, 1, "%.2f");
+
+        ImGui::ColorEdit4("Tint##2", &tint2.x);
+
+        ImGui::TreePop();
+    }
 
     // Plot
     if (ImPlot3D::BeginPlot("Image Plot")) {
-        ImPlot3D::PlotImage("My Image", ImGui::GetIO().Fonts->TexID, p0, p1, p2, p3, uv0, uv1, uv2, uv3, tint);
+        ImTextureID tex = ImGui::GetIO().Fonts->TexID;
+
+        ImPlot3D::PlotImage("Image 1", tex, center1, axis_u1, axis_v1, uv0_1, uv1_1, tint1);
+        ImPlot3D::PlotImage("Image 2", tex, p0, p1, p2, p3, uv0, uv1, uv2, uv3, tint2);
+
         ImPlot3D::EndPlot();
     }
 }
