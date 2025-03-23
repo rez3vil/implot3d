@@ -674,7 +674,7 @@ void DemoBoxRotation() {
 }
 
 void DemoTickLabels() {
-    static bool custom_ticks = false;
+    static bool custom_ticks = true;
     static bool custom_labels = true;
     ImGui::Checkbox("Show Custom Ticks", &custom_ticks);
     if (custom_ticks) {
