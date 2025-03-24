@@ -1,5 +1,5 @@
 //--------------------------------------------------
-// ImPlot3D v0.2
+// ImPlot3D v0.3 WIP
 // implot3d_demo.cpp
 // Date: 2024-11-17
 // Author: Breno Cunha Queiroz (brenocq.com)

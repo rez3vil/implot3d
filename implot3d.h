@@ -1,5 +1,5 @@
 //--------------------------------------------------
-// ImPlot3D v0.2
+// ImPlot3D v0.3 WIP
 // implot3d.h
 // Date: 2024-11-16
 // Author: Breno Cunha Queiroz (brenocq.com)
@@ -45,8 +45,8 @@
 #define IMPLOT3D_API
 #endif
 
-#define IMPLOT3D_VERSION "0.2"                // ImPlot3D version
-#define IMPLOT3D_VERSION_NUM 200              // Integer encoded version
+#define IMPLOT3D_VERSION "0.3 WIP"            // ImPlot3D version
+#define IMPLOT3D_VERSION_NUM 300              // Integer encoded version
 #define IMPLOT3D_AUTO -1                      // Deduce variable automatically
 #define IMPLOT3D_AUTO_COL ImVec4(0, 0, 0, -1) // Deduce color automatically
 #define IMPLOT3D_TMP template <typename T> IMPLOT3D_API
