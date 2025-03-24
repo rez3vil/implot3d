@@ -88,6 +88,11 @@ typedef int ImPlot3DImageFlags;    // -> ImPlot3DImageFlags_    // Flags: Image 
 typedef int ImPlot3DLegendFlags;   // -> ImPlot3DLegendFlags_   // Flags: Legend flags
 typedef int ImPlot3DAxisFlags;     // -> ImPlot3DAxisFlags_     // Flags: Axis flags
 
+// Fallback for ImGui versions before v1.92: define ImTextureRef as ImTextureID
+#ifndef IMGUI_HAS_TEXTURES
+typedef ImTextureID ImTextureRef;
+#endif
+
 //-----------------------------------------------------------------------------
 // [SECTION] Flags & Enumerations
 //-----------------------------------------------------------------------------
@@ -438,7 +443,7 @@ IMPLOT3D_API void PlotMesh(const char* label_id, const ImPlot3DPoint* vtx, const
 // The rectangle is formed by moving from the center along ±axis_u and ±axis_v.
 // #uv0 and #uv1 define the texture mapping.
 // #tint_col can be used to tint the image.
-IMPLOT3D_API void PlotImage(const char* label_id, ImTextureID user_texture_id, const ImPlot3DPoint& center, const ImPlot3DPoint& axis_u,
+IMPLOT3D_API void PlotImage(const char* label_id, ImTextureRef tex_ref, const ImPlot3DPoint& center, const ImPlot3DPoint& axis_u,
                             const ImPlot3DPoint& axis_v, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1),
                             const ImVec4& tint_col = ImVec4(1, 1, 1, 1), ImPlot3DImageFlags flags = 0);
 
@@ -447,8 +452,8 @@ IMPLOT3D_API void PlotImage(const char* label_id, ImTextureID user_texture_id, c
 // This overload allows full control over orientation, shape, and distortion.
 // Note: The quad is internally split into two triangles, so non-rectangular quads may produce rendering artifacts
 // since distortion is interpolated per triangle rather than over the full quad.
-IMPLOT3D_API void PlotImage(const char* label_id, ImTextureID user_texture_id, const ImPlot3DPoint& p0, const ImPlot3DPoint& p1,
-                            const ImPlot3DPoint& p2, const ImPlot3DPoint& p3, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 0),
+IMPLOT3D_API void PlotImage(const char* label_id, ImTextureRef tex_ref, const ImPlot3DPoint& p0, const ImPlot3DPoint& p1, const ImPlot3DPoint& p2,
+                            const ImPlot3DPoint& p3, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 0),
                             const ImVec2& uv2 = ImVec2(1, 1), const ImVec2& uv3 = ImVec2(0, 1), const ImVec4& tint_col = ImVec4(1, 1, 1, 1),
                             ImPlot3DImageFlags flags = 0);
 

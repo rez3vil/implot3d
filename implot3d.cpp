@@ -3014,31 +3014,39 @@ void ImDrawList3D::PrimUnreserve(int idx_count, int vtx_count) {
     ZBuffer.shrink(ZBuffer.Size - idx_count / 3);
 }
 
-void ImDrawList3D::SetTextureID(ImTextureID texture_id) {
+void ImDrawList3D::SetTexture(ImTextureRef tex_ref) {
     if (_TextureBuffer.empty()) {
         // First texture assignment
-        _TextureBuffer.push_back({texture_id, _VtxCurrentIdx});
+        _TextureBuffer.push_back({tex_ref, _VtxCurrentIdx});
         return;
     }
 
     ImTextureBufferItem& prev_item = _TextureBuffer.back();
     if (prev_item.VtxIdx == _VtxCurrentIdx) {
         // Same vertex index: update existing texture ID
-        prev_item.TextureID = texture_id;
+        prev_item.TexRef = tex_ref;
 
         // If the previous texture was the same, remove current texture
         if (_TextureBuffer.Size >= 2) {
-            if (_TextureBuffer[_TextureBuffer.Size - 2].TextureID == texture_id) {
+            if (_TextureBuffer[_TextureBuffer.Size - 2].TexRef == tex_ref) {
                 _TextureBuffer.pop_back();
             }
         }
-    } else if (prev_item.TextureID != texture_id) {
+    } else if (prev_item.TexRef != tex_ref) {
         // New vertex index and different texture: insert new item
-        _TextureBuffer.push_back({texture_id, _VtxCurrentIdx});
+        _TextureBuffer.push_back({tex_ref, _VtxCurrentIdx});
     }
 }
 
-void ImDrawList3D::ResetTextureID() { SetTextureID(0); }
+void ImDrawList3D::ResetTexture() { SetTexture(ImTextureID(0)); }
+
+#ifdef IMGUI_HAS_TEXTURES
+#define SET_TEX_REF(cmd, tex_ref) (cmd).TexRef = (tex_ref)
+#define GET_TEX_REF(cmd) (cmd).TexRef
+#else
+#define SET_TEX_REF(cmd, tex_ref) (cmd).TextureId = (tex_ref)
+#define GET_TEX_REF(cmd) (cmd).TextureId
+#endif
 
 void ImDrawList3D::SortedMoveToImGuiDrawList() {
     ImDrawList& draw_list = *ImGui::GetWindowDrawList();
@@ -3106,8 +3114,8 @@ void ImDrawList3D::SortedMoveToImGuiDrawList() {
 
     // If multiple textures were used (e.g. PlotImage was called), generate multiple ImDrawCmd
     if (_TextureBuffer.Size > 1) {
-        ImTextureID default_tex = draw_list._CmdHeader.TextureId;
-        ImTextureID curr_tex = default_tex;
+        ImTextureRef default_tex = GET_TEX_REF(draw_list._CmdHeader);
+        ImTextureRef curr_tex = default_tex;
 
         // Remove elements reserved from PrimReserve
         draw_list.CmdBuffer.back().ElemCount -= IdxBuffer.Size;
@@ -3119,12 +3127,14 @@ void ImDrawList3D::SortedMoveToImGuiDrawList() {
             unsigned int idx_in = (unsigned int)(*idx_out - idx_offset);
 
             // Get the texture for this triangle
-            ImTextureID tri_tex = 0;
+            const ImTextureRef invalid_tex = ImTextureID(0);
+            ImTextureRef tri_tex = invalid_tex;
             for (int j = 0; j < _TextureBuffer.Size; j++)
                 if (idx_in >= _TextureBuffer[j].VtxIdx)
-                    tri_tex = _TextureBuffer[j].TextureID;
-            // If tri_tex is 0, it means the texture is the default texture
-            if (tri_tex == 0)
+                    tri_tex = _TextureBuffer[j].TexRef;
+
+            // If tri_tex is invalid, the default texture should be used
+            if (tri_tex == invalid_tex)
                 tri_tex = default_tex;
 
             if (tri_tex != curr_tex) {
@@ -3134,12 +3144,12 @@ void ImDrawList3D::SortedMoveToImGuiDrawList() {
 
                 // Set custom texture
                 curr_tex = tri_tex;
-                draw_list._CmdHeader.TextureId = curr_tex;
+                SET_TEX_REF(draw_list._CmdHeader, curr_tex);
 
                 // Add new draw cmd for the new texture
                 ImDrawCmd draw_cmd;
                 draw_cmd.ClipRect = draw_list._CmdHeader.ClipRect;
-                draw_cmd.TextureId = draw_list._CmdHeader.TextureId;
+                SET_TEX_REF(draw_cmd, GET_TEX_REF(draw_list._CmdHeader));
                 draw_cmd.VtxOffset = draw_list._CmdHeader.VtxOffset;
                 draw_cmd.IdxOffset = (unsigned int)(idx_out - draw_list.IdxBuffer.Data);
                 draw_list.CmdBuffer.push_back(draw_cmd);
@@ -3151,7 +3161,7 @@ void ImDrawList3D::SortedMoveToImGuiDrawList() {
         // Check if the last texture was not the default texture
         if (curr_tex != default_tex) {
             // Restore default texture
-            draw_list._CmdHeader.TextureId = default_tex;
+            SET_TEX_REF(draw_list._CmdHeader, default_tex);
 
             // Flush last draw cmd with custom texture
             draw_list.AddDrawCmd();

@@ -685,9 +685,9 @@ template <class _Getter> struct RendererQuadFill : RendererBase {
 };
 
 template <class _Getter> struct RendererQuadImage : RendererBase {
-    RendererQuadImage(const _Getter& getter, ImTextureID user_texture_id, const ImVec2& uv0, const ImVec2& uv1, const ImVec2& uv2, const ImVec2& uv3,
+    RendererQuadImage(const _Getter& getter, ImTextureRef tex_ref, const ImVec2& uv0, const ImVec2& uv1, const ImVec2& uv2, const ImVec2& uv3,
                       ImU32 col)
-        : RendererBase(getter.Count / 4, 6, 4), Getter(getter), UserTextureID(user_texture_id), UV0(uv0), UV1(uv1), UV2(uv2), UV3(uv3), Col(col) {}
+        : RendererBase(getter.Count / 4, 6, 4), Getter(getter), TexRef(tex_ref), UV0(uv0), UV1(uv1), UV2(uv2), UV3(uv3), Col(col) {}
 
     void Init(ImDrawList3D& draw_list_3d) const {}
 
@@ -703,7 +703,7 @@ template <class _Getter> struct RendererQuadImage : RendererBase {
             return false;
 
         // Set texture ID to be used when rendering this quad
-        draw_list_3d.SetTextureID(UserTextureID);
+        draw_list_3d.SetTexture(TexRef);
 
         // Project the quad vertices to screen space
         ImVec2 p[4];
@@ -755,14 +755,14 @@ template <class _Getter> struct RendererQuadImage : RendererBase {
         draw_list_3d._VtxCurrentIdx += 4;
 
         // Reset texture ID
-        draw_list_3d.ResetTextureID();
+        draw_list_3d.ResetTexture();
 
         return true;
     }
 
     const _Getter& Getter;
-    const ImTextureID UserTextureID;
-    mutable ImVec2 UV0, UV1, UV2, UV3;
+    const ImTextureRef TexRef;
+    const ImVec2 UV0, UV1, UV2, UV3;
     const ImU32 Col;
 };
 
@@ -1396,7 +1396,7 @@ void PlotMesh(const char* label_id, const ImPlot3DPoint* vtx, const unsigned int
 // [SECTION] PlotImage
 //-----------------------------------------------------------------------------
 
-IMPLOT3D_API void PlotImage(const char* label_id, ImTextureID user_texture_id, const ImPlot3DPoint& center, const ImPlot3DPoint& axis_u,
+IMPLOT3D_API void PlotImage(const char* label_id, ImTextureRef tex_ref, const ImPlot3DPoint& center, const ImPlot3DPoint& axis_u,
                             const ImPlot3DPoint& axis_v, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, ImPlot3DImageFlags flags) {
     // Compute corners from center and axes
     ImPlot3DPoint p0 = center - axis_u - axis_v; // Bottom-left
@@ -1411,12 +1411,12 @@ IMPLOT3D_API void PlotImage(const char* label_id, ImTextureID user_texture_id, c
     ImVec2 uv_3 = ImVec2(uv0.x, uv1.y);
 
     // Delegate to full quad version
-    PlotImage(label_id, user_texture_id, p0, p1, p2, p3, uv_0, uv_1, uv_2, uv_3, tint_col, flags);
+    PlotImage(label_id, tex_ref, p0, p1, p2, p3, uv_0, uv_1, uv_2, uv_3, tint_col, flags);
 }
 
-IMPLOT3D_API void PlotImage(const char* label_id, ImTextureID user_texture_id, const ImPlot3DPoint& p0, const ImPlot3DPoint& p1,
-                            const ImPlot3DPoint& p2, const ImPlot3DPoint& p3, const ImVec2& uv0, const ImVec2& uv1, const ImVec2& uv2,
-                            const ImVec2& uv3, const ImVec4& tint_col, ImPlot3DImageFlags flags) {
+IMPLOT3D_API void PlotImage(const char* label_id, ImTextureRef tex_ref, const ImPlot3DPoint& p0, const ImPlot3DPoint& p1, const ImPlot3DPoint& p2,
+                            const ImPlot3DPoint& p3, const ImVec2& uv0, const ImVec2& uv1, const ImVec2& uv2, const ImVec2& uv3,
+                            const ImVec4& tint_col, ImPlot3DImageFlags flags) {
     ImPlot3DContext& gp = *GImPlot3D;
     IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr, "PlotImage() needs to be called between BeginPlot() and EndPlot()!");
     SetupLock();
@@ -1437,7 +1437,7 @@ IMPLOT3D_API void PlotImage(const char* label_id, ImTextureID user_texture_id, c
         // Render image
         bool is_transparent = (tint_col32 & IM_COL32_A_MASK) == 0;
         if (!is_transparent)
-            RenderPrimitives<RendererQuadImage>(getter, user_texture_id, uv_0, uv_1, uv_2, uv_3, tint_col32);
+            RenderPrimitives<RendererQuadImage>(getter, tex_ref, uv_0, uv_1, uv_2, uv_3, tint_col32);
 
         EndItem();
     }

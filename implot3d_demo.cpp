@@ -482,7 +482,14 @@ void DemoImagePlots() {
 
     // Plot
     if (ImPlot3D::BeginPlot("Image Plot", ImVec2(-1, 0), ImPlot3DFlags_NoClip)) {
+#ifdef IMGUI_HAS_TEXTURES
+        // We use the font atlas ImTextureRef for this demo, but in your real code when you submit
+        // an image that you have loaded yourself, you would normally have a ImTextureID which works
+        // just as well (as ImTextureRef can be constructed from ImTextureID).
+        ImTextureRef tex = ImGui::GetIO().Fonts->TexRef;
+#else
         ImTextureID tex = ImGui::GetIO().Fonts->TexID;
+#endif
 
         ImPlot3D::PlotImage("Image 1", tex, center1, axis_u1, axis_v1, uv0_1, uv1_1, tint1);
         ImPlot3D::PlotImage("Image 2", tex, p0, p1, p2, p3, uv0, uv1, uv2, uv3, tint2);
