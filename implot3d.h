@@ -89,7 +89,8 @@ typedef int ImPlot3DLegendFlags;   // -> ImPlot3DLegendFlags_   // Flags: Legend
 typedef int ImPlot3DAxisFlags;     // -> ImPlot3DAxisFlags_     // Flags: Axis flags
 
 // Fallback for ImGui versions before v1.92: define ImTextureRef as ImTextureID
-#ifndef IMGUI_HAS_TEXTURES
+// You can `#define IMPLOT3D_NO_IMTEXTUREREF` to avoid this fallback
+#if !defined(IMGUI_HAS_TEXTURES) && !defined(IMPLOT3D_NO_IMTEXTUREREF)
 typedef ImTextureID ImTextureRef;
 #endif
 
