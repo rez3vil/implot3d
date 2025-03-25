@@ -327,6 +327,15 @@ IMPLOT3D_INLINE void PrimLine(ImDrawList3D& draw_list_3d, const ImVec2& P1, cons
 float GetPointDepth(ImPlot3DPoint p) {
     ImPlot3DContext& gp = *GImPlot3D;
     ImPlot3DPlot& plot = *gp.CurrentPlot;
+
+    // Adjust for inverted axes before rotation
+    if (ImHasFlag(plot.Axes[0].Flags, ImPlot3DAxisFlags_Invert))
+        p.x = -p.x;
+    if (ImHasFlag(plot.Axes[1].Flags, ImPlot3DAxisFlags_Invert))
+        p.y = -p.y;
+    if (ImHasFlag(plot.Axes[2].Flags, ImPlot3DAxisFlags_Invert))
+        p.z = -p.z;
+
     ImPlot3DPoint p_rot = plot.Rotation * p;
     return p_rot.z;
 }
