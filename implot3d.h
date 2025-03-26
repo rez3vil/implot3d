@@ -584,7 +584,6 @@ IMPLOT3D_API void ShowDemoWindow(bool* p_open = nullptr);
 // Shows all ImPlot3D demos, without enclosing window
 IMPLOT3D_API void ShowAllDemos();
 
-
 // Shows ImPlot3D style editor block (not a window)
 IMPLOT3D_API void ShowStyleEditor(ImPlot3DStyle* ref = nullptr);
 

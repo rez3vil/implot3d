@@ -829,12 +829,10 @@ void DemoHeader(const char* label, void (*demo)()) {
     }
 }
 
-void ShowAllDemos()
-{
+void ShowAllDemos() {
     ImGui::Text("ImPlot3D says olá! (%s)", IMPLOT3D_VERSION);
     ImGui::Spacing();
-    if (ImGui::BeginTabBar("ImPlot3DDemoTabs"))
-    {
+    if (ImGui::BeginTabBar("ImPlot3DDemoTabs")) {
         if (ImGui::BeginTabItem("Plots")) {
             DemoHeader("Line Plots", DemoLinePlots);
             DemoHeader("Scatter Plots", DemoScatterPlots);
@@ -843,7 +841,7 @@ void ShowAllDemos()
             DemoHeader("Surface Plots", DemoSurfacePlots);
             DemoHeader("Mesh Plots", DemoMeshPlots);
             DemoHeader("Realtime Plots", DemoRealtimePlots);
-			DemoHeader("Image Plots", DemoImagePlots);
+            DemoHeader("Image Plots", DemoImagePlots);
             DemoHeader("Markers and Text", DemoMarkersAndText);
             DemoHeader("NaN Values", DemoNaNValues);
             ImGui::EndTabItem();
@@ -866,7 +864,6 @@ void ShowAllDemos()
         ImGui::EndTabBar();
     }
 }
-
 
 void ShowDemoWindow(bool* p_open) {
     static bool show_implot3d_style_editor = false;

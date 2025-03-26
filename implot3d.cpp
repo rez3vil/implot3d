@@ -2281,7 +2281,6 @@ static const ImPlot3DStyleVarInfo* GetPlotStyleVarInfo(ImPlot3DStyleVar idx) {
 ImPlot3DStyle& GetStyle() { return GImPlot3D->Style; }
 void SetStyle(const ImPlot3DStyle& style) { GImPlot3D->Style = style; }
 
-
 void StyleColorsAuto(ImPlot3DStyle* dst) {
     ImPlot3DStyle* style = dst ? dst : &ImPlot3D::GetStyle();
     ImVec4* colors = style->Colors;
