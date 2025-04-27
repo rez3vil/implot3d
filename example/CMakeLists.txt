@@ -77,3 +77,8 @@ set(EXAMPLE_SOURCE
 )
 add_executable(example ${EXAMPLE_SOURCE})
 target_link_libraries(example PRIVATE implot implot3d)
+
+# Silence OpenGL deprecation warnings on macOS
+if(APPLE)
+    target_compile_definitions(example PRIVATE GL_SILENCE_DEPRECATION)
+endif()
