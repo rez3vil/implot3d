@@ -62,8 +62,8 @@ set(IMPLOT_SOURCE
     ${IMPLOT_SOURCE_DIR}/implot_items.cpp
 )
 add_library(implot STATIC ${IMPLOT_SOURCE})
-target_link_libraries(implot PUBLIC imgui)
 target_include_directories(imgui PUBLIC ${IMPLOT_SOURCE_DIR})
+target_link_libraries(implot PUBLIC imgui)
 
 # Setup ImPlot3D
 set(IMPLOT3D_SOURCE_DIR "..")
@@ -74,12 +74,12 @@ set(IMPLOT3D_SOURCE
     ${IMPLOT3D_SOURCE_DIR}/implot3d_meshes.cpp
 )
 add_library(implot3d STATIC ${IMPLOT3D_SOURCE})
-target_include_directories(implot3d PUBLIC "..")
-target_link_libraries(implot3d PRIVATE imgui)
+target_include_directories(implot3d PUBLIC ${IMPLOT3D_SOURCE_DIR})
+target_link_libraries(implot3d PUBLIC imgui)
 
 # Add the executable
 set(EXAMPLE_SOURCE
     main.cpp
 )
 add_executable(example ${EXAMPLE_SOURCE})
-target_link_libraries(example PRIVATE imgui implot implot3d glad glfw)
+target_link_libraries(example PRIVATE implot implot3d)
