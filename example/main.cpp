@@ -24,10 +24,21 @@ int main() {
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return -1;
     }
+
+    // Setup OpenGL version
+#if defined(__APPLE__)
+    // GL 3.2 + GLSL 150 (MacOS)
+    const char* glsl_version = "#version 150";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // 3.2+ only
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);           // Required on MacOS
+#else
+    // GL 3.0 + GLSL 130 (Windows and Linux)
+    const char* glsl_version = "#version 130";
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+#endif
 
     // Create window
     GLFWwindow* window = glfwCreateWindow(800, 600, "Example", nullptr, nullptr);
@@ -37,7 +48,7 @@ int main() {
         return -1;
     }
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(0);
+    glfwSwapInterval(0); // Disable vsync
 
     // Setup context
     IMGUI_CHECKVERSION();
@@ -50,7 +61,7 @@ int main() {
 
     // Setup backend
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 330");
+    ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
