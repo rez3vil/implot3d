@@ -4,13 +4,12 @@
 // Date: 2024-11-17
 // Author: Breno Cunha Queiroz (brenocq.com)
 //--------------------------------------------------
-#include "glad/gl.h"
-#include "GLFW/glfw3.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "implot.h"
 #include "implot3d.h"
+#include <GLFW/glfw3.h>
 #include <iostream>
 
 // Callback to handle GLFW errors
@@ -39,15 +38,6 @@ int main() {
     }
     glfwMakeContextCurrent(window);
     glfwSwapInterval(0);
-
-    // Load OpenGL functions using glad
-    int version = gladLoadGL(glfwGetProcAddress);
-    if (version == 0) {
-        std::cerr << "Failed to initialize OpenGL loader (glad)" << std::endl;
-        glfwDestroyWindow(window);
-        glfwTerminate();
-        return -1;
-    }
 
     // Setup context
     IMGUI_CHECKVERSION();
