@@ -10,11 +10,13 @@ include(FetchContent)
 FetchContent_Declare(
     glad
     GIT_REPOSITORY "https://github.com/Dav1dde/glad"
-    GIT_TAG "v0.1.36"
+    GIT_TAG "v2.0.8"
     GIT_PROGRESS TRUE
     GIT_SHALLOW TRUE
+    SOURCE_SUBDIR cmake
 )
 FetchContent_MakeAvailable(glad)
+glad_add_library(glad STATIC REPRODUCIBLE LOADER API gl:core=3.2)
 
 # Setup GLFW
 FetchContent_Declare(
