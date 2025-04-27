@@ -4,7 +4,7 @@
 // Date: 2024-11-17
 // Author: Breno Cunha Queiroz (brenocq.com)
 //--------------------------------------------------
-#include "glad/glad.h"
+#include "glad/gl.h"
 #include "GLFW/glfw3.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
@@ -14,9 +14,7 @@
 #include <iostream>
 
 // Callback to handle GLFW errors
-void glfw_error_callback(int error, const char* description) {
-    std::cerr << "GLFW Error " << error << ": " << description << std::endl;
-}
+void glfw_error_callback(int error, const char* description) { std::cerr << "GLFW Error " << error << ": " << description << std::endl; }
 
 int main() {
     // Setup error callback
@@ -43,8 +41,10 @@ int main() {
     glfwSwapInterval(0);
 
     // Load OpenGL functions using glad
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    int version = gladLoadGL(glfwGetProcAddress);
+    if (version == 0) {
         std::cerr << "Failed to initialize OpenGL loader (glad)" << std::endl;
+        glfwDestroyWindow(window);
         glfwTerminate();
         return -1;
     }
