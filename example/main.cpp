@@ -4,13 +4,12 @@
 // Date: 2024-11-17
 // Author: Breno Cunha Queiroz (brenocq.com)
 //--------------------------------------------------
-#include "glad/gl.h"
-#include "GLFW/glfw3.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "implot.h"
 #include "implot3d.h"
+#include <GLFW/glfw3.h>
 #include <iostream>
 
 // Callback to handle GLFW errors
@@ -25,10 +24,21 @@ int main() {
         std::cerr << "Failed to initialize GLFW" << std::endl;
         return -1;
     }
+
+    // Setup OpenGL version
+#if defined(__APPLE__)
+    // GL 3.2 + GLSL 150 (MacOS)
+    const char* glsl_version = "#version 150";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // 3.2+ only
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);           // Required on MacOS
+#else
+    // GL 3.0 + GLSL 130 (Windows and Linux)
+    const char* glsl_version = "#version 130";
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+#endif
 
     // Create window
     GLFWwindow* window = glfwCreateWindow(800, 600, "Example", nullptr, nullptr);
@@ -38,16 +48,7 @@ int main() {
         return -1;
     }
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(0);
-
-    // Load OpenGL functions using glad
-    int version = gladLoadGL(glfwGetProcAddress);
-    if (version == 0) {
-        std::cerr << "Failed to initialize OpenGL loader (glad)" << std::endl;
-        glfwDestroyWindow(window);
-        glfwTerminate();
-        return -1;
-    }
+    glfwSwapInterval(0); // Disable vsync
 
     // Setup context
     IMGUI_CHECKVERSION();
@@ -60,7 +61,7 @@ int main() {
 
     // Setup backend
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 330");
+    ImGui_ImplOpenGL3_Init(glsl_version);
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {

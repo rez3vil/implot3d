@@ -6,13 +6,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(FetchContent)
 
-# Setup glad (OpenGL 3.2 core profile)
-set(GLAD_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/glad)
-set(GLAD_SOURCE
-    ${GLAD_SOURCE_DIR}/src/gl.c
-)
-add_library(glad STATIC ${GLAD_SOURCE})
-target_include_directories(glad PUBLIC "${GLAD_SOURCE_DIR}/include")
+# Setup OpenGL
+cmake_policy(SET CMP0072 NEW) # Pefer GLVND over legacy GL libraries
+find_package(OpenGL REQUIRED)
 
 # Setup GLFW
 FetchContent_Declare(
@@ -33,19 +29,18 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(imgui)
-set(IMGUI_SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/imgui-src)
 set(IMGUI_SOURCE
-    ${IMGUI_SOURCE_DIR}/imgui.cpp
-    ${IMGUI_SOURCE_DIR}/imgui_demo.cpp
-    ${IMGUI_SOURCE_DIR}/imgui_draw.cpp
-    ${IMGUI_SOURCE_DIR}/imgui_tables.cpp
-    ${IMGUI_SOURCE_DIR}/imgui_widgets.cpp
-	${IMGUI_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
-	${IMGUI_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_demo.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+	${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+	${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
 )
 add_library(imgui STATIC ${IMGUI_SOURCE})
-target_include_directories(imgui PUBLIC "${IMGUI_SOURCE_DIR};${IMGUI_SOURCE_DIR}/backends/")
-target_link_libraries(imgui PUBLIC glfw glad)
+target_include_directories(imgui PUBLIC "${imgui_SOURCE_DIR};${imgui_SOURCE_DIR}/backends/")
+target_link_libraries(imgui PUBLIC glfw OpenGL::GL)
 
 # Setup ImPlot
 FetchContent_Declare(
@@ -55,18 +50,17 @@ FetchContent_Declare(
     GIT_PROGRESS TRUE
 )
 FetchContent_MakeAvailable(implot)
-set(IMPLOT_SOURCE_DIR ${CMAKE_BINARY_DIR}/_deps/implot-src)
 set(IMPLOT_SOURCE
-    ${IMPLOT_SOURCE_DIR}/implot.cpp
-    ${IMPLOT_SOURCE_DIR}/implot_demo.cpp
-    ${IMPLOT_SOURCE_DIR}/implot_items.cpp
+    ${implot_SOURCE_DIR}/implot.cpp
+    ${implot_SOURCE_DIR}/implot_demo.cpp
+    ${implot_SOURCE_DIR}/implot_items.cpp
 )
 add_library(implot STATIC ${IMPLOT_SOURCE})
-target_include_directories(imgui PUBLIC ${IMPLOT_SOURCE_DIR})
+target_include_directories(implot PUBLIC ${implot_SOURCE_DIR})
 target_link_libraries(implot PUBLIC imgui)
 
 # Setup ImPlot3D
-set(IMPLOT3D_SOURCE_DIR "..")
+set(IMPLOT3D_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/..)
 set(IMPLOT3D_SOURCE
     ${IMPLOT3D_SOURCE_DIR}/implot3d.cpp
     ${IMPLOT3D_SOURCE_DIR}/implot3d_demo.cpp
@@ -83,3 +77,8 @@ set(EXAMPLE_SOURCE
 )
 add_executable(example ${EXAMPLE_SOURCE})
 target_link_libraries(example PRIVATE implot implot3d)
+
+# Silence OpenGL deprecation warnings on macOS
+if(APPLE)
+    target_compile_definitions(example PRIVATE GL_SILENCE_DEPRECATION)
+endif()
