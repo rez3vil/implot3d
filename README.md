@@ -58,19 +58,19 @@ ImPlot3D is an extension of [Dear ImGui](https://github.com/ocornut/imgui) that 
 </div>
 
 <div align="center">
-  <a href="https://implot3d.brenocq.com/discussion_0"><img src="https://storage.googleapis.com/implot3d/discussion_0.svg"/></a>
+  <a href="https://redirect.brenocq.com/?url=https://storage.googleapis.com/implot3d/discussion_0.svg"><img src="https://storage.googleapis.com/implot3d/discussion_0.svg"/></a>
 </div>
 <div align="center">
-  <a href="https://implot3d.brenocq.com/discussion_1"><img src="https://storage.googleapis.com/implot3d/discussion_1.svg"/></a>
+  <a href="https://redirect.brenocq.com/?url=https://storage.googleapis.com/implot3d/discussion_1.svg"><img src="https://storage.googleapis.com/implot3d/discussion_1.svg"/></a>
 </div>
 <div align="center">
-  <a href="https://implot3d.brenocq.com/discussion_2"><img src="https://storage.googleapis.com/implot3d/discussion_2.svg"/></a>
+  <a href="https://redirect.brenocq.com/?url=https://storage.googleapis.com/implot3d/discussion_2.svg"><img src="https://storage.googleapis.com/implot3d/discussion_2.svg"/></a>
 </div>
 <div align="center">
-  <a href="https://implot3d.brenocq.com/discussion_3"><img src="https://storage.googleapis.com/implot3d/discussion_3.svg"/></a>
+  <a href="https://redirect.brenocq.com/?url=https://storage.googleapis.com/implot3d/discussion_3.svg"><img src="https://storage.googleapis.com/implot3d/discussion_3.svg"/></a>
 </div>
 <div align="center">
-  <a href="https://implot3d.brenocq.com/discussion_4"><img src="https://storage.googleapis.com/implot3d/discussion_4.svg"/></a>
+  <a href="https://redirect.brenocq.com/?url=https://storage.googleapis.com/implot3d/discussion_4.svg"><img src="https://storage.googleapis.com/implot3d/discussion_4.svg"/></a>
 </div>
 
 ## 🛠️ Usage
