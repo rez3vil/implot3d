@@ -213,6 +213,9 @@ enum ImPlot3DQuadFlags_ {
     ImPlot3DQuadFlags_None = 0, // Default
     ImPlot3DQuadFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
     ImPlot3DQuadFlags_NoFit = ImPlot3DItemFlags_NoFit,
+    ImPlot3DQuadFlags_NoLines = 1 << 10,   // No lines will be rendered
+    ImPlot3DQuadFlags_NoFill = 1 << 11,    // No fill will be rendered
+    ImPlot3DQuadFlags_NoMarkers = 1 << 12, // No markers will be rendered
 };
 
 // Flags for PlotSurface

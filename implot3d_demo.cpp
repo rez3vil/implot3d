@@ -262,6 +262,12 @@ void DemoQuadPlots() {
     xs[23] = -1; ys[23] =  1; zs[23] = -1;
     // clang-format on
 
+    // Quad flags
+    static ImPlot3DQuadFlags flags = ImPlot3DQuadFlags_None;
+    CHECKBOX_FLAG(flags, ImPlot3DQuadFlags_NoLines);
+    CHECKBOX_FLAG(flags, ImPlot3DQuadFlags_NoFill);
+    CHECKBOX_FLAG(flags, ImPlot3DQuadFlags_NoMarkers);
+
     if (ImPlot3D::BeginPlot("Quad Plots")) {
         ImPlot3D::SetupAxesLimits(-1.5f, 1.5f, -1.5f, 1.5f, -1.5f, 1.5f);
 
@@ -270,21 +276,21 @@ void DemoQuadPlots() {
         ImPlot3D::SetNextFillStyle(colorX);
         ImPlot3D::SetNextLineStyle(colorX, 2);
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 3, colorX, IMPLOT3D_AUTO, colorX);
-        ImPlot3D::PlotQuad("X", &xs[0], &ys[0], &zs[0], 8);
+        ImPlot3D::PlotQuad("X", &xs[0], &ys[0], &zs[0], 8, flags);
 
         // Render +y and -y faces
         static ImVec4 colorY(0.2f, 0.8f, 0.2f, 0.8f); // Green
         ImPlot3D::SetNextFillStyle(colorY);
         ImPlot3D::SetNextLineStyle(colorY, 2);
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 3, colorY, IMPLOT3D_AUTO, colorY);
-        ImPlot3D::PlotQuad("Y", &xs[8], &ys[8], &zs[8], 8);
+        ImPlot3D::PlotQuad("Y", &xs[8], &ys[8], &zs[8], 8, flags);
 
         // Render +z and -z faces
         static ImVec4 colorZ(0.2f, 0.2f, 0.8f, 0.8f); // Blue
         ImPlot3D::SetNextFillStyle(colorZ);
         ImPlot3D::SetNextLineStyle(colorZ, 2);
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 3, colorZ, IMPLOT3D_AUTO, colorZ);
-        ImPlot3D::PlotQuad("Z", &xs[16], &ys[16], &zs[16], 8);
+        ImPlot3D::PlotQuad("Z", &xs[16], &ys[16], &zs[16], 8, flags);
 
         ImPlot3D::EndPlot();
     }
@@ -395,16 +401,16 @@ void DemoMeshPlots() {
     static int mesh_id = 0;
     ImGui::Combo("Mesh", &mesh_id, "Duck\0Sphere\0Cube\0\0");
 
+    // Choose line color
+    static ImVec4 line_color = ImVec4(0.5f, 0.5f, 0.2f, 0.6f);
+    ImGui::ColorEdit4("Line Color##Mesh", (float*)&line_color);
+
     // Choose fill color
     static ImVec4 fill_color = ImVec4(0.8f, 0.8f, 0.2f, 0.6f);
     ImGui::ColorEdit4("Fill Color##Mesh", (float*)&fill_color);
 
-    // Choose line color
-    static ImVec4 line_color = ImVec4(0.2f, 0.2f, 0.2f, 0.8f);
-    ImGui::ColorEdit4("Line Color##Mesh", (float*)&line_color);
-
     // Choose marker color
-    static ImVec4 marker_color = ImVec4(0.2f, 0.2f, 0.2f, 0.8f);
+    static ImVec4 marker_color = ImVec4(0.5f, 0.5f, 0.2f, 0.6f);
     ImGui::ColorEdit4("Marker Color##Mesh", (float*)&marker_color);
 
     // Mesh flags
