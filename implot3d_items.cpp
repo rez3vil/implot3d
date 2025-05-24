@@ -1330,19 +1330,19 @@ template <typename _Getter> void PlotSurfaceEx(const char* label_id, const _Gett
         const ImPlot3DNextItemData& n = GetItemData();
 
         // Render fill
-        if (getter.Count >= 4 && n.RenderFill) {
+        if (getter.Count >= 4 && n.RenderFill && !ImHasFlag(flags, ImPlot3DSurfaceFlags_NoFill)) {
             const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Fill]);
             RenderPrimitives<RendererSurfaceFill>(getter, x_count, y_count, col_fill, scale_min, scale_max);
         }
 
         // Render lines
-        if (getter.Count >= 2 && n.RenderLine) {
+        if (getter.Count >= 2 && n.RenderLine && !ImHasFlag(flags, ImPlot3DSurfaceFlags_NoLines)) {
             const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Line]);
             RenderPrimitives<RendererLineSegments>(GetterSurfaceLines<_Getter>(getter, x_count, y_count), col_line, n.LineWeight);
         }
 
         // Render markers
-        if (n.Marker != ImPlot3DMarker_None) {
+        if (n.Marker != ImPlot3DMarker_None && !ImHasFlag(flags, ImPlot3DSurfaceFlags_NoMarkers)) {
             const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerOutline]);
             const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerFill]);
             RenderMarkers<_Getter>(getter, n.Marker, n.MarkerSize, n.RenderMarkerFill, col_fill, n.RenderMarkerLine, col_line, n.MarkerWeight);

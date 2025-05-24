@@ -47,6 +47,8 @@ namespace ImPlot3D {
 // [SECTION] Helpers
 //-----------------------------------------------------------------------------
 
+#define CHECKBOX_FLAG(flags, flag) ImGui::CheckboxFlags(#flag, (unsigned int*)&flags, flag)
+
 static void HelpMarker(const char* desc) {
     ImGui::TextDisabled("(?)");
     if (ImGui::BeginItemTooltip()) {
@@ -346,22 +348,34 @@ void DemoSurfacePlots() {
         ImGui::Unindent();
     }
 
+    // Select flags
+    static ImPlot3DSurfaceFlags flags = ImPlot3DSurfaceFlags_NoMarkers;
+    CHECKBOX_FLAG(flags, ImPlot3DSurfaceFlags_NoLines);
+    CHECKBOX_FLAG(flags, ImPlot3DSurfaceFlags_NoFill);
+    CHECKBOX_FLAG(flags, ImPlot3DSurfaceFlags_NoMarkers);
+
     // Begin the plot
     if (selected_fill == 1)
         ImPlot3D::PushColormap(colormaps[sel_colormap]);
     if (ImPlot3D::BeginPlot("Surface Plots", ImVec2(-1, 400), ImPlot3DFlags_NoClip)) {
-        // Set styles
         ImPlot3D::SetupAxesLimits(-1, 1, -1, 1, -1.5, 1.5);
+
+        // Set fill style
         ImPlot3D::PushStyleVar(ImPlot3DStyleVar_FillAlpha, 0.8f);
         if (selected_fill == 0)
             ImPlot3D::SetNextFillStyle(solid_color);
+
+        // Set line style
         ImPlot3D::SetNextLineStyle(ImPlot3D::GetColormapColor(1));
+
+        // Set marker style
+        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, IMPLOT3D_AUTO, ImPlot3D::GetColormapColor(2));
 
         // Plot the surface
         if (custom_range)
-            ImPlot3D::PlotSurface("Wave Surface", xs, ys, zs, N, N, (double)range_min, (double)range_max);
+            ImPlot3D::PlotSurface("Wave Surface", xs, ys, zs, N, N, (double)range_min, (double)range_max, flags);
         else
-            ImPlot3D::PlotSurface("Wave Surface", xs, ys, zs, N, N);
+            ImPlot3D::PlotSurface("Wave Surface", xs, ys, zs, N, N, 0.0, 0.0, flags);
 
         // End the plot
         ImPlot3D::PopStyleVar();

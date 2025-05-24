@@ -217,6 +217,9 @@ enum ImPlot3DSurfaceFlags_ {
     ImPlot3DSurfaceFlags_None = 0, // Default
     ImPlot3DSurfaceFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
     ImPlot3DSurfaceFlags_NoFit = ImPlot3DItemFlags_NoFit,
+    ImPlot3DSurfaceFlags_NoLines = 1 << 10,   // No lines will be rendered
+    ImPlot3DSurfaceFlags_NoFill = 1 << 11,    // No fill will be rendered
+    ImPlot3DSurfaceFlags_NoMarkers = 1 << 12, // No markers will be rendered
 };
 
 // Flags for PlotMesh
