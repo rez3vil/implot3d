@@ -390,54 +390,42 @@ void DemoMeshPlots() {
     ImGui::Combo("Mesh", &mesh_id, "Duck\0Sphere\0Cube\0\0");
 
     // Choose fill color
-    static bool set_fill_color = true;
     static ImVec4 fill_color = ImVec4(0.8f, 0.8f, 0.2f, 0.6f);
-    ImGui::Checkbox("Fill Color", &set_fill_color);
-    if (set_fill_color) {
-        ImGui::SameLine();
-        ImGui::ColorEdit4("##MeshFillColor", (float*)&fill_color);
-    }
+    ImGui::ColorEdit4("Fill Color##Mesh", (float*)&fill_color);
 
     // Choose line color
-    static bool set_line_color = true;
     static ImVec4 line_color = ImVec4(0.2f, 0.2f, 0.2f, 0.8f);
-    ImGui::Checkbox("Line Color", &set_line_color);
-    if (set_line_color) {
-        ImGui::SameLine();
-        ImGui::ColorEdit4("##MeshLineColor", (float*)&line_color);
-    }
+    ImGui::ColorEdit4("Line Color##Mesh", (float*)&line_color);
 
     // Choose marker color
-    static bool set_marker_color = false;
     static ImVec4 marker_color = ImVec4(0.2f, 0.2f, 0.2f, 0.8f);
-    ImGui::Checkbox("Marker Color", &set_marker_color);
-    if (set_marker_color) {
-        ImGui::SameLine();
-        ImGui::ColorEdit4("##MeshMarkerColor", (float*)&marker_color);
-    }
+    ImGui::ColorEdit4("Marker Color##Mesh", (float*)&marker_color);
+
+    // Mesh flags
+    static ImPlot3DMeshFlags flags = ImPlot3DMeshFlags_NoMarkers;
+    CHECKBOX_FLAG(flags, ImPlot3DMeshFlags_NoFill);
+    CHECKBOX_FLAG(flags, ImPlot3DMeshFlags_NoLines);
+    CHECKBOX_FLAG(flags, ImPlot3DMeshFlags_NoMarkers);
 
     if (ImPlot3D::BeginPlot("Mesh Plots")) {
         ImPlot3D::SetupAxesLimits(-1, 1, -1, 1, -1, 1);
 
-        // Set colors
-        if (set_fill_color)
-            ImPlot3D::SetNextFillStyle(fill_color);
-        else {
-            // If not set as transparent, the fill color will be determined by the colormap
-            ImPlot3D::SetNextFillStyle(ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-        }
-        if (set_line_color)
-            ImPlot3D::SetNextLineStyle(line_color);
-        if (set_marker_color)
-            ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 3, marker_color, IMPLOT3D_AUTO, marker_color);
+        // Set fill style
+        ImPlot3D::SetNextFillStyle(fill_color);
+
+        // Set line style
+        ImPlot3D::SetNextLineStyle(line_color);
+
+        // Set marker style
+        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 3, marker_color, IMPLOT3D_AUTO, marker_color);
 
         // Plot mesh
         if (mesh_id == 0)
-            ImPlot3D::PlotMesh("Duck", duck_vtx, duck_idx, DUCK_VTX_COUNT, DUCK_IDX_COUNT);
+            ImPlot3D::PlotMesh("Duck", duck_vtx, duck_idx, DUCK_VTX_COUNT, DUCK_IDX_COUNT, flags);
         else if (mesh_id == 1)
-            ImPlot3D::PlotMesh("Sphere", sphere_vtx, sphere_idx, SPHERE_VTX_COUNT, SPHERE_IDX_COUNT);
+            ImPlot3D::PlotMesh("Sphere", sphere_vtx, sphere_idx, SPHERE_VTX_COUNT, SPHERE_IDX_COUNT, flags);
         else if (mesh_id == 2)
-            ImPlot3D::PlotMesh("Cube", cube_vtx, cube_idx, CUBE_VTX_COUNT, CUBE_IDX_COUNT);
+            ImPlot3D::PlotMesh("Cube", cube_vtx, cube_idx, CUBE_VTX_COUNT, CUBE_IDX_COUNT, flags);
 
         ImPlot3D::EndPlot();
     }

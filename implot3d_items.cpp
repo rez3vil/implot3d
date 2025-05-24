@@ -1379,19 +1379,19 @@ void PlotMesh(const char* label_id, const ImPlot3DPoint* vtx, const unsigned int
         const ImPlot3DNextItemData& n = GetItemData();
 
         // Render fill
-        if (getter.Count >= 3 && n.RenderFill) {
+        if (getter.Count >= 3 && n.RenderFill && !ImHasFlag(flags, ImPlot3DMeshFlags_NoFill)) {
             const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Fill]);
             RenderPrimitives<RendererTriangleFill>(getter_triangles, col_fill);
         }
 
         // Render lines
-        if (getter.Count >= 2 && n.RenderLine && !n.IsAutoLine) {
+        if (getter.Count >= 2 && n.RenderLine && !n.IsAutoLine && !ImHasFlag(flags, ImPlot3DMeshFlags_NoLines)) {
             const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_Line]);
             RenderPrimitives<RendererLineSegments>(GetterTriangleLines<GetterMeshTriangles>(getter_triangles), col_line, n.LineWeight);
         }
 
         // Render markers
-        if (n.Marker != ImPlot3DMarker_None) {
+        if (n.Marker != ImPlot3DMarker_None && !ImHasFlag(flags, ImPlot3DMeshFlags_NoMarkers)) {
             const ImU32 col_line = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerOutline]);
             const ImU32 col_fill = ImGui::GetColorU32(n.Colors[ImPlot3DCol_MarkerFill]);
             RenderMarkers(getter, n.Marker, n.MarkerSize, n.RenderMarkerFill, col_fill, n.RenderMarkerLine, col_line, n.MarkerWeight);

@@ -227,6 +227,9 @@ enum ImPlot3DMeshFlags_ {
     ImPlot3DMeshFlags_None = 0, // Default
     ImPlot3DMeshFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
     ImPlot3DMeshFlags_NoFit = ImPlot3DItemFlags_NoFit,
+    ImPlot3DMeshFlags_NoLines = 1 << 10,   // No lines will be rendered
+    ImPlot3DMeshFlags_NoFill = 1 << 11,    // No fill will be rendered
+    ImPlot3DMeshFlags_NoMarkers = 1 << 12, // No markers will be rendered
 };
 
 // Flags for PlotImage
