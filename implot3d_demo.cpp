@@ -198,6 +198,12 @@ void DemoTrianglePlots() {
 
     // Now we have 18 vertices in xs, ys, zs forming the pyramid
 
+    // Triangle flags
+    static ImPlot3DTriangleFlags flags = ImPlot3DTriangleFlags_None;
+    CHECKBOX_FLAG(flags, ImPlot3DTriangleFlags_NoLines);
+    CHECKBOX_FLAG(flags, ImPlot3DTriangleFlags_NoFill);
+    CHECKBOX_FLAG(flags, ImPlot3DTriangleFlags_NoMarkers);
+
     if (ImPlot3D::BeginPlot("Triangle Plots")) {
         ImPlot3D::SetupAxesLimits(-1, 1, -1, 1, -0.5, 1.5);
 
@@ -207,7 +213,7 @@ void DemoTrianglePlots() {
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 3, ImPlot3D::GetColormapColor(2), IMPLOT3D_AUTO, ImPlot3D::GetColormapColor(2));
 
         // Plot pyramid
-        ImPlot3D::PlotTriangle("Pyramid", xs, ys, zs, 6 * 3); // 6 triangles, 3 vertices each = 18
+        ImPlot3D::PlotTriangle("Pyramid", xs, ys, zs, 6 * 3, flags); // 6 triangles, 3 vertices each = 18
         ImPlot3D::EndPlot();
     }
 }
@@ -403,8 +409,8 @@ void DemoMeshPlots() {
 
     // Mesh flags
     static ImPlot3DMeshFlags flags = ImPlot3DMeshFlags_NoMarkers;
-    CHECKBOX_FLAG(flags, ImPlot3DMeshFlags_NoFill);
     CHECKBOX_FLAG(flags, ImPlot3DMeshFlags_NoLines);
+    CHECKBOX_FLAG(flags, ImPlot3DMeshFlags_NoFill);
     CHECKBOX_FLAG(flags, ImPlot3DMeshFlags_NoMarkers);
 
     if (ImPlot3D::BeginPlot("Mesh Plots")) {

@@ -203,6 +203,9 @@ enum ImPlot3DTriangleFlags_ {
     ImPlot3DTriangleFlags_None = 0, // Default
     ImPlot3DTriangleFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
     ImPlot3DTriangleFlags_NoFit = ImPlot3DItemFlags_NoFit,
+    ImPlot3DTriangleFlags_NoLines = 1 << 10,   // No lines will be rendered
+    ImPlot3DTriangleFlags_NoFill = 1 << 11,    // No fill will be rendered
+    ImPlot3DTriangleFlags_NoMarkers = 1 << 12, // No markers will be rendered
 };
 
 // Flags for PlotQuad
