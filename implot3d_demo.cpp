@@ -47,6 +47,8 @@ namespace ImPlot3D {
 // [SECTION] Helpers
 //-----------------------------------------------------------------------------
 
+#define CHECKBOX_FLAG(flags, flag) ImGui::CheckboxFlags(#flag, (unsigned int*)&flags, flag)
+
 static void HelpMarker(const char* desc) {
     ImGui::TextDisabled("(?)");
     if (ImGui::BeginItemTooltip()) {
@@ -196,6 +198,12 @@ void DemoTrianglePlots() {
 
     // Now we have 18 vertices in xs, ys, zs forming the pyramid
 
+    // Triangle flags
+    static ImPlot3DTriangleFlags flags = ImPlot3DTriangleFlags_None;
+    CHECKBOX_FLAG(flags, ImPlot3DTriangleFlags_NoLines);
+    CHECKBOX_FLAG(flags, ImPlot3DTriangleFlags_NoFill);
+    CHECKBOX_FLAG(flags, ImPlot3DTriangleFlags_NoMarkers);
+
     if (ImPlot3D::BeginPlot("Triangle Plots")) {
         ImPlot3D::SetupAxesLimits(-1, 1, -1, 1, -0.5, 1.5);
 
@@ -205,7 +213,7 @@ void DemoTrianglePlots() {
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 3, ImPlot3D::GetColormapColor(2), IMPLOT3D_AUTO, ImPlot3D::GetColormapColor(2));
 
         // Plot pyramid
-        ImPlot3D::PlotTriangle("Pyramid", xs, ys, zs, 6 * 3); // 6 triangles, 3 vertices each = 18
+        ImPlot3D::PlotTriangle("Pyramid", xs, ys, zs, 6 * 3, flags); // 6 triangles, 3 vertices each = 18
         ImPlot3D::EndPlot();
     }
 }
@@ -254,6 +262,12 @@ void DemoQuadPlots() {
     xs[23] = -1; ys[23] =  1; zs[23] = -1;
     // clang-format on
 
+    // Quad flags
+    static ImPlot3DQuadFlags flags = ImPlot3DQuadFlags_None;
+    CHECKBOX_FLAG(flags, ImPlot3DQuadFlags_NoLines);
+    CHECKBOX_FLAG(flags, ImPlot3DQuadFlags_NoFill);
+    CHECKBOX_FLAG(flags, ImPlot3DQuadFlags_NoMarkers);
+
     if (ImPlot3D::BeginPlot("Quad Plots")) {
         ImPlot3D::SetupAxesLimits(-1.5f, 1.5f, -1.5f, 1.5f, -1.5f, 1.5f);
 
@@ -262,21 +276,21 @@ void DemoQuadPlots() {
         ImPlot3D::SetNextFillStyle(colorX);
         ImPlot3D::SetNextLineStyle(colorX, 2);
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 3, colorX, IMPLOT3D_AUTO, colorX);
-        ImPlot3D::PlotQuad("X", &xs[0], &ys[0], &zs[0], 8);
+        ImPlot3D::PlotQuad("X", &xs[0], &ys[0], &zs[0], 8, flags);
 
         // Render +y and -y faces
         static ImVec4 colorY(0.2f, 0.8f, 0.2f, 0.8f); // Green
         ImPlot3D::SetNextFillStyle(colorY);
         ImPlot3D::SetNextLineStyle(colorY, 2);
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 3, colorY, IMPLOT3D_AUTO, colorY);
-        ImPlot3D::PlotQuad("Y", &xs[8], &ys[8], &zs[8], 8);
+        ImPlot3D::PlotQuad("Y", &xs[8], &ys[8], &zs[8], 8, flags);
 
         // Render +z and -z faces
         static ImVec4 colorZ(0.2f, 0.2f, 0.8f, 0.8f); // Blue
         ImPlot3D::SetNextFillStyle(colorZ);
         ImPlot3D::SetNextLineStyle(colorZ, 2);
         ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 3, colorZ, IMPLOT3D_AUTO, colorZ);
-        ImPlot3D::PlotQuad("Z", &xs[16], &ys[16], &zs[16], 8);
+        ImPlot3D::PlotQuad("Z", &xs[16], &ys[16], &zs[16], 8, flags);
 
         ImPlot3D::EndPlot();
     }
@@ -346,22 +360,34 @@ void DemoSurfacePlots() {
         ImGui::Unindent();
     }
 
+    // Select flags
+    static ImPlot3DSurfaceFlags flags = ImPlot3DSurfaceFlags_NoMarkers;
+    CHECKBOX_FLAG(flags, ImPlot3DSurfaceFlags_NoLines);
+    CHECKBOX_FLAG(flags, ImPlot3DSurfaceFlags_NoFill);
+    CHECKBOX_FLAG(flags, ImPlot3DSurfaceFlags_NoMarkers);
+
     // Begin the plot
     if (selected_fill == 1)
         ImPlot3D::PushColormap(colormaps[sel_colormap]);
     if (ImPlot3D::BeginPlot("Surface Plots", ImVec2(-1, 400), ImPlot3DFlags_NoClip)) {
-        // Set styles
         ImPlot3D::SetupAxesLimits(-1, 1, -1, 1, -1.5, 1.5);
+
+        // Set fill style
         ImPlot3D::PushStyleVar(ImPlot3DStyleVar_FillAlpha, 0.8f);
         if (selected_fill == 0)
             ImPlot3D::SetNextFillStyle(solid_color);
+
+        // Set line style
         ImPlot3D::SetNextLineStyle(ImPlot3D::GetColormapColor(1));
+
+        // Set marker style
+        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, IMPLOT3D_AUTO, ImPlot3D::GetColormapColor(2));
 
         // Plot the surface
         if (custom_range)
-            ImPlot3D::PlotSurface("Wave Surface", xs, ys, zs, N, N, (double)range_min, (double)range_max);
+            ImPlot3D::PlotSurface("Wave Surface", xs, ys, zs, N, N, (double)range_min, (double)range_max, flags);
         else
-            ImPlot3D::PlotSurface("Wave Surface", xs, ys, zs, N, N);
+            ImPlot3D::PlotSurface("Wave Surface", xs, ys, zs, N, N, 0.0, 0.0, flags);
 
         // End the plot
         ImPlot3D::PopStyleVar();
@@ -375,55 +401,43 @@ void DemoMeshPlots() {
     static int mesh_id = 0;
     ImGui::Combo("Mesh", &mesh_id, "Duck\0Sphere\0Cube\0\0");
 
-    // Choose fill color
-    static bool set_fill_color = true;
-    static ImVec4 fill_color = ImVec4(0.8f, 0.8f, 0.2f, 0.6f);
-    ImGui::Checkbox("Fill Color", &set_fill_color);
-    if (set_fill_color) {
-        ImGui::SameLine();
-        ImGui::ColorEdit4("##MeshFillColor", (float*)&fill_color);
-    }
-
     // Choose line color
-    static bool set_line_color = true;
-    static ImVec4 line_color = ImVec4(0.2f, 0.2f, 0.2f, 0.8f);
-    ImGui::Checkbox("Line Color", &set_line_color);
-    if (set_line_color) {
-        ImGui::SameLine();
-        ImGui::ColorEdit4("##MeshLineColor", (float*)&line_color);
-    }
+    static ImVec4 line_color = ImVec4(0.5f, 0.5f, 0.2f, 0.6f);
+    ImGui::ColorEdit4("Line Color##Mesh", (float*)&line_color);
+
+    // Choose fill color
+    static ImVec4 fill_color = ImVec4(0.8f, 0.8f, 0.2f, 0.6f);
+    ImGui::ColorEdit4("Fill Color##Mesh", (float*)&fill_color);
 
     // Choose marker color
-    static bool set_marker_color = false;
-    static ImVec4 marker_color = ImVec4(0.2f, 0.2f, 0.2f, 0.8f);
-    ImGui::Checkbox("Marker Color", &set_marker_color);
-    if (set_marker_color) {
-        ImGui::SameLine();
-        ImGui::ColorEdit4("##MeshMarkerColor", (float*)&marker_color);
-    }
+    static ImVec4 marker_color = ImVec4(0.5f, 0.5f, 0.2f, 0.6f);
+    ImGui::ColorEdit4("Marker Color##Mesh", (float*)&marker_color);
+
+    // Mesh flags
+    static ImPlot3DMeshFlags flags = ImPlot3DMeshFlags_NoMarkers;
+    CHECKBOX_FLAG(flags, ImPlot3DMeshFlags_NoLines);
+    CHECKBOX_FLAG(flags, ImPlot3DMeshFlags_NoFill);
+    CHECKBOX_FLAG(flags, ImPlot3DMeshFlags_NoMarkers);
 
     if (ImPlot3D::BeginPlot("Mesh Plots")) {
         ImPlot3D::SetupAxesLimits(-1, 1, -1, 1, -1, 1);
 
-        // Set colors
-        if (set_fill_color)
-            ImPlot3D::SetNextFillStyle(fill_color);
-        else {
-            // If not set as transparent, the fill color will be determined by the colormap
-            ImPlot3D::SetNextFillStyle(ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-        }
-        if (set_line_color)
-            ImPlot3D::SetNextLineStyle(line_color);
-        if (set_marker_color)
-            ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 3, marker_color, IMPLOT3D_AUTO, marker_color);
+        // Set fill style
+        ImPlot3D::SetNextFillStyle(fill_color);
+
+        // Set line style
+        ImPlot3D::SetNextLineStyle(line_color);
+
+        // Set marker style
+        ImPlot3D::SetNextMarkerStyle(ImPlot3DMarker_Square, 3, marker_color, IMPLOT3D_AUTO, marker_color);
 
         // Plot mesh
         if (mesh_id == 0)
-            ImPlot3D::PlotMesh("Duck", duck_vtx, duck_idx, DUCK_VTX_COUNT, DUCK_IDX_COUNT);
+            ImPlot3D::PlotMesh("Duck", duck_vtx, duck_idx, DUCK_VTX_COUNT, DUCK_IDX_COUNT, flags);
         else if (mesh_id == 1)
-            ImPlot3D::PlotMesh("Sphere", sphere_vtx, sphere_idx, SPHERE_VTX_COUNT, SPHERE_IDX_COUNT);
+            ImPlot3D::PlotMesh("Sphere", sphere_vtx, sphere_idx, SPHERE_VTX_COUNT, SPHERE_IDX_COUNT, flags);
         else if (mesh_id == 2)
-            ImPlot3D::PlotMesh("Cube", cube_vtx, cube_idx, CUBE_VTX_COUNT, CUBE_IDX_COUNT);
+            ImPlot3D::PlotMesh("Cube", cube_vtx, cube_idx, CUBE_VTX_COUNT, CUBE_IDX_COUNT, flags);
 
         ImPlot3D::EndPlot();
     }

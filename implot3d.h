@@ -203,6 +203,9 @@ enum ImPlot3DTriangleFlags_ {
     ImPlot3DTriangleFlags_None = 0, // Default
     ImPlot3DTriangleFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
     ImPlot3DTriangleFlags_NoFit = ImPlot3DItemFlags_NoFit,
+    ImPlot3DTriangleFlags_NoLines = 1 << 10,   // No lines will be rendered
+    ImPlot3DTriangleFlags_NoFill = 1 << 11,    // No fill will be rendered
+    ImPlot3DTriangleFlags_NoMarkers = 1 << 12, // No markers will be rendered
 };
 
 // Flags for PlotQuad
@@ -210,6 +213,9 @@ enum ImPlot3DQuadFlags_ {
     ImPlot3DQuadFlags_None = 0, // Default
     ImPlot3DQuadFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
     ImPlot3DQuadFlags_NoFit = ImPlot3DItemFlags_NoFit,
+    ImPlot3DQuadFlags_NoLines = 1 << 10,   // No lines will be rendered
+    ImPlot3DQuadFlags_NoFill = 1 << 11,    // No fill will be rendered
+    ImPlot3DQuadFlags_NoMarkers = 1 << 12, // No markers will be rendered
 };
 
 // Flags for PlotSurface
@@ -217,6 +223,9 @@ enum ImPlot3DSurfaceFlags_ {
     ImPlot3DSurfaceFlags_None = 0, // Default
     ImPlot3DSurfaceFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
     ImPlot3DSurfaceFlags_NoFit = ImPlot3DItemFlags_NoFit,
+    ImPlot3DSurfaceFlags_NoLines = 1 << 10,   // No lines will be rendered
+    ImPlot3DSurfaceFlags_NoFill = 1 << 11,    // No fill will be rendered
+    ImPlot3DSurfaceFlags_NoMarkers = 1 << 12, // No markers will be rendered
 };
 
 // Flags for PlotMesh
@@ -224,6 +233,9 @@ enum ImPlot3DMeshFlags_ {
     ImPlot3DMeshFlags_None = 0, // Default
     ImPlot3DMeshFlags_NoLegend = ImPlot3DItemFlags_NoLegend,
     ImPlot3DMeshFlags_NoFit = ImPlot3DItemFlags_NoFit,
+    ImPlot3DMeshFlags_NoLines = 1 << 10,   // No lines will be rendered
+    ImPlot3DMeshFlags_NoFill = 1 << 11,    // No fill will be rendered
+    ImPlot3DMeshFlags_NoMarkers = 1 << 12, // No markers will be rendered
 };
 
 // Flags for PlotImage
