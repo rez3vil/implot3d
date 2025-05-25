@@ -1,7 +1,8 @@
 name: 📋 Update README
 
 on:
-  issue:
+  workflow_dispatch:
+  issues:
     types: [opened, edited, reopened, closed, labeled, unlabeled, assigned, unassigned, pinned, unpinned]
   issue_comment:
     types: [created]
