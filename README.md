@@ -38,40 +38,49 @@ ImPlot3D is an extension of [Dear ImGui](https://github.com/ocornut/imgui) that 
   - Triangle plots
   - Mesh plots
   - Text plots
+  - Image plots
 - Rotate, pan, and zoom 3D plots interactively
 - Several plot styling options: 10 marker types, adjustable marker sizes, line weights, outline colors, fill colors, etc.
-- 16 built-in colormaps and support for and user-added colormaps
+- 16 built-in colormaps and support for user-added colormaps
 - Optional plot titles, axis labels, and grid labels
 - Optional and configurable legends with toggle buttons to quickly show/hide plot items
 - Default styling based on the current ImGui theme, or completely custom plot styles
 
 ## 🚧 Feature Roadmap
-- ✨ The cards below are automatically updated to reflect the [discussions](https://github.com/brenocq/implot3d/discussions).
-- 💡 Click a card to explore the discussion!
+- ✨ The cards below are automatically updated to reflect the [Issues](https://github.com/brenocq/implot3d/issues?q=is%3Aissue%20sort%3Aupdated-desc)
+- 💡 Click on a card to explore the task progress
+- 🤝 Your reactions guide development! Add a ❤️ to your favorite features
 
 <div align="center">
-  <a href="https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements?discussions_q=category%3A%22Features+and+improvements%22+label%3Astatus%3Aidea+"><img src="https://storage.googleapis.com/implot3d/idea.svg"/></a>
-  <a href="https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements?discussions_q=category%3A%22Features+and+improvements%22+label%3Astatus%3Atodo+"><img src="https://storage.googleapis.com/implot3d/todo.svg"/></a>
-  <a href="https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements?discussions_q=category%3A%22Features+and+improvements%22+label%3Astatus%3Adoing+"><img src="https://storage.googleapis.com/implot3d/doing.svg"/></a>
-  <a href="https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements?discussions_q=category%3A%22Features+and+improvements%22+label%3Astatus%3Areview+"><img src="https://storage.googleapis.com/implot3d/review.svg"/></a>
-  <a href="https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements?discussions_q=category%3A%22Features+and+improvements%22+label%3Astatus%3Adone+is%3Aclosed"><img src="https://storage.googleapis.com/implot3d/done.svg"/></a>
+  <a href="https://github.com/brenocq/implot3d/issues?q=is%3Aissue%20label%3Astatus%3Aidea"><img src="https://github.com/brenocq/implot3d/blob/generated-svgs/status_idea.svg"/></a>
+  <a href="https://github.com/brenocq/implot3d/issues?q=is%3Aissue%20label%3Astatus%3Atodo"><img src="https://github.com/brenocq/implot3d/blob/generated-svgs/status_todo.svg"/></a>
+  <a href="https://github.com/brenocq/implot3d/issues?q=is%3Aissue%20label%3Astatus%3Adoing"><img src="https://github.com/brenocq/implot3d/blob/generated-svgs/status_doing.svg"/></a>
+  <a href="https://github.com/brenocq/implot3d/issues?q=is%3Aissue%20label%3Astatus%3Areview"><img src="https://github.com/brenocq/implot3d/blob/generated-svgs/status_review.svg"/></a>
+  <a href="https://github.com/brenocq/implot3d/issues?q=is%3Aissue%20label%3Astatus%3Adone"><img src="https://github.com/brenocq/implot3d/blob/generated-svgs/status_done.svg"/></a>
 </div>
 
 <div align="center">
-  <a href="https://redirect.brenocq.com/?url=https://storage.googleapis.com/implot3d/discussion_0.svg"><img src="https://storage.googleapis.com/implot3d/discussion_0.svg"/></a>
+  <a href="https://redirect.brenocq.com/?url=https://raw.githubusercontent.com/brenocq/implot3d/refs/heads/generated-svgs/issue_0.svg"><img src="https://github.com/brenocq/implot3d/blob/generated-svgs/issue_0.svg"/></a>
 </div>
 <div align="center">
-  <a href="https://redirect.brenocq.com/?url=https://storage.googleapis.com/implot3d/discussion_1.svg"><img src="https://storage.googleapis.com/implot3d/discussion_1.svg"/></a>
+  <a href="https://redirect.brenocq.com/?url=https://raw.githubusercontent.com/brenocq/implot3d/refs/heads/generated-svgs/issue_1.svg"><img src="https://github.com/brenocq/implot3d/blob/generated-svgs/issue_1.svg"/></a>
 </div>
 <div align="center">
-  <a href="https://redirect.brenocq.com/?url=https://storage.googleapis.com/implot3d/discussion_2.svg"><img src="https://storage.googleapis.com/implot3d/discussion_2.svg"/></a>
+  <a href="https://redirect.brenocq.com/?url=https://raw.githubusercontent.com/brenocq/implot3d/refs/heads/generated-svgs/issue_2.svg"><img src="https://github.com/brenocq/implot3d/blob/generated-svgs/issue_2.svg"/></a>
 </div>
 <div align="center">
-  <a href="https://redirect.brenocq.com/?url=https://storage.googleapis.com/implot3d/discussion_3.svg"><img src="https://storage.googleapis.com/implot3d/discussion_3.svg"/></a>
+  <a href="https://redirect.brenocq.com/?url=https://raw.githubusercontent.com/brenocq/implot3d/refs/heads/generated-svgs/issue_3.svg"><img src="https://github.com/brenocq/implot3d/blob/generated-svgs/issue_3.svg"/></a>
 </div>
 <div align="center">
-  <a href="https://redirect.brenocq.com/?url=https://storage.googleapis.com/implot3d/discussion_4.svg"><img src="https://storage.googleapis.com/implot3d/discussion_4.svg"/></a>
+  <a href="https://redirect.brenocq.com/?url=https://raw.githubusercontent.com/brenocq/implot3d/refs/heads/generated-svgs/issue_4.svg"><img src="https://github.com/brenocq/implot3d/blob/generated-svgs/issue_4.svg"/></a>
 </div>
+<div align="center">
+  <a href="https://redirect.brenocq.com/?url=https://raw.githubusercontent.com/brenocq/implot3d/refs/heads/generated-svgs/issue_5.svg"><img src="https://github.com/brenocq/implot3d/blob/generated-svgs/issue_5.svg"/></a>
+</div>
+<div align="center">
+  <a href="https://github.com/brenocq/implot3d/issues?q=is%3Aissue%20sort%3Aupdated-desc"><img src="https://github.com/user-attachments/assets/e3deab96-be62-42b4-886b-a8509ffe761a"/></a>
+</div>
+
 
 ## 🛠️ Usage
 The ImPlot3D API is designed to feel very similar to Dear ImGui and ImPlot. You start by calling `ImPlot3D::BeginPlot()` to initialize a 3D plot, followed by plotting various data using the `PlotX` functions (e.g., `PlotLine()` , `PlotScatter()` , `PlotSurface()` ). Finally, you end the plot with ` ImPlot3D::EndPlot()` .
@@ -94,7 +103,7 @@ ImGui::End();
 ## 🎨 Demos
 A comprehensive example showcasing ImPlot3D features can be found in `implot3d_demo.cpp`. Add this file to your project and call `ImPlot3D::ShowDemoWindow()` in your update loop. This demo provides a wide variety of 3D plotting examples, serving as a reference for creating different types of 3D plots. The demo is regularly updated to reflect new features and plot types, so be sure to revisit it with each release!
 
-This demo in also [available online](https://traineq.org/implot_demo/src/implot_demo.html), thanks to [this project](https://github.com/pthom/implot_demo): this way, you can test ImPlot3D, and ImPlot right away.
+This demo is also [available online](https://traineq.org/implot_demo/src/implot_demo.html), thanks to [this project](https://github.com/pthom/implot_demo): this way, you can test ImPlot3D and ImPlot right away.
 
 ## ⚙️ Integration
 To integrate ImPlot3D into your application, follow these steps:
@@ -115,7 +124,7 @@ You're now ready to start plotting in 3D!
 ## ⚠️ Extremely Important Note
 Dear ImGui, by default, uses 16-bit indexing, which might cause issues with high-density 3D visualizations such as complex surfaces or meshes. This can lead to assertion failures, data truncation, or visual glitches. To avoid these problems, it's recommended to:
 
-- Option 1: Enable 32-bit indices by uncommenting `#define ImDrawIdx unsigned int` in your ImGui imconfig.h file.
+- Option 1: Enable 32-bit indices by uncommenting `#define ImDrawIdx unsigned int` in your ImGui `imconfig.h` file.
 - Option 2: Ensure your renderer supports the `ImGuiBackendFlags_RendererHasVtxOffset` flag. Many official ImGui backends already support this functionality.
 
 ## 💬 FAQ
@@ -162,14 +171,15 @@ ImPlot3D is growing quickly, and I would love more people to get involved in the
 
 ### How to Contribute
 1. **Propose Ideas and Discuss Features:**
-   - Explore our [features and improvements](https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements) section.
-   - Join discussions, suggest new features, or refine existing ideas.
+   - Explore the [next features roadmap](https://github.com/brenocq/implot3d/issues?q=is%3Aissue%20state%3Aopen%20sort%3Aupdated-desc).
+   - Leave comments to help refine ideas and guide development.
+   - Have any feature requests? Create a [feature request issue](https://github.com/brenocq/implot3d/issues/new?template=feature_request.md).
 
 2. **Report Bugs:**
-   - Found a bug? [Open an issue](https://github.com/brenocq/implot3d/issues/new). Include details, reproduction steps, and any relevant screenshots or logs.
+   - Found a bug? [Open a bug report issue](https://github.com/brenocq/implot3d/issues/new?template=bug_report.md). Include details, reproduction steps, and any relevant screenshots or logs.
 
 3. **Implement Features:**
-   - Indicate your intent to work on a feature by commenting in the [feature discussion](https://github.com/brenocq/implot3d/discussions/categories/features-and-improvements) or starting a new one if it doesn't exist. This helps avoid duplicated efforts and allows maintainers to provide guidance.
+   - Indicate your intent to work on a feature by commenting in the relevant issue or starting a [new feature request](https://github.com/brenocq/implot3d/issues/new?template=feature_request.md) if it doesn't exist. This helps avoid duplicated efforts and allows maintainers to provide guidance.
    - Fork the repository and branch off `main`.
    - Implement your feature following the project’s coding standards.
    - [Open a pull request](https://github.com/brenocq/implot3d/compare) targeting the `main` branch.
