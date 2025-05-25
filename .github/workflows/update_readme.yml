@@ -1,39 +1,49 @@
-name: Update README
+name: 📋 Update README
 
 on:
-  discussion:
-    types: [created, edited, labeled, unlabeled]
-  discussion_comment:
-    types: [created, edited]
+  issue:
+    types: [opened, edited, reopened, closed, labeled, unlabeled, assigned, unassigned, pinned, unpinned]
+  issue_comment:
+    types: [created]
+  push:
 
 jobs:
-  update-readme:
+  generate-svgs:
+    name: Generate SVGs
     runs-on: ubuntu-latest
-    permissions:
-      discussions: read
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set Up Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
-      - name: Authenticate with GCP (Service Account Key)
-        env:
-          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-        run: |
-          echo "$GCP_SA_KEY" > /tmp/gcp-key.json
+      - name: Install dependencies
+        run: pip install -r .github/scripts/readme_svgs/requirements.txt
 
-      - name: Install Dependencies
-        run: |
-          pip install -r .github/scripts/update_readme/requirements.txt
-
-      - name: Update README images
+      - name: Run script
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-          GOOGLE_APPLICATION_CREDENTIALS: "/tmp/gcp-key.json"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python .github/scripts/update_readme/update_readme.py
+          python .github/scripts/readme_svgs/gen_status_cards.py
+          python .github/scripts/readme_svgs/gen_issue_cards.py
+
+      - name: Save generated SVGs temporarily
+        run: |
+          mkdir -p "$RUNNER_TEMP/tmp_svgs"
+          cp *.svg "$RUNNER_TEMP/tmp_svgs/"
+
+      - name: Create orphan branch and commit SVGs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan generated-svgs
+          git reset --hard
+          git clean -fdx
+          cp "$RUNNER_TEMP/tmp_svgs/"*.svg ./
+          git add *.svg
+          git commit -m "chore: auto-update README SVGs"
+
+      - name: Push orphan branch
+        run: git push --force origin generated-svgs
