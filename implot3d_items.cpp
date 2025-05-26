@@ -576,7 +576,7 @@ template <class _Getter> struct RendererTriangleFill : RendererBase {
         p_plot[2] = Getter(3 * prim + 2);
 
         // Check if the triangle is outside the culling box
-        if (!cull_box.Contains(p_plot[0]) && !cull_box.Contains(p_plot[0]) && !cull_box.Contains(p_plot[1]))
+        if (!cull_box.Contains(p_plot[0]) && !cull_box.Contains(p_plot[1]) && !cull_box.Contains(p_plot[2]))
             return false;
 
         // Project the triangle vertices to screen space
@@ -677,9 +677,10 @@ template <class _Getter> struct RendererQuadFill : RendererBase {
 
         draw_list_3d._IdxWritePtr += 6;
 
-        // Add depth values for the two triangles
-        draw_list_3d._ZWritePtr[0] = GetPointDepth((p_plot[0] + p_plot[1] + p_plot[2]) / 3.0f);
-        draw_list_3d._ZWritePtr[1] = GetPointDepth((p_plot[0] + p_plot[2] + p_plot[3]) / 3.0f);
+        // Add depth value for the quad
+        float z = GetPointDepth((p_plot[0] + p_plot[1] + p_plot[2] + p_plot[3]) / 4.0f);
+        draw_list_3d._ZWritePtr[0] = z;
+        draw_list_3d._ZWritePtr[1] = z;
         draw_list_3d._ZWritePtr += 2;
 
         // Update vertex count
@@ -755,9 +756,10 @@ template <class _Getter> struct RendererQuadImage : RendererBase {
 
         draw_list_3d._IdxWritePtr += 6;
 
-        // Add depth values for the two triangles
-        draw_list_3d._ZWritePtr[0] = GetPointDepth((p_plot[0] + p_plot[1] + p_plot[2]) / 3.0f);
-        draw_list_3d._ZWritePtr[1] = GetPointDepth((p_plot[0] + p_plot[2] + p_plot[3]) / 3.0f);
+        // Add depth value for the quad
+        float z = GetPointDepth((p_plot[0] + p_plot[1] + p_plot[2] + p_plot[3]) / 4.0f);
+        draw_list_3d._ZWritePtr[0] = z;
+        draw_list_3d._ZWritePtr[1] = z;
         draw_list_3d._ZWritePtr += 2;
 
         // Update vertex count
