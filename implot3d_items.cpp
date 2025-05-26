@@ -576,7 +576,7 @@ template <class _Getter> struct RendererTriangleFill : RendererBase {
         p_plot[2] = Getter(3 * prim + 2);
 
         // Check if the triangle is outside the culling box
-        if (!cull_box.Contains(p_plot[0]) && !cull_box.Contains(p_plot[0]) && !cull_box.Contains(p_plot[1]))
+        if (!cull_box.Contains(p_plot[0]) && !cull_box.Contains(p_plot[1]) && !cull_box.Contains(p_plot[2]))
             return false;
 
         // Project the triangle vertices to screen space
