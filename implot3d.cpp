@@ -3194,6 +3194,7 @@ void ImPlot3DAxis::ApplyFit() {
         Range.Max += 0.5;
         Range.Min -= 0.5;
     }
+    Constrain();
     FitExtents.Min = HUGE_VAL;
     FitExtents.Max = -HUGE_VAL;
 }
