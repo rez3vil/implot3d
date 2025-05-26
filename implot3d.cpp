@@ -1534,8 +1534,8 @@ void SetupAxisLimitsConstraints(ImAxis3D idx, double v_min, double v_max) {
                          "Setup needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!");
     ImPlot3DPlot& plot = *gp.CurrentPlot;
     ImPlot3DAxis& axis = plot.Axes[idx];
-    axis.ConstraintRange.Min = v_min;
-    axis.ConstraintRange.Max = v_max;
+    axis.ConstraintRange.Min = (float)v_min;
+    axis.ConstraintRange.Max = (float)v_max;
 }
 
 void SetupAxisZoomConstraints(ImAxis3D idx, double z_min, double z_max) {
@@ -1544,8 +1544,8 @@ void SetupAxisZoomConstraints(ImAxis3D idx, double z_min, double z_max) {
                          "Setup needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!");
     ImPlot3DPlot& plot = *gp.CurrentPlot;
     ImPlot3DAxis& axis = plot.Axes[idx];
-    axis.ConstraintZoom.Min = z_min;
-    axis.ConstraintZoom.Max = z_max;
+    axis.ConstraintZoom.Min = (float)z_min;
+    axis.ConstraintZoom.Max = (float)z_max;
 }
 
 void SetupAxes(const char* x_label, const char* y_label, const char* z_label, ImPlot3DAxisFlags x_flags, ImPlot3DAxisFlags y_flags,
