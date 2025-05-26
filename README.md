@@ -163,11 +163,7 @@ Yes! ImPlot3D can be used with various languages through the following bindings:
 - **Lua**: [LuaJIT-ImGui](https://github.com/sonoro1234/LuaJIT-ImGui)
 
 ## 🤝 Contributing
-ImPlot3D is growing quickly, and I would love more people to get involved in the project. Whether you have ideas to share, bugs to report, or features to implement, your contributions are welcome!
-
-<p align="center">
-    <img src="https://api.star-history.com/svg?repos=brenocq/implot3d&type=Date" height="300"/>
-</p>
+ImPlot3D is growing quickly, and I would love more people to get involved in this project. Whether you have ideas to share, bugs to report, or features to implement, your contributions are welcome!
 
 ### How to Contribute
 1. **Propose Ideas and Discuss Features:**
