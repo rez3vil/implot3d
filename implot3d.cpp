@@ -1528,6 +1528,26 @@ void SetupAxisTicks(ImAxis3D idx, double v_min, double v_max, int n_ticks, const
     SetupAxisTicks(idx, temp.Data, n_ticks, labels, keep_default);
 }
 
+void SetupAxisLimitsConstraints(ImAxis3D idx, double v_min, double v_max) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
+                         "Setup needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    ImPlot3DAxis& axis = plot.Axes[idx];
+    axis.ConstraintRange.Min = v_min;
+    axis.ConstraintRange.Max = v_max;
+}
+
+void SetupAxisZoomConstraints(ImAxis3D idx, double z_min, double z_max) {
+    ImPlot3DContext& gp = *GImPlot3D;
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != nullptr && !gp.CurrentPlot->SetupLocked,
+                         "Setup needs to be called after BeginPlot and before any setup locking functions (e.g. PlotX)!");
+    ImPlot3DPlot& plot = *gp.CurrentPlot;
+    ImPlot3DAxis& axis = plot.Axes[idx];
+    axis.ConstraintZoom.Min = z_min;
+    axis.ConstraintZoom.Max = z_max;
+}
+
 void SetupAxes(const char* x_label, const char* y_label, const char* z_label, ImPlot3DAxisFlags x_flags, ImPlot3DAxisFlags y_flags,
                ImPlot3DAxisFlags z_flags) {
     SetupAxis(ImAxis3D_X, x_label, x_flags);
