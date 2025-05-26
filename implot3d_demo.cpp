@@ -723,7 +723,7 @@ void DemoAxisConstraints() {
     static ImPlot3DAxisFlags flags;
     ImGui::DragFloat2("Limits Constraints", limit_constraints, 0.01f);
     ImGui::DragFloat2("Zoom Constraints", zoom_constraints, 0.01f);
-    // CHECKBOX_FLAG(flags, ImPlot3DAxisFlags_PanStretch);
+    CHECKBOX_FLAG(flags, ImPlot3DAxisFlags_PanStretch);
     if (ImPlot3D::BeginPlot("##AxisConstraints", ImVec2(-1, 0))) {
         ImPlot3D::SetupAxes("X", "Y", "Z", flags, flags, flags);
         ImPlot3D::SetupAxesLimits(-1, 1, -1, 1, -1, 1);

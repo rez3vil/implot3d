@@ -582,6 +582,19 @@ struct ImPlot3DAxis {
     inline bool IsInputLockedMax() const { return IsLockedMax() || IsAutoFitting(); }
     inline bool IsInputLocked() const { return IsLocked() || IsAutoFitting(); }
 
+    inline bool IsPanLocked(bool increasing) {
+        if (ImPlot3D::ImHasFlag(Flags, ImPlot3DAxisFlags_PanStretch)) {
+            return IsInputLocked();
+        } else {
+            if (IsLockedMin() || IsLockedMax() || IsAutoFitting())
+                return false;
+            if (increasing)
+                return Range.Max == ConstraintRange.Max;
+            else
+                return Range.Min == ConstraintRange.Min;
+        }
+    }
+
     inline void SetLabel(const char* label) {
         Label.Buf.shrink(0);
         if (label && ImGui::FindRenderedTextEnd(label, nullptr) != label)

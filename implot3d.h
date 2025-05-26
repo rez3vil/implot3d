@@ -277,6 +277,7 @@ enum ImPlot3DAxisFlags_ {
     ImPlot3DAxisFlags_LockMax = 1 << 5,      // The axis maximum value will be locked when panning/zooming
     ImPlot3DAxisFlags_AutoFit = 1 << 6,      // Axis will be auto-fitting to data extents
     ImPlot3DAxisFlags_Invert = 1 << 7,       // The axis will be inverted
+    ImPlot3DAxisFlags_PanStretch = 1 << 8,   // Panning in a locked or constrained state will cause the axis to stretch if possible
     ImPlot3DAxisFlags_Lock = ImPlot3DAxisFlags_LockMin | ImPlot3DAxisFlags_LockMax,
     ImPlot3DAxisFlags_NoDecorations = ImPlot3DAxisFlags_NoLabel | ImPlot3DAxisFlags_NoGridLines | ImPlot3DAxisFlags_NoTickLabels,
 };

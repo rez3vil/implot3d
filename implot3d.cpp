@@ -1983,7 +1983,8 @@ void HandleInput(ImPlot3DPlot& plot) {
             // Adjust plot range to translate the plot
             for (int i = 0; i < 3; i++) {
                 if (plot.Axes[i].Hovered) {
-                    if (!plot.Axes[i].IsInputLocked()) {
+                    bool increasing = delta_plot[i] < 0.0f;
+                    if (delta_plot[i] != 0.0f && !plot.Axes[i].IsPanLocked(increasing)) {
                         plot.Axes[i].SetMin(plot.Axes[i].Range.Min - delta_plot[i]);
                         plot.Axes[i].SetMax(plot.Axes[i].Range.Max - delta_plot[i]);
                     }
@@ -2007,7 +2008,8 @@ void HandleInput(ImPlot3DPlot& plot) {
             // Apply translation to the selected axes
             for (int i = 0; i < 3; i++) {
                 if (plot.Axes[i].Hovered) {
-                    if (!plot.Axes[i].IsInputLocked()) {
+                    bool increasing = delta_plot[i] < 0.0f;
+                    if (delta_plot[i] != 0.0f && !plot.Axes[i].IsPanLocked(increasing)) {
                         plot.Axes[i].SetMin(plot.Axes[i].Range.Min - delta_plot[i]);
                         plot.Axes[i].SetMax(plot.Axes[i].Range.Max - delta_plot[i]);
                     }
