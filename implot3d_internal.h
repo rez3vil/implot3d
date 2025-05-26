@@ -553,8 +553,8 @@ struct ImPlot3DAxis {
     }
 
     inline void Constrain() {
-        Range.Min = (float)ImPlot3D::ImConstrainNan(ImPlot3D::ImConstrainInf((double)Range.Min));
-        Range.Max = (float)ImPlot3D::ImConstrainNan(ImPlot3D::ImConstrainInf((double)Range.Max));
+        Range.Min = (float)ImPlot3D::ImConstrainNan((float)ImPlot3D::ImConstrainInf((double)Range.Min));
+        Range.Max = (float)ImPlot3D::ImConstrainNan((float)ImPlot3D::ImConstrainInf((double)Range.Max));
         if (Range.Min < ConstraintRange.Min)
             Range.Min = ConstraintRange.Min;
         if (Range.Max > ConstraintRange.Max)
