@@ -214,10 +214,10 @@ static const char* GetShortLegendLocationName(ImPlot3DLocation loc) {
         return short_legend_location[2];
     if (loc == ImPlot3DLocation_West)
         return short_legend_location[3];
-    if (loc == ImPlot3DLocation_NorthWest)
-        return short_legend_location[5];
     if (loc == ImPlot3DLocation_East)
         return short_legend_location[4];
+    if (loc == ImPlot3DLocation_NorthWest)
+        return short_legend_location[5];
     if (loc == ImPlot3DLocation_NorthEast)
         return short_legend_location[6];
     if (loc == ImPlot3DLocation_SouthWest)
