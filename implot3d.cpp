@@ -3423,9 +3423,23 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
                 ImGui::BulletText("Initialized: %s", plot.Initialized ? "true" : "false");
                 ImGui::BulletText("Hovered: %s", plot.Hovered ? "true" : "false");
                 ImGui::BulletText("Held: %s", plot.Held ? "true" : "false");
+                ImGui::BulletText("HeldEdgeIdx: %d", plot.HeldEdgeIdx);
+                ImGui::BulletText("HeldPlaneIdx: %d", plot.HeldPlaneIdx);
                 ImGui::BulletText("LegendLocation: %s", GetShortLegendLocationName(plot.Items.Legend.Location));
                 ImGui::BulletText("LegendHovered: %s", plot.Items.Legend.Hovered ? "true" : "false");
                 ImGui::BulletText("LegendHeld: %s", plot.Items.Legend.Held ? "true" : "false");
+                ImGui::BulletText("RotationCond: 0x%08X", plot.RotationCond);
+                ImGui::BulletText("InitialRotation: [%.2f,%.2f,%.2f,%.2f]", plot.InitialRotation.x, plot.InitialRotation.y, plot.InitialRotation.z,
+                                  plot.InitialRotation.w);
+                ImGui::BulletText("Rotation: [%.2f,%.2f,%.2f,%.2f]", plot.Rotation.x, plot.Rotation.y, plot.Rotation.z, plot.Rotation.w);
+                ImGui::BulletText("Animation: Time=%.4f RotationEnd=[%.2f,%.2f,%.2f,%.2f]", plot.AnimationTime, plot.RotationAnimationEnd.x,
+                                  plot.RotationAnimationEnd.y, plot.Rotation.z, plot.RotationAnimationEnd.w);
+                ImGui::BulletText("BoxScale: [%.2f,%.2f,%.2f]", plot.BoxScale.x, plot.BoxScale.y, plot.BoxScale.z);
+                ImGui::BulletText("BoxZoom: %.2f", plot.GetBoxZoom());
+                //ImGui::BulletText("FitThisFrame: %s", plot.FitThisFrame ? "true" : "false");
+                //ImGui::BulletText("ContextClick: %s", plot.ContextClick ? "true" : "false");
+                //ImGui::BulletText("OpenContextThisFrame: %s", plot.OpenContextThisFrame ? "true" : "false");
+                //ImGui::BulletText("SetupLocked: %s", plot.SetupLocked ? "true" : "false");
                 ImGui::TreePop();
             }
             ImGui::PopID();
