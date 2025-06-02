@@ -3308,7 +3308,6 @@ void ShowAxisMetrics(const ImPlot3DPlot& plot, const ImPlot3DAxis& axis) {
     ImGui::BulletText("Range: [%f,%f]", axis.Range.Min, axis.Range.Max);
 
     ImGui::BulletText("ShowDefaultTicks: %s", axis.ShowDefaultTicks ? "true" : "false");
-    ImGui::BulletText("ShowDefaultTicks: %s", axis.ShowDefaultTicks ? "true" : "false");
     ImGui::BulletText("FitThisFrame: %s", axis.FitThisFrame ? "true" : "false");
     ImGui::BulletText("FitExtents: [%f,%f]", axis.FitExtents.Min, axis.FitExtents.Min);
     ImGui::BulletText("ConstraintRange: [%f,%f]", axis.ConstraintRange.Min, axis.ConstraintRange.Min);
