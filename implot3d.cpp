@@ -3308,7 +3308,7 @@ void ShowTicksMetrics(const ImPlot3DTicker& ticker) {
     ImGui::BulletText("Size: %d", ticker.TickCount());
 }
 
-void ShowAxisMetrics(const ImPlot3DPlot& plot, const ImPlot3DAxis& axis) {
+void ShowAxisMetrics(const ImPlot3DAxis& axis) {
     ImGui::BulletText("Label: %s", axis.GetLabel());
     ImGui::BulletText("Flags: 0x%08X", axis.Flags);
     ImGui::BulletText("Range: [%f,%f]", axis.Range.Min, axis.Range.Max);
@@ -3414,7 +3414,7 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
                 for (int i = 0; i < 3; ++i) {
                     ImFormatString(buff, 16, "Axes %d", i + 1);
                     if (ImGui::TreeNode(buff)) {
-                        ShowAxisMetrics(plot, plot.Axes[i]);
+                        ShowAxisMetrics(plot.Axes[i]);
                         ImGui::TreePop();
                     }
                 }
