@@ -206,17 +206,24 @@ void AddTextCentered(ImDrawList* draw_list, ImVec2 top_center, ImU32 col, const 
 static const char* short_legend_location[9] = {"C", "N", "S", "W", "E", "NW", "NE", "SW", "SE"};
 
 static const char* GetShortLegendLocationName(ImPlot3DLocation loc) {
-    // clang-format off
-    if (loc == ImPlot3DLocation_Center) return short_legend_location[0];
-    if (loc == ImPlot3DLocation_North) return short_legend_location[1];
-    if (loc == ImPlot3DLocation_South) return short_legend_location[2];
-    if (loc == ImPlot3DLocation_West) return short_legend_location[3];
-    if (loc == ImPlot3DLocation_NorthWest) return short_legend_location[5];
-    if (loc == ImPlot3DLocation_East) return short_legend_location[4];
-    if (loc == ImPlot3DLocation_NorthEast) return short_legend_location[6];
-    if (loc == ImPlot3DLocation_SouthWest) return short_legend_location[7];
-    if (loc == ImPlot3DLocation_SouthEast) return short_legend_location[8];
-    // clang-format on
+    if (loc == ImPlot3DLocation_Center)
+        return short_legend_location[0];
+    if (loc == ImPlot3DLocation_North)
+        return short_legend_location[1];
+    if (loc == ImPlot3DLocation_South)
+        return short_legend_location[2];
+    if (loc == ImPlot3DLocation_West)
+        return short_legend_location[3];
+    if (loc == ImPlot3DLocation_NorthWest)
+        return short_legend_location[5];
+    if (loc == ImPlot3DLocation_East)
+        return short_legend_location[4];
+    if (loc == ImPlot3DLocation_NorthEast)
+        return short_legend_location[6];
+    if (loc == ImPlot3DLocation_SouthWest)
+        return short_legend_location[7];
+    if (loc == ImPlot3DLocation_SouthEast)
+        return short_legend_location[8];
     return nullptr;
 }
 
