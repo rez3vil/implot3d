@@ -39,6 +39,7 @@
 // [SECTION] ImPlot3DAxis
 // [SECTION] ImPlot3DPlot
 // [SECTION] ImPlot3DStyle
+// [SECTION] Metrics
 
 //-----------------------------------------------------------------------------
 // [SECTION] Includes
@@ -3273,5 +3274,180 @@ ImPlot3DStyle::ImPlot3DStyle() {
     ImPlot3D::StyleColorsAuto(this);
     Colormap = ImPlot3DColormap_Deep;
 };
+
+
+//-----------------------------------------------------------------------------
+// [SECTION] Metrics
+//-----------------------------------------------------------------------------
+
+void ShowTicksMetrics(const ImPlot3DTicker& ticker) {
+    ImGui::BulletText("Size: %d", ticker.TickCount());
+}
+
+void ShowAxisMetrics(const ImPlot3DPlot& plot, const ImPlot3DAxis& axis) {
+    ImGui::BulletText("Label: %s", axis.GetLabel());
+    ImGui::BulletText("Flags: 0x%08X", axis.Flags);
+    ImGui::BulletText("Range: [%f,%f]", axis.Range.Min, axis.Range.Max);
+
+    ImGui::BulletText("FitThisFrame: %s", axis.FitThisFrame ? "true" : "false");
+    ImGui::BulletText("FitExtents: [%f,%f]", axis.FitExtents.Min, axis.FitExtents.Min);
+    ImGui::BulletText("ConstraintRange: [%f,%f]", axis.ConstraintRange.Min, axis.ConstraintRange.Min);
+    ImGui::BulletText("ConstraintZoom: [%f,%f]", axis.ConstraintZoom.Min, axis.ConstraintZoom.Min);
+    ImGui::BulletText("Hovered: %s", axis.Hovered ? "true" : "false");
+    ImGui::BulletText("Held: %s", axis.Held ? "true" : "false");
+
+    if (ImGui::TreeNode("Ticks")) {
+        ShowTicksMetrics(axis.Ticker);
+        ImGui::TreePop();
+    }
+}
+
+void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
+
+    static bool show_plot_rects = false;
+    static bool show_axes_rects = false;
+    static bool show_axis_rects = false;
+    static bool show_canvas_rects = false;
+    static bool show_frame_rects = false;
+    static bool show_legend_rects = false;
+
+    ImDrawList& fg = *ImGui::GetForegroundDrawList();
+
+    ImPlot3DContext& gp = *GImPlot3D;
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui::Begin("ImPlot3D Metrics", p_popen);
+    ImGui::Text("ImPlot3D " IMPLOT3D_VERSION);
+    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+    ImGui::Text("Mouse Position: [%.0f,%.0f]", io.MousePos.x, io.MousePos.y);
+    ImGui::Separator();
+    if (ImGui::TreeNode("Tools")) {
+        if (ImGui::Button("Bust Plot Cache"))
+            BustPlotCache();
+        ImGui::SameLine();
+        if (ImGui::Button("Bust Item Cache"))
+            BustItemCache();
+        ImGui::Checkbox("Show Frame Rects", &show_frame_rects);
+        ImGui::Checkbox("Show Canvas Rects", &show_canvas_rects);
+        ImGui::Checkbox("Show Plot Rects", &show_plot_rects);
+        ImGui::Checkbox("Show Axes Rects", &show_axes_rects);
+        ImGui::Checkbox("Show Axis Rects", &show_axis_rects);
+        ImGui::Checkbox("Show Legend Rects", &show_legend_rects);
+        ImGui::TreePop();
+    }
+    const int n_plots = gp.Plots.GetBufSize();
+    // render rects
+    for (int p = 0; p < n_plots; ++p) {
+        ImPlot3DPlot* plot = gp.Plots.GetByIndex(p);
+        if (show_frame_rects)
+            fg.AddRect(plot->FrameRect.Min, plot->FrameRect.Max, IM_COL32(255, 0, 255, 255));
+        if (show_canvas_rects)
+            fg.AddRect(plot->CanvasRect.Min, plot->CanvasRect.Max, IM_COL32(0, 255, 255, 255));
+        if (show_plot_rects)
+            fg.AddRect(plot->PlotRect.Min, plot->PlotRect.Max, IM_COL32(255, 255, 0, 255));
+        // if (show_axes_rects)
+        //     fg.AddRect(plot->AxesRect.Min, plot->AxesRect.Max, IM_COL32(0, 255, 128, 255));
+        // if (show_axis_rects) {
+        //    for (int i = 0; i < 3; ++i) {
+        //         if (plot->Axes[i].Enabled)
+        //            fg.AddRect(plot->Axes[i].HoverRect.Min, plot->Axes[i].HoverRect.Max, IM_COL32(0, 255, 0, 255));
+        //    }
+        //}
+        if (show_legend_rects && plot->Items.GetLegendCount() > 0) {
+            fg.AddRect(plot->Items.Legend.Rect.Min, plot->Items.Legend.Rect.Max, IM_COL32(255, 192, 0, 255));
+            // fg.AddRect(plot->Items.Legend.RectClamped.Min, plot->Items.Legend.RectClamped.Max, IM_COL32(255, 128, 0, 255));
+        }
+    }
+    if (ImGui::TreeNode("Plots", "Plots (%d)", n_plots)) {
+        for (int p = 0; p < n_plots; ++p) {
+            // plot
+            ImPlot3DPlot& plot = *gp.Plots.GetByIndex(p);
+            ImGui::PushID(p);
+            if (ImGui::TreeNode("Plot", "Plot [0x%08X]", plot.ID)) {
+                int n_items = plot.Items.GetItemCount();
+                if (ImGui::TreeNode("Items", "Items (%d)", n_items)) {
+                    for (int i = 0; i < n_items; ++i) {
+                        ImPlot3DItem* item = plot.Items.GetItemByIndex(i);
+                        ImGui::PushID(i);
+                        if (ImGui::TreeNode("Item", "Item [0x%08X]", item->ID)) {
+                            ImGui::Bullet();
+                            ImGui::Checkbox("Show", &item->Show);
+                            ImGui::Bullet();
+                            ImVec4 temp = ImGui::ColorConvertU32ToFloat4(item->Color);
+                            if (ImGui::ColorEdit4("Color", &temp.x, ImGuiColorEditFlags_NoInputs))
+                                item->Color = ImGui::ColorConvertFloat4ToU32(temp);
+
+                            ImGui::BulletText("NameOffset: %d", item->NameOffset);
+                            ImGui::BulletText("Name: %s", item->NameOffset != -1 ? plot.Items.Legend.Labels.Buf.Data + item->NameOffset : "N/A");
+                            ImGui::BulletText("Hovered: %s", item->LegendHovered ? "true" : "false");
+                            ImGui::TreePop();
+                        }
+                        ImGui::PopID();
+                    }
+                    ImGui::TreePop();
+                }
+                char buff[16];
+                for (int i = 0; i < 3; ++i) {
+                    ImFormatString(buff, 16, "Axes %d", i + 1);
+                    if (ImGui::TreeNode(buff)) {
+                        ShowAxisMetrics(plot, plot.Axes[i]);
+                        ImGui::TreePop();
+                    }
+                }
+                ImGui::BulletText("Title: %s", plot.HasTitle() ? plot.GetTitle() : "none");
+                ImGui::BulletText("Flags: 0x%08X", plot.Flags);
+                ImGui::BulletText("Initialized: %s", plot.Initialized ? "true" : "false");
+                ImGui::BulletText("Hovered: %s", plot.Hovered ? "true" : "false");
+                ImGui::BulletText("Held: %s", plot.Held ? "true" : "false");
+                ImGui::BulletText("LegendHovered: %s", plot.Items.Legend.Hovered ? "true" : "false");
+                ImGui::TreePop();
+            }
+            ImGui::PopID();
+        }
+        ImGui::TreePop();
+    }
+
+    if (ImGui::TreeNode("Colormaps")) {
+        ImGui::BulletText("Colormaps:  %d", gp.ColormapData.Count);
+        ImGui::BulletText("Memory: %d bytes", gp.ColormapData.Tables.Size * sizeof(gp.ColormapData.Tables.Data[0]));
+        if (ImGui::TreeNode("Data")) {
+            for (int m = 0; m < gp.ColormapData.Count; ++m) {
+                if (ImGui::TreeNode(gp.ColormapData.GetName(m))) {
+                    int count = gp.ColormapData.GetKeyCount(m);
+                    int size = gp.ColormapData.GetTableSize(m);
+                    bool qual = gp.ColormapData.IsQual(m);
+                    ImGui::BulletText("Qualitative: %s", qual ? "true" : "false");
+                    ImGui::BulletText("Key Count: %d", count);
+                    ImGui::BulletText("Table Size: %d", size);
+                    ImGui::Indent();
+
+                    // static float t = 0.5;
+                    // ImVec4 samp;
+                    // float wid = 32 * 10 - ImGui::GetFrameHeight() - ImGui::GetStyle().ItemSpacing.x;
+                    // ImGui::SetNextItemWidth(wid);
+                    // ImPlot3D::ColormapSlider("##Sample", &t, &samp, "%.3f", m);
+                    // ImGui::SameLine();
+                    // ImGui::ColorButton("Sampler", samp);
+                    ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0, 0, 0, 0));
+                    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+                    for (int c = 0; c < size; ++c) {
+                        ImVec4 col = ImGui::ColorConvertU32ToFloat4(gp.ColormapData.GetTableColor(m, c));
+                        ImGui::PushID(m * 1000 + c);
+                        ImGui::ColorButton("", col, 0, ImVec2(10, 10));
+                        ImGui::PopID();
+                        if ((c + 1) % 32 != 0 && c != size - 1)
+                            ImGui::SameLine();
+                    }
+                    ImGui::PopStyleVar();
+                    ImGui::PopStyleColor();
+                    ImGui::Unindent();
+                    ImGui::TreePop();
+                }
+            }
+            ImGui::TreePop();
+        }
+        ImGui::TreePop();
+    }
+    ImGui::End();
+}
 
 #endif // #ifndef IMGUI_DISABLE

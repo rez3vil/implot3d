@@ -905,6 +905,7 @@ void ShowDemoWindow(bool* p_open) {
     static bool show_imgui_metrics = false;
     static bool show_imgui_style_editor = false;
     static bool show_imgui_demo = false;
+    static bool show_implot3d_metrics = false;
 
     if (show_implot3d_style_editor) {
         ImGui::Begin("Style Editor (ImPlot3D)", &show_implot3d_style_editor);
@@ -922,11 +923,15 @@ void ShowDemoWindow(bool* p_open) {
     if (show_imgui_demo)
         ImGui::ShowDemoWindow(&show_imgui_demo);
 
+    if (show_implot3d_metrics)
+        ImPlot3D::ShowMetricsWindow(&show_implot3d_metrics);
+
     ImGui::SetNextWindowPos(ImVec2(100, 100), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(600, 750), ImGuiCond_FirstUseEver);
     ImGui::Begin("ImPlot3D Demo", p_open, ImGuiWindowFlags_MenuBar);
     if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("Tools")) {
+            ImGui::MenuItem("ImPlot3D Metrics", nullptr, &show_implot3d_metrics);
             ImGui::MenuItem("Style Editor", nullptr, &show_implot3d_style_editor);
             ImGui::Separator();
             ImGui::MenuItem("ImGui Metrics", nullptr, &show_imgui_metrics);
