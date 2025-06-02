@@ -203,6 +203,24 @@ void AddTextCentered(ImDrawList* draw_list, ImVec2 top_center, ImU32 col, const 
 // [SECTION] Legend Utils
 //-----------------------------------------------------------------------------
 
+static const char* short_legend_location[9] = {"C", "N", "S", "W", "E", "NW", "NE", "SW", "SE"};
+
+static const char* GetShortLegendLocationName(ImPlot3DLocation loc) {
+    // clang-format off
+    if (loc == ImPlot3DLocation_NorthWest) return short_legend_location[5];
+    if (loc == ImPlot3DLocation_Center) return short_legend_location[0];
+    if (loc == ImPlot3DLocation_North) return short_legend_location[1];
+    if (loc == ImPlot3DLocation_South) return short_legend_location[2];
+    if (loc == ImPlot3DLocation_West) return short_legend_location[3];
+    if (loc == ImPlot3DLocation_NorthWest) return short_legend_location[5];
+    if (loc == ImPlot3DLocation_East) return short_legend_location[4];
+    if (loc == ImPlot3DLocation_NorthEast) return short_legend_location[6];
+    if (loc == ImPlot3DLocation_SouthWest) return short_legend_location[7];
+    if (loc == ImPlot3DLocation_SouthEast) return short_legend_location[8];
+    // clang-format on
+    return nullptr;
+}
+
 ImVec2 GetLocationPos(const ImRect& outer_rect, const ImVec2& inner_size, ImPlot3DLocation loc, const ImVec2& pad) {
     ImVec2 pos;
     // Legend x coordinate
@@ -1163,15 +1181,15 @@ bool ShowLegendContextMenu(ImPlot3DLegend& legend, bool visible) {
         legend.Flags &= ~ImPlot3DLegendFlags_Horizontal;
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(2, 2));
     // clang-format off
-    if (ImGui::Button("NW",ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_NorthWest; } ImGui::SameLine();
-    if (ImGui::Button("N", ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_North;     } ImGui::SameLine();
-    if (ImGui::Button("NE",ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_NorthEast; }
-    if (ImGui::Button("W", ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_West;      } ImGui::SameLine();
-    if (ImGui::InvisibleButton("C", ImVec2(1.5f*s,s))) {     } ImGui::SameLine();
-    if (ImGui::Button("E", ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_East;      }
-    if (ImGui::Button("SW",ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_SouthWest; } ImGui::SameLine();
-    if (ImGui::Button("S", ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_South;     } ImGui::SameLine();
-    if (ImGui::Button("SE",ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_SouthEast; }
+    if (ImGui::Button(GetShortLegendLocationName(ImPlot3DLocation_NorthWest),ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_NorthWest; } ImGui::SameLine();
+    if (ImGui::Button(GetShortLegendLocationName(ImPlot3DLocation_North) , ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_North;     } ImGui::SameLine();
+    if (ImGui::Button(GetShortLegendLocationName(ImPlot3DLocation_NorthEast), ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_NorthEast; }
+    if (ImGui::Button(GetShortLegendLocationName(ImPlot3DLocation_West), ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_West;      } ImGui::SameLine();
+    if (ImGui::InvisibleButton(GetShortLegendLocationName(ImPlot3DLocation_Center), ImVec2(1.5f*s,s))) {     } ImGui::SameLine();
+    if (ImGui::Button(GetShortLegendLocationName(ImPlot3DLocation_East), ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_East;      }
+    if (ImGui::Button(GetShortLegendLocationName(ImPlot3DLocation_SouthWest),ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_SouthWest; } ImGui::SameLine();
+    if (ImGui::Button(GetShortLegendLocationName(ImPlot3DLocation_South), ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_South;     } ImGui::SameLine();
+    if (ImGui::Button(GetShortLegendLocationName(ImPlot3DLocation_SouthEast),ImVec2(1.5f*s,s))) { legend.Location = ImPlot3DLocation_SouthEast; }
     // clang-format on
     ImGui::PopStyleVar();
     return ret;
@@ -3289,6 +3307,7 @@ void ShowAxisMetrics(const ImPlot3DPlot& plot, const ImPlot3DAxis& axis) {
     ImGui::BulletText("Flags: 0x%08X", axis.Flags);
     ImGui::BulletText("Range: [%f,%f]", axis.Range.Min, axis.Range.Max);
 
+    ImGui::BulletText("ShowDefaultTicks: %s", axis.ShowDefaultTicks ? "true" : "false");
     ImGui::BulletText("FitThisFrame: %s", axis.FitThisFrame ? "true" : "false");
     ImGui::BulletText("FitExtents: [%f,%f]", axis.FitExtents.Min, axis.FitExtents.Min);
     ImGui::BulletText("ConstraintRange: [%f,%f]", axis.ConstraintRange.Min, axis.ConstraintRange.Min);
@@ -3398,7 +3417,9 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
                 ImGui::BulletText("Initialized: %s", plot.Initialized ? "true" : "false");
                 ImGui::BulletText("Hovered: %s", plot.Hovered ? "true" : "false");
                 ImGui::BulletText("Held: %s", plot.Held ? "true" : "false");
+                ImGui::BulletText("LegendLocation: %s", GetShortLegendLocationName(plot.Items.Legend.Location));
                 ImGui::BulletText("LegendHovered: %s", plot.Items.Legend.Hovered ? "true" : "false");
+                ImGui::BulletText("LegendHeld: %s", plot.Items.Legend.Held ? "true" : "false");
                 ImGui::TreePop();
             }
             ImGui::PopID();
