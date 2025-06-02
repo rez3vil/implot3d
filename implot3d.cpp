@@ -207,7 +207,6 @@ static const char* short_legend_location[9] = {"C", "N", "S", "W", "E", "NW", "N
 
 static const char* GetShortLegendLocationName(ImPlot3DLocation loc) {
     // clang-format off
-    if (loc == ImPlot3DLocation_NorthWest) return short_legend_location[5];
     if (loc == ImPlot3DLocation_Center) return short_legend_location[0];
     if (loc == ImPlot3DLocation_North) return short_legend_location[1];
     if (loc == ImPlot3DLocation_South) return short_legend_location[2];
