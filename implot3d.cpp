@@ -3480,6 +3480,22 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
                         ImGui::TreePop();
                     }
                 }
+
+                if (ImGui::TreeNode("Axes Parameters")) {
+                    GetAxesParameters(plot, active_faces, corners_pix, corners, plane_2d, axis_corners);
+                    ImGui::BulletText("Active Faces: [%s, %s, %s]", active_faces[0] ? "true" : "false", active_faces[1] ? "true" : "false",
+                                      active_faces[2] ? "true" : "false");
+                    for (int c = 0; c < 8; c++) {
+                        ImGui::BulletText("Corner %d: [%.2f, %.2f, %.2f] [%.2f, %.2f]", c, corners[c].x, corners[c].y, corners[c].z, corners_pix[c].x,
+                                          corners_pix[c].y);
+                    }
+                    for (int a = 0; a < 3; a++) {
+                        ImGui::BulletText("Axis Corners %d: [%d, %d]", a, axis_corners[a][0], axis_corners[a][1]);
+                    }
+                    ImGui::BulletText("Plane2D: %d", plane_2d);
+                    ImGui::TreePop();
+                }
+
                 ImGui::BulletText("Title: %s", plot.HasTitle() ? plot.GetTitle() : "none");
                 ImGui::BulletText("Flags: 0x%08X", plot.Flags);
                 ImGui::BulletText("Initialized: %s", plot.Initialized ? "true" : "false");
