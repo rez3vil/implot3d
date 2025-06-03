@@ -992,7 +992,7 @@ void ComputeBoxCornersPix(const ImPlot3DPlot& plot, ImVec2* corners_pix, const I
 }
 
 // Function to get axes parameters which can then be used later down the line
-void GetAxesParameters(const ImPlot3DPlot& plot, bool active_faces[3], ImVec2 corners_pix[8], ImPlot3DPoint corners[8], int& plane_2d,
+void GetAxesParameters(const ImPlot3DPlot& plot, bool* active_faces, ImVec2* corners_pix, ImPlot3DPoint* corners, int& plane_2d,
                        int axis_corners[3][2]) {
     // Get plot parameters
     const ImPlot3DQuat& rotation = plot.Rotation;
