@@ -3379,13 +3379,13 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
         ImGui::TreePop();
     }
     const int n_plots = gp.Plots.GetBufSize();
-    // Render rectangles
     bool active_faces[3];
     ImVec2 corners_pix[8];
     ImPlot3DPoint corners[8];
     int plane_2d;
     int axis_corners[3][2];
 
+    // Render rectangles
     for (int p = 0; p < n_plots; ++p) {
         ImPlot3DPlot& plot = *gp.Plots.GetByIndex(p);
         if (show_frame_rects)
@@ -3397,19 +3397,19 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
         if (show_plot_box || show_legend_axis_lines)
             GetAxesParameters(plot, active_faces, corners_pix, corners, plane_2d, axis_corners);
         if (show_plot_box) {
-            enum class RenderEdgeType { NotRendered, Plane2DHidden, Rendered };
+            enum class RenderEdgeType { EdgeNotRendered, Hidden2DEdge, EdgeRendered };
             RenderEdgeType render_edge_type[12];
             for (int i = 0; i < 12; i++) {
                 if (plane_2d == -1)
-                    render_edge_type[i] = RenderEdgeType::NotRendered;
+                    render_edge_type[i] = RenderEdgeType::EdgeNotRendered;
                 else
-                    render_edge_type[i] = RenderEdgeType::Plane2DHidden;
+                    render_edge_type[i] = RenderEdgeType::Hidden2DEdge;
             }
             for (int a = 0; a < 3; a++) {
                 int face_idx = a + 3 * active_faces[a];
                 for (size_t i = 0; i < 4; i++) {
                     if (plane_2d == -1 || a == plane_2d)
-                        render_edge_type[face_edges[face_idx][i]] = RenderEdgeType::Rendered;
+                        render_edge_type[face_edges[face_idx][i]] = RenderEdgeType::EdgeRendered;
                 }
             }
 
@@ -3417,12 +3417,12 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
                 int idx0 = edges[i][0];
                 int idx1 = edges[i][1];
 
-                // Draw different boxes depending on how the box should be rendered
-                if (render_edge_type[i] == RenderEdgeType::Rendered)
+                // Draw different lines depending on the type that the renderer thinks it is
+                if (render_edge_type[i] == RenderEdgeType::EdgeRendered)
                     fg.AddLine(corners_pix[idx0], corners_pix[idx1], IM_COL32(255, 200, 0, 255));
-                else if (render_edge_type[i] == RenderEdgeType::NotRendered)
+                else if (render_edge_type[i] == RenderEdgeType::EdgeNotRendered)
                     fg.AddLine(corners_pix[idx0], corners_pix[idx1], IM_COL32(100, 255, 0, 125));
-                // If Plane2DHidden then there is no box an render nothing
+                // If the render edge type is Hidden2DEdge then there this edge does not get rendered
             }
         }
         if (show_legend_axis_lines) {
