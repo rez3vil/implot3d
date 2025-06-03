@@ -3392,12 +3392,10 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
             fg.AddRect(plot.FrameRect.Min, plot.FrameRect.Max, IM_COL32(255, 0, 255, 255));
         if (show_canvas_rects)
             fg.AddRect(plot.CanvasRect.Min, plot.CanvasRect.Max, IM_COL32(0, 255, 255, 255));
-        if (show_plot_rects) {
+        if (show_plot_rects)
             fg.AddRect(plot.PlotRect.Min, plot.PlotRect.Max, IM_COL32(255, 255, 0, 255));
-        }
         if (show_plot_box || show_legend_axis_lines)
             GetAxesParameters(plot, active_faces, corners_pix, corners, plane_2d, axis_corners);
-
         if (show_plot_box) {
             enum class RenderEdgeType { NotRendered, Plane2DHidden, Rendered };
             RenderEdgeType render_edge_type[12];
@@ -3484,13 +3482,11 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
                     GetAxesParameters(plot, active_faces, corners_pix, corners, plane_2d, axis_corners);
                     ImGui::BulletText("Active Faces: [%s, %s, %s]", active_faces[0] ? "true" : "false", active_faces[1] ? "true" : "false",
                                       active_faces[2] ? "true" : "false");
-                    for (int c = 0; c < 8; c++) {
+                    for (int c = 0; c < 8; c++)
                         ImGui::BulletText("Corner %d: [%.2f, %.2f, %.2f] [%.2f, %.2f]", c, corners[c].x, corners[c].y, corners[c].z, corners_pix[c].x,
                                           corners_pix[c].y);
-                    }
-                    for (int a = 0; a < 3; a++) {
+                    for (int a = 0; a < 3; a++)
                         ImGui::BulletText("Axis Corners %d: [%d, %d]", a, axis_corners[a][0], axis_corners[a][1]);
-                    }
                     ImGui::BulletText("Plane2D: %d", plane_2d);
                     ImGui::TreePop();
                 }
