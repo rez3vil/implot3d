@@ -3394,7 +3394,6 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
             fg.AddRect(plot.CanvasRect.Min, plot.CanvasRect.Max, IM_COL32(0, 255, 255, 255));
         if (show_plot_rects) {
             fg.AddRect(plot.PlotRect.Min, plot.PlotRect.Max, IM_COL32(255, 255, 0, 255));
-            fg.AddCircle(plot.PlotRect.GetCenter(), 10, IM_COL32(255, 255, 0, 255));
         }
         if (show_plot_box || show_legend_axis_lines)
             GetAxesParameters(plot, active_faces, corners_pix, corners, plane_2d, axis_corners);
