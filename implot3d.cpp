@@ -469,26 +469,6 @@ static const int axis_corners_lookup_3d[8][3][2] = {
 // Lookup table for corners based on shifted version of active_faces (3D plot)
 static const int corner_lookup_3d[8] = {6, 2, 5, 1, 7, 3, 4, 0};
 
-// Lookup table for axis_corners based on non active_faces (3D plot)
-static const int axis_non_corners_lookup_3d[8][3][2] = {
-    // Index 0: active_faces = {0, 0, 0}
-    {{0, 1}, {0, 3}, {0, 4}},
-    // Index 1: active_faces = {0, 0, 1}
-    {{4, 5}, {4, 7}, {0, 4}},
-    // Index 2: active_faces = {0, 1, 0}
-    {{0, 1}, {1, 2}, {2, 6}},
-    // Index 3: active_faces = {0, 1, 1}
-    {{4, 5}, {5, 6}, {2, 6}},
-    // Index 4: active_faces = {1, 0, 0}
-    {{3, 2}, {0, 3}, {0, 4}},
-    // Index 5: active_faces = {1, 0, 1}
-    {{7, 6}, {4, 7}, {0, 4}},
-    // Index 6: active_faces = {1, 1, 0}
-    {{0, 1}, {0, 3}, {3, 7}},
-    // Index 7: active_faces = {1, 1, 1}
-    {{4, 5}, {4, 7}, {3, 7}},
-};
-
 int Active3DFacesToCornerIndex(const bool* active_faces) {
     return ((int)active_faces[0] << 2) | ((int)active_faces[1] << 1) | ((int)active_faces[2]);
 }
@@ -3413,7 +3393,7 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
     int plane_2d;
     int axis_corners[3][2];
     char buff[16];
-    bool edge_already_rendered[12];
+    enum class DisplayedType { Outer, Hidden, Inner };
 
     // Render rectangles
     for (int p = 0; p < n_plots; ++p) {
@@ -3424,65 +3404,33 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
             fg.AddRect(plot.CanvasRect.Min, plot.CanvasRect.Max, IM_COL32(0, 255, 255, 255));
         if (show_plot_rects)
             fg.AddRect(plot.PlotRect.Min, plot.PlotRect.Max, IM_COL32(255, 255, 0, 255));
-        if (show_plot_box || show_axis_lines || show_axis_corner_indexes || show_axis_edge_indexes) {
+        if (show_plot_box || show_axis_lines || show_axis_corner_indexes || show_axis_edge_indexes)
             GetAxesParameters(plot, active_faces, corners_pix, corners, plane_2d, axis_corners);
-            for (int e = 0; e < 12; e++) {
-                edge_already_rendered[e] = false;
-            }
-        }
         if (show_plot_box) {
-            for (int a = 0; a < 3; a++) {
-                if (plane_2d != -1 && a == plane_2d)
-                    continue;
-
-                int face_idx = a + 3 * active_faces[a];
-                for (size_t i = 0; i < 4; i++) {
-                    int face_edge = face_edges[face_idx][i];
-                    if (!edge_already_rendered[face_edge]) {
-                        int idx0 = edges[face_edge][0];
-                        int idx1 = edges[face_edge][1];
-                        // fg.AddLine(corners_pix[idx0], corners_pix[idx1], IM_COL32(255, 200, 0, 255));
-                        // edge_already_rendered[face_edge] = true;
-                    }
-                }
-
-                int not_face_idx = a + 3 * !active_faces[a];
-                for (size_t i = 0; i < 4; i++) {
-                    int face_edge = face_edges[not_face_idx][i];
-                    if (!edge_already_rendered[face_edge]) {
-                        int idx0 = edges[face_edge][0];
-                        int idx1 = edges[face_edge][1];
-                        fg.AddLine(corners_pix[idx0], corners_pix[idx1], IM_COL32(100, 255, 0, 125));
-                        edge_already_rendered[face_edge] = true;
-                    }
-                }
+            DisplayedType edge_types[12];
+            for (int i = 0; i < 12; i++) {
+                if (plane_2d == -1)
+                    edge_types[i] = DisplayedType::Outer;
+                else
+                    edge_types[i] = DisplayedType::Hidden;
             }
-            //for (int a = 0; a < 3; a++) {
-            //    if (plane_2d != -1 && a == plane_2d)
-            //        continue;
+            for (int a = 0; a < 3; a++) {
+                int face_idx = a + 3 * active_faces[a];
+                for (size_t i = 0; (plane_2d == -1 || a == plane_2d) && i < 4; i++)
+                    edge_types[face_edges[face_idx][i]] = DisplayedType::Inner;
+            }
 
-            //    int face_idx = a + 3 * active_faces[a];
-            //    for (size_t i = 0; i < 4; i++) {
-            //        int face_edge = face_edges[face_idx][i];
-            //        if (!edge_already_rendered[face_edge]) {
-            //            int idx0 = edges[face_edge][0];
-            //            int idx1 = edges[face_edge][1];
-            //            //fg.AddLine(corners_pix[idx0], corners_pix[idx1], IM_COL32(255, 200, 0, 255));
-            //            //edge_already_rendered[face_edge] = true;
-            //        }
-            //    }
+            for (int i = 0; i < 12; i++) {
+                int idx0 = edges[i][0];
+                int idx1 = edges[i][1];
 
-            //    int not_face_idx = a + 3 * !active_faces[a];
-            //    for (size_t i = 0; i < 4; i++) {
-            //        int face_edge = face_edges[not_face_idx][i];
-            //        if (!edge_already_rendered[face_edge]) {
-            //            int idx0 = edges[face_edge][0];
-            //            int idx1 = edges[face_edge][1];
-            //            fg.AddLine(corners_pix[idx0], corners_pix[idx1], IM_COL32(100, 255, 0, 125));
-            //            edge_already_rendered[face_edge] = true;
-            //        }
-            //    }
-            //}
+                // Draw different lines depending on the type that the renderer thinks it is
+                if (edge_types[i] == DisplayedType::Inner)
+                    fg.AddLine(corners_pix[idx0], corners_pix[idx1], IM_COL32(255, 200, 0, 255));
+                else if (edge_types[i] == DisplayedType::Outer)
+                    fg.AddLine(corners_pix[idx0], corners_pix[idx1], IM_COL32(100, 255, 0, 125));
+                // If the render edge type is Hidden then there this edge does not get rendered
+            }
         }
         if (show_axis_lines) {
             for (int a = 0; a < 3; a++) {
@@ -3498,29 +3446,47 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
             }
         }
         if (show_axis_corner_indexes) {
+            DisplayedType corner_types[8];
             for (int c = 0; c < 8; c++) {
-                if (plane_2d != -1) {
-
-                    // TODO: Do not render if this is 2d plot
+                if (plane_2d == -1 && show_plot_box)
+                    corner_types[c] = DisplayedType::Outer;
+                else
+                    corner_types[c] = DisplayedType::Hidden;
+            }
+            for (int a = 0; a < 3; a++) {
+                int face_idx = a + 3 * active_faces[a];
+                for (size_t i = 0; (plane_2d == -1 || a == plane_2d) && i < 4; i++)
+                    corner_types[faces[face_idx][i]] = DisplayedType::Inner;
+            }
+            for (int c = 0; c < 8; c++) {
+                if (corner_types[c] == DisplayedType::Inner || corner_types[c] == DisplayedType::Outer) {
+                    ImVec2 corner = corners_pix[c];
+                    ImFormatString(buff, IM_ARRAYSIZE(buff), "C%d", c);
+                    AddTextRotated(&fg, corner, 0, IM_COL32(0, 200, 0, 200), buff);
                 }
-                ImVec2 corner = corners_pix[c];
-                ImFormatString(buff, IM_ARRAYSIZE(buff), "C%d", c);
-                AddTextRotated(&fg, corner, 0, IM_COL32(0, 200, 0, 200), buff);
             }
         }
         if (show_axis_edge_indexes) {
+            DisplayedType edge_types[12];
             for (int e = 0; e < 12; e++) {
-                if (plane_2d != -1) {
-                    if (e < plane_2d * 4 || e > (plane_2d * 4 + 4))
-                        continue;
-                    // TODO: Do not render if this is 2d plot
-                    //continue;
+                if (plane_2d == -1 && show_plot_box)
+                    edge_types[e] = DisplayedType::Outer;
+                else
+                    edge_types[e] = DisplayedType::Hidden;
+            }
+            for (int a = 0; a < 3; a++) {
+                int face_idx = a + 3 * active_faces[a];
+                for (size_t i = 0; (plane_2d == -1 || a == plane_2d) && i < 4; i++)
+                    edge_types[face_edges[face_idx][i]] = DisplayedType::Inner;
+            }
+            for (int e = 0; e < 12; e++) {
+                if (edge_types[e] == DisplayedType::Inner || edge_types[e] == DisplayedType::Outer) {
+                    int idx0 = edges[e][0];
+                    int idx1 = edges[e][1];
+                    ImVec2 edge_middle = (corners_pix[idx0] + corners_pix[idx1]) / 2;
+                    ImFormatString(buff, IM_ARRAYSIZE(buff), "E%d", e);
+                    AddTextRotated(&fg, edge_middle, 0, IM_COL32(200, 0, 0, 200), buff);
                 }
-                int idx0 = edges[e][0];
-                int idx1 = edges[e][1];
-                ImVec2 edge_middle = (corners_pix[idx0] + corners_pix[idx1]) / 2;
-                ImFormatString(buff, IM_ARRAYSIZE(buff), "E%d", e);
-                AddTextRotated(&fg, edge_middle, 0, IM_COL32(200, 0, 0, 200), buff);
             }
         }
         if (show_legend_rects && plot.Items.GetLegendCount() > 0)
@@ -3579,11 +3545,6 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
                                           axis_corners_lookup_3d[corner_index][0][0], axis_corners_lookup_3d[corner_index][0][1],
                                           axis_corners_lookup_3d[corner_index][1][0], axis_corners_lookup_3d[corner_index][1][1],
                                           axis_corners_lookup_3d[corner_index][2][0], axis_corners_lookup_3d[corner_index][2][1]);
-
-                        ImGui::BulletText("3d Non Corner Lookup: %d {{%d, %d}, {%d, %d}, {%d, %d}]", corner_lookup_3d[corner_index],
-                                          axis_non_corners_lookup_3d[corner_index][0][0], axis_non_corners_lookup_3d[corner_index][0][1],
-                                          axis_non_corners_lookup_3d[corner_index][1][0], axis_non_corners_lookup_3d[corner_index][1][1],
-                                          axis_non_corners_lookup_3d[corner_index][2][0], axis_non_corners_lookup_3d[corner_index][2][1]);
                     }
 
                     for (int c = 0; c < 8; c++)
