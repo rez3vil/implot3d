@@ -3494,7 +3494,6 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
     }
     if (ImGui::TreeNode("Plots", "Plots (%d)", n_plots)) {
         for (int p = 0; p < n_plots; ++p) {
-            // plot
             ImPlot3DPlot& plot = *gp.Plots.GetByIndex(p);
             ImGui::PushID(p);
             if (ImGui::TreeNode("Plot", "Plot [0x%08X]", plot.ID)) {
@@ -3521,15 +3520,14 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
                     ImGui::TreePop();
                 }
 
-                if (ImGui::TreeNode("Axes Parameters")) {
+                if (ImGui::TreeNode("Axes")) {
                     // Get the axes parameters of this plot and use it to plot
                     GetAxesParameters(plot, active_faces, corners_pix, corners, plane_2d, axis_corners);
 
                     for (int a = 0; a < 3; ++a) {
                         if (plane_2d != -1 && plane_2d == a)
                             continue;
-                        ImFormatString(buff, IM_ARRAYSIZE(buff), "Axes %s", axis_labels[a]);
-                        if (ImGui::TreeNode(buff)) {
+                        if (ImGui::TreeNode(axis_labels[a])) {
                             ShowAxisMetrics(plot.Axes[a]);
                             ImGui::TreePop();
                         }
@@ -3547,11 +3545,12 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
                                           axis_corners_lookup_3d[corner_index][2][0], axis_corners_lookup_3d[corner_index][2][1]);
                     }
 
+                    for (int a = 0; a < 3; a++)
+                        ImGui::BulletText("%s Label Corners: [%d, %d]", axis_labels[a], axis_corners[a][0], axis_corners[a][1]);
                     for (int c = 0; c < 8; c++)
                         ImGui::BulletText("Corner %d: [%.2f, %.2f, %.2f] [%.2f, %.2f]", c, corners[c].x, corners[c].y, corners[c].z, corners_pix[c].x,
                                           corners_pix[c].y);
-                    for (int a = 0; a < 3; a++)
-                        ImGui::BulletText("Axis Corners %d: [%d, %d]", a, axis_corners[a][0], axis_corners[a][1]);
+
                     ImGui::TreePop();
                 }
 
