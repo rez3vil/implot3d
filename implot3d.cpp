@@ -466,10 +466,8 @@ static const int axis_corners_lookup_3d[8][3][2] = {
     {{4, 5}, {4, 7}, {3, 7}},
 };
 
-// Lookup table for corners based on shifted version of active_faces (3D plot)
-static const int corner_lookup_3d[8] = {6, 2, 5, 1, 7, 3, 4, 0};
-
-int Active3DFacesToCornerIndex(const bool* active_faces) {
+// Convert the X, Y and Z active_faces array to a integer value representation that can be looked up in axis_corners_lookup_3d
+int Active3DFacesToAxisLookupIndex(const bool* active_faces) {
     return ((int)active_faces[0] << 2) | ((int)active_faces[1] << 1) | ((int)active_faces[2]);
 }
 
@@ -966,6 +964,7 @@ void ComputeBoxCorners(ImPlot3DPoint* corners, const ImPlot3DPoint& range_min, c
     corners[7] = ImPlot3DPoint(range_min.x, range_max.y, range_max.z); // 7
 }
 
+// Convert a position in the plot's NDC to pixels
 ImVec2 NDCToPixels(const ImPlot3DPlot& plot, const ImPlot3DPoint& point) {
     ImVec2 center = plot.PlotRect.GetCenter();
     ImPlot3DPoint point_pix = plot.GetBoxZoom() * (plot.Rotation * point);
@@ -976,8 +975,8 @@ ImVec2 NDCToPixels(const ImPlot3DPlot& plot, const ImPlot3DPoint& point) {
     return {point_pix.x, point_pix.y};
 }
 
+// Convert a position in the plot's coordinate system to the plot's normalized device coordinate system (NDC)
 ImPlot3DPoint PlotToNDC(const ImPlot3DPlot& plot, const ImPlot3DPoint& point) {
-
     ImPlot3DPoint ndc_point;
     for (int i = 0; i < 3; i++) {
         const ImPlot3DAxis& axis = plot.Axes[i];
@@ -989,6 +988,7 @@ ImPlot3DPoint PlotToNDC(const ImPlot3DPlot& plot, const ImPlot3DPoint& point) {
     return ndc_point;
 }
 
+// Convert a position in the plot's coordinate system to pixels
 ImVec2 PlotToPixels(const ImPlot3DPlot& plot, const ImPlot3DPoint& point) { return NDCToPixels(plot, PlotToNDC(plot, point)); }
 
 // Function to compute the box corners in pixel space
@@ -1091,7 +1091,7 @@ void GetAxesParameters(const ImPlot3DPlot& plot, bool* active_faces, ImVec2* cor
             axis_corners[y_axis][1] = y_corner;
         }
     } else {
-        int index = Active3DFacesToCornerIndex(active_faces);
+        int index = Active3DFacesToAxisLookupIndex(active_faces);
         for (int a = 0; a < 3; a++) {
             axis_corners[a][0] = axis_corners_lookup_3d[index][a][0];
             axis_corners[a][1] = axis_corners_lookup_3d[index][a][1];
@@ -1100,7 +1100,6 @@ void GetAxesParameters(const ImPlot3DPlot& plot, bool* active_faces, ImVec2* cor
 }
 
 void RenderPlotBox(ImDrawList* draw_list, const ImPlot3DPlot& plot) {
-
     bool active_faces[3];
     ImVec2 corners_pix[8];
     ImPlot3DPoint corners[8];
@@ -3351,13 +3350,13 @@ void ShowAxisMetrics(const ImPlot3DAxis& axis) {
 }
 
 void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
-
     static bool show_frame_rects = false;
     static bool show_canvas_rects = false;
     static bool show_plot_rects = false;
     static bool show_plot_box = false;
-    static bool show_axis_lines = false;
+    static bool show_axis_line = false;
     static bool show_axis_corner_indexes = false;
+    static bool show_axis_face_indexes = false;
     static bool show_axis_edge_indexes = false;
     static bool show_legend_rects = false;
 
@@ -3380,8 +3379,9 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
         ImGui::Checkbox("Show Canvas Rects", &show_canvas_rects);
         ImGui::Checkbox("Show Plot Rects", &show_plot_rects);
         ImGui::Checkbox("Show Plot Box", &show_plot_box);
-        ImGui::Checkbox("Show Axis Lines", &show_axis_lines);
+        ImGui::Checkbox("Show Axis Line", &show_axis_line);
         ImGui::Checkbox("Show Axis Corner Indexes", &show_axis_corner_indexes);
+        ImGui::Checkbox("Show Axis Face Indexes", &show_axis_face_indexes);
         ImGui::Checkbox("Show Axis Edge Indexes", &show_axis_edge_indexes);
         ImGui::Checkbox("Show Legend Rects", &show_legend_rects);
         ImGui::TreePop();
@@ -3393,7 +3393,14 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
     int plane_2d;
     int axis_corners[3][2];
     char buff[16];
-    enum class DisplayedType { Outer, Hidden, Inner };
+    // Enum used to indicate how a certain type will be displayed
+    enum class DisplayedType {
+        Hidden,   // Hidden type that is not displayed. Used when the object should not be displayed. Will be used when:
+                  // 1. 2D plot and this type should not be used,
+                  // 2. The flag show_plot_box is disabled
+        Active,   // Part of the faces of the box that are active
+        NotActive // Part of the faces of the box that are not active when show_plot_box is active
+    };
 
     // Render rectangles
     for (int p = 0; p < n_plots; ++p) {
@@ -3404,35 +3411,56 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
             fg.AddRect(plot.CanvasRect.Min, plot.CanvasRect.Max, IM_COL32(0, 255, 255, 255));
         if (show_plot_rects)
             fg.AddRect(plot.PlotRect.Min, plot.PlotRect.Max, IM_COL32(255, 255, 0, 255));
-        if (show_plot_box || show_axis_lines || show_axis_corner_indexes || show_axis_edge_indexes)
+        if (show_plot_box || show_axis_line || show_axis_corner_indexes || show_axis_face_indexes || show_axis_edge_indexes)
             GetAxesParameters(plot, active_faces, corners_pix, corners, plane_2d, axis_corners);
-        if (show_plot_box) {
+        if (show_plot_box || show_axis_edge_indexes) {
+            // Determine which display type each of the edges are
             DisplayedType edge_types[12];
-            for (int i = 0; i < 12; i++) {
-                if (plane_2d == -1)
-                    edge_types[i] = DisplayedType::Outer;
+            for (int e = 0; e < 12; e++) {
+                if (plane_2d == -1 && show_plot_box)
+                    edge_types[e] = DisplayedType::NotActive;
                 else
-                    edge_types[i] = DisplayedType::Hidden;
+                    edge_types[e] = DisplayedType::Hidden;
             }
             for (int a = 0; a < 3; a++) {
                 int face_idx = a + 3 * active_faces[a];
                 for (size_t i = 0; (plane_2d == -1 || a == plane_2d) && i < 4; i++)
-                    edge_types[face_edges[face_idx][i]] = DisplayedType::Inner;
+                    edge_types[face_edges[face_idx][i]] = DisplayedType::Active;
             }
 
-            for (int i = 0; i < 12; i++) {
-                int idx0 = edges[i][0];
-                int idx1 = edges[i][1];
+            // Go through each edge and use the display type
+            for (int e = 0; e < 12; e++) {
+                int idx0 = edges[e][0];
+                int idx1 = edges[e][1];
 
-                // Draw different lines depending on the type that the renderer thinks it is
-                if (edge_types[i] == DisplayedType::Inner)
-                    fg.AddLine(corners_pix[idx0], corners_pix[idx1], IM_COL32(255, 200, 0, 255));
-                else if (edge_types[i] == DisplayedType::Outer)
-                    fg.AddLine(corners_pix[idx0], corners_pix[idx1], IM_COL32(100, 255, 0, 125));
-                // If the render edge type is Hidden then there this edge does not get rendered
+                if (show_plot_box) {
+                    // Draw different lines depending on the type that the renderer thinks it is
+                    if (edge_types[e] == DisplayedType::Active)
+                        fg.AddLine(corners_pix[idx0], corners_pix[idx1], IM_COL32(255, 200, 0, 255));
+                    else if (edge_types[e] == DisplayedType::NotActive)
+                        fg.AddLine(corners_pix[idx0], corners_pix[idx1], IM_COL32(100, 255, 0, 125));
+                    // If the render edge type is Hidden then there this edge does not get rendered
+                }
+                if (show_axis_edge_indexes) {
+                    if (edge_types[e] == DisplayedType::Active || edge_types[e] == DisplayedType::NotActive) {
+                        // Display the text in the middle between the points and at the same angle between the two points
+                        ImVec2 edge_middle = (corners_pix[idx0] + corners_pix[idx1]) / 2;
+                        ImVec2 point_difference = (corners_pix[idx1] - corners_pix[idx0]);
+                        float angle = ImAtan2(-point_difference.y, point_difference.x);
+                        // Adjust angle to keep labels upright
+                        if (angle > IM_PI * 0.5f)
+                            angle -= IM_PI;
+                        if (angle < -IM_PI * 0.5f)
+                            angle += IM_PI;
+
+                        ImFormatString(buff, IM_ARRAYSIZE(buff), "E%d", e);
+                        AddTextRotated(&fg, edge_middle, angle, IM_COL32(200, 0, 0, 200), buff);
+                    }
+                }
             }
         }
-        if (show_axis_lines) {
+        if (show_axis_line) {
+            // For each axis plot a line between the axis corners
             for (int a = 0; a < 3; a++) {
                 if (plane_2d != -1 && a == plane_2d)
                     continue;
@@ -3446,46 +3474,40 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
             }
         }
         if (show_axis_corner_indexes) {
+            // Determine which display type each of the corners are
             DisplayedType corner_types[8];
             for (int c = 0; c < 8; c++) {
                 if (plane_2d == -1 && show_plot_box)
-                    corner_types[c] = DisplayedType::Outer;
+                    corner_types[c] = DisplayedType::NotActive;
                 else
                     corner_types[c] = DisplayedType::Hidden;
             }
             for (int a = 0; a < 3; a++) {
                 int face_idx = a + 3 * active_faces[a];
                 for (size_t i = 0; (plane_2d == -1 || a == plane_2d) && i < 4; i++)
-                    corner_types[faces[face_idx][i]] = DisplayedType::Inner;
+                    corner_types[faces[face_idx][i]] = DisplayedType::Active;
             }
+            // Go through each corner and use the display type
             for (int c = 0; c < 8; c++) {
-                if (corner_types[c] == DisplayedType::Inner || corner_types[c] == DisplayedType::Outer) {
+                if (corner_types[c] == DisplayedType::Active || corner_types[c] == DisplayedType::NotActive) {
                     ImVec2 corner = corners_pix[c];
                     ImFormatString(buff, IM_ARRAYSIZE(buff), "C%d", c);
                     AddTextRotated(&fg, corner, 0, IM_COL32(0, 200, 0, 200), buff);
                 }
             }
         }
-        if (show_axis_edge_indexes) {
-            DisplayedType edge_types[12];
-            for (int e = 0; e < 12; e++) {
-                if (plane_2d == -1 && show_plot_box)
-                    edge_types[e] = DisplayedType::Outer;
-                else
-                    edge_types[e] = DisplayedType::Hidden;
-            }
+        if (show_axis_face_indexes) {
+            // Go through each axis and then face to display the face index
             for (int a = 0; a < 3; a++) {
-                int face_idx = a + 3 * active_faces[a];
-                for (size_t i = 0; (plane_2d == -1 || a == plane_2d) && i < 4; i++)
-                    edge_types[face_edges[face_idx][i]] = DisplayedType::Inner;
-            }
-            for (int e = 0; e < 12; e++) {
-                if (edge_types[e] == DisplayedType::Inner || edge_types[e] == DisplayedType::Outer) {
-                    int idx0 = edges[e][0];
-                    int idx1 = edges[e][1];
-                    ImVec2 edge_middle = (corners_pix[idx0] + corners_pix[idx1]) / 2;
-                    ImFormatString(buff, IM_ARRAYSIZE(buff), "E%d", e);
-                    AddTextRotated(&fg, edge_middle, 0, IM_COL32(200, 0, 0, 200), buff);
+                for (int f = 0; f < 2; f++) {
+                    if ((plane_2d == -1 || a == plane_2d) && (f == active_faces[a] || show_plot_box)) {
+                        const int face_idx = a + 3 * f;
+                        const int* face_indexes = faces[face_idx];
+                        // Display the text in the middle of the square by determining the point between two of opposite corner pixels
+                        ImVec2 middle_of_face_sqaure = (corners_pix[face_indexes[0]] + corners_pix[face_indexes[2]]) / 2;
+                        ImFormatString(buff, IM_ARRAYSIZE(buff), "F%d", face_idx);
+                        AddTextRotated(&fg, middle_of_face_sqaure, 0, IM_COL32(0, 200, 200, 200), buff);
+                    }
                 }
             }
         }
@@ -3536,19 +3558,19 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
                     if (plane_2d != -1)
                         ImGui::BulletText("Plane2D: %d %s", plane_2d, plane_labels[plane_2d]);
                     else {
-                        int corner_index = Active3DFacesToCornerIndex(active_faces);
-                        ImGui::BulletText("3D Active Faces: %d [%s, %s, %s]", corner_index, active_faces[0] ? "X-min" : "X-max",
-                                          active_faces[1] ? "Y-min" : "Y-max", active_faces[2] ? "Z-min" : "Z-max");
-                        ImGui::BulletText("3d Corner Lookup: %d {{%d, %d}, {%d, %d}, {%d, %d}]", corner_lookup_3d[corner_index],
+                        int corner_index = Active3DFacesToAxisLookupIndex(active_faces);
+                        ImGui::BulletText("3D Active Faces: [%s,%s,%s]", active_faces[0] ? "X-max" : "X-min", active_faces[1] ? "Y-max" : "Y-min",
+                                          active_faces[2] ? "Z-max" : "Z-min");
+                        ImGui::BulletText("3D Corner Lookup: %d [[%d,%d],[%d, %d],[%d, %d]]", corner_index,
                                           axis_corners_lookup_3d[corner_index][0][0], axis_corners_lookup_3d[corner_index][0][1],
                                           axis_corners_lookup_3d[corner_index][1][0], axis_corners_lookup_3d[corner_index][1][1],
                                           axis_corners_lookup_3d[corner_index][2][0], axis_corners_lookup_3d[corner_index][2][1]);
                     }
 
                     for (int a = 0; a < 3; a++)
-                        ImGui::BulletText("%s Label Corners: [%d, %d]", axis_labels[a], axis_corners[a][0], axis_corners[a][1]);
+                        ImGui::BulletText("%s Label Corners: [%d,%d]", axis_labels[a], axis_corners[a][0], axis_corners[a][1]);
                     for (int c = 0; c < 8; c++)
-                        ImGui::BulletText("Corner %d: [%.2f, %.2f, %.2f] [%.2f, %.2f]", c, corners[c].x, corners[c].y, corners[c].z, corners_pix[c].x,
+                        ImGui::BulletText("Corner %d: [%.2f,%.2f,%.2f] [%.2f,%.2f]", c, corners[c].x, corners[c].y, corners[c].z, corners_pix[c].x,
                                           corners_pix[c].y);
 
                     ImGui::TreePop();
@@ -3582,7 +3604,7 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
 
     if (ImGui::TreeNode("Colormaps")) {
         ImGui::BulletText("Colormaps:  %d", gp.ColormapData.Count);
-        ImGui::BulletText("Memory: %d bytes", gp.ColormapData.Tables.Size * sizeof(gp.ColormapData.Tables.Data[0]));
+        ImGui::BulletText("Memory: %d bytes", gp.ColormapData.Tables.Size * (int)(sizeof(gp.ColormapData.Tables.Data[0])));
         if (ImGui::TreeNode("Data")) {
             for (int m = 0; m < gp.ColormapData.Count; ++m) {
                 if (ImGui::TreeNode(gp.ColormapData.GetName(m))) {
