@@ -466,6 +466,26 @@ static const int axis_corners_lookup_3d[8][3][2] = {
     {{4, 5}, {4, 7}, {3, 7}},
 };
 
+// Lookup table for axis_edges based on active_faces (3D plot)
+static const int axis_edges_lookup_3d[8][3] = {
+    // Index 0: active_faces = {0, 0, 0}
+    {2, 1, 9},
+    // Index 1: active_faces = {0, 0, 1}
+    {6, 5, 9},
+    // Index 2: active_faces = {0, 1, 0}
+    {0, 1, 10},
+    // Index 3: active_faces = {0, 1, 1}
+    {4, 5, 10},
+    // Index 4: active_faces = {1, 0, 0}
+    {2, 3, 8},
+    // Index 5: active_faces = {1, 0, 1}
+    {6, 7, 8},
+    // Index 6: active_faces = {1, 1, 0}
+    {0, 3, 11},
+    // Index 7: active_faces = {1, 1, 1}
+    {4, 7, 11},
+};
+
 // Convert the X, Y and Z active_faces array to a integer value representation that can be looked up in axis_corners_lookup_3d
 int Active3DFacesToAxisLookupIndex(const bool* active_faces) {
     return ((int)active_faces[0] << 2) | ((int)active_faces[1] << 1) | ((int)active_faces[2]);
@@ -3558,13 +3578,15 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
                     if (plane_2d != -1)
                         ImGui::BulletText("Plane2D: %d %s", plane_2d, plane_labels[plane_2d]);
                     else {
-                        int corner_index = Active3DFacesToAxisLookupIndex(active_faces);
-                        ImGui::BulletText("3D Active Faces: [%s,%s,%s]", active_faces[0] ? "X-max" : "X-min", active_faces[1] ? "Y-max" : "Y-min",
-                                          active_faces[2] ? "Z-max" : "Z-min");
-                        ImGui::BulletText("3D Corner Lookup: %d [[%d,%d],[%d, %d],[%d, %d]]", corner_index,
-                                          axis_corners_lookup_3d[corner_index][0][0], axis_corners_lookup_3d[corner_index][0][1],
-                                          axis_corners_lookup_3d[corner_index][1][0], axis_corners_lookup_3d[corner_index][1][1],
-                                          axis_corners_lookup_3d[corner_index][2][0], axis_corners_lookup_3d[corner_index][2][1]);
+                        int active_corner_index = Active3DFacesToAxisLookupIndex(active_faces);
+                        ImGui::BulletText("3D Active Faces: [%s,%s,%s]=%d", active_faces[0] ? "X-max" : "X-min", active_faces[1] ? "Y-max" : "Y-min",
+                                          active_faces[2] ? "Z-max" : "Z-min", active_corner_index);
+                        ImGui::BulletText("3D Active Corner Lookup: [[%d,%d],[%d, %d],[%d, %d]]", axis_corners_lookup_3d[active_corner_index][0][0],
+                                          axis_corners_lookup_3d[active_corner_index][0][1], axis_corners_lookup_3d[active_corner_index][1][0],
+                                          axis_corners_lookup_3d[active_corner_index][1][1], axis_corners_lookup_3d[active_corner_index][2][0],
+                                          axis_corners_lookup_3d[active_corner_index][2][1]);
+                        ImGui::BulletText("3D Active Edges Lookup: [%d,%d,%d]", axis_edges_lookup_3d[active_corner_index][0],
+                                          axis_edges_lookup_3d[active_corner_index][1], axis_edges_lookup_3d[active_corner_index][2]);
                     }
 
                     for (int a = 0; a < 3; a++)
