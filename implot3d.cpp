@@ -2645,6 +2645,74 @@ ImU32 SampleColormapU32(float t, ImPlot3DColormap cmap) {
 
 ImVec4 SampleColormap(float t, ImPlot3DColormap cmap) { return ImGui::ColorConvertU32ToFloat4(SampleColormapU32(t, cmap)); }
 
+void RenderColorBar(const ImU32* colors, int size, ImDrawList& DrawList, const ImRect& bounds, bool vert, bool reversed, bool continuous) {
+    const int n = continuous ? size - 1 : size;
+    ImU32 col1, col2;
+    if (vert) {
+        const float step = bounds.GetHeight() / n;
+        ImRect rect(bounds.Min.x, bounds.Min.y, bounds.Max.x, bounds.Min.y + step);
+        for (int i = 0; i < n; ++i) {
+            if (reversed) {
+                col1 = colors[size - i - 1];
+                col2 = continuous ? colors[size - i - 2] : col1;
+            } else {
+                col1 = colors[i];
+                col2 = continuous ? colors[i + 1] : col1;
+            }
+            DrawList.AddRectFilledMultiColor(rect.Min, rect.Max, col1, col1, col2, col2);
+            rect.TranslateY(step);
+        }
+    } else {
+        const float step = bounds.GetWidth() / n;
+        ImRect rect(bounds.Min.x, bounds.Min.y, bounds.Min.x + step, bounds.Max.y);
+        for (int i = 0; i < n; ++i) {
+            if (reversed) {
+                col1 = colors[size - i - 1];
+                col2 = continuous ? colors[size - i - 2] : col1;
+            } else {
+                col1 = colors[i];
+                col2 = continuous ? colors[i + 1] : col1;
+            }
+            DrawList.AddRectFilledMultiColor(rect.Min, rect.Max, col1, col2, col2, col1);
+            rect.TranslateX(step);
+        }
+    }
+}
+
+bool ColormapSlider(const char* label, float* t, ImVec4* out, const char* format, ImPlot3DColormap cmap) {
+    *t = ImClamp(*t, 0.0f, 1.0f);
+    ImGuiContext& G = *GImGui;
+    ImGuiWindow* Window = G.CurrentWindow;
+    if (Window->SkipItems)
+        return false;
+    ImPlot3DContext& gp = *GImPlot3D;
+    cmap = cmap == IMPLOT3D_AUTO ? gp.Style.Colormap : cmap;
+    IM_ASSERT_USER_ERROR(cmap >= 0 && cmap < gp.ColormapData.Count, "Invalid colormap index!");
+    const ImU32* keys = gp.ColormapData.GetKeys(cmap);
+    const int count = gp.ColormapData.GetKeyCount(cmap);
+    const bool qual = gp.ColormapData.IsQual(cmap);
+    const ImVec2 pos = ImGui::GetCurrentWindow()->DC.CursorPos;
+    const float w = ImGui::CalcItemWidth();
+    const float h = ImGui::GetFrameHeight();
+    const ImRect rect = ImRect(pos.x, pos.y, pos.x + w, pos.y + h);
+    RenderColorBar(keys, count, *ImGui::GetWindowDrawList(), rect, false, false, !qual);
+    const ImU32 grab = CalcTextColor(gp.ColormapData.LerpTable(cmap, *t));
+    // const ImU32 text = CalcTextColor(gp.ColormapData.LerpTable(cmap,0.5f));
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32_BLACK_TRANS);
+    ImGui::PushStyleColor(ImGuiCol_FrameBgActive, IM_COL32_BLACK_TRANS);
+    ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(1, 1, 1, 0.1f));
+    ImGui::PushStyleColor(ImGuiCol_SliderGrab, grab);
+    ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, grab);
+    ImGui::PushStyleVar(ImGuiStyleVar_GrabMinSize, 2);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
+    const bool changed = ImGui::SliderFloat(label, t, 0, 1, format);
+    ImGui::PopStyleColor(5);
+    ImGui::PopStyleVar(2);
+    if (out != nullptr)
+        *out = ImGui::ColorConvertU32ToFloat4(gp.ColormapData.LerpTable(cmap, *t));
+    return changed;
+}
+
 //-----------------------------------------------------------------------------
 // [SECTION] Context Utils
 //-----------------------------------------------------------------------------
@@ -3638,13 +3706,13 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
                     ImGui::BulletText("Table Size: %d", size);
                     ImGui::Indent();
 
-                    // static float t = 0.5;
-                    // ImVec4 samp;
-                    // float wid = 32 * 10 - ImGui::GetFrameHeight() - ImGui::GetStyle().ItemSpacing.x;
-                    // ImGui::SetNextItemWidth(wid);
-                    // ImPlot3D::ColormapSlider("##Sample", &t, &samp, "%.3f", m);
-                    // ImGui::SameLine();
-                    // ImGui::ColorButton("Sampler", samp);
+                    static float t = 0.5;
+                    ImVec4 samp;
+                    float wid = 32 * 10 - ImGui::GetFrameHeight() - ImGui::GetStyle().ItemSpacing.x;
+                    ImGui::SetNextItemWidth(wid);
+                    ColormapSlider("##Sample", &t, &samp, "%.3f", m);
+                    ImGui::SameLine();
+                    ImGui::ColorButton("Sampler", samp);
                     ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0, 0, 0, 0));
                     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
                     for (int c = 0; c < size; ++c) {
