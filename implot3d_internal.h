@@ -726,6 +726,12 @@ IMPLOT3D_API bool IsColorAuto(ImPlot3DCol idx);
 IMPLOT3D_API ImVec4 GetAutoColor(ImPlot3DCol idx);
 IMPLOT3D_API const char* GetStyleColorName(ImPlot3DCol idx);
 
+// Returns white or black text given background color
+static inline ImU32 CalcTextColor(const ImVec4& bg) {
+    return (bg.x * 0.299f + bg.y * 0.587f + bg.z * 0.114f) > 0.5f ? IM_COL32_BLACK : IM_COL32_WHITE;
+}
+static inline ImU32 CalcTextColor(ImU32 bg) { return CalcTextColor(ImGui::ColorConvertU32ToFloat4(bg)); }
+
 // Get styling data for next item (call between BeginItem/EndItem)
 IMPLOT3D_API const ImPlot3DNextItemData& GetItemData();
 
@@ -734,6 +740,10 @@ IMPLOT3D_API ImU32 GetColormapColorU32(int idx, ImPlot3DColormap cmap);
 
 // Returns the next unused colormap color and advances the colormap. Can be used to skip colors if desired
 IMPLOT3D_API ImU32 NextColormapColorU32();
+
+// Render a colormap bar
+IMPLOT3D_API void RenderColorBar(const ImU32* colors, int size, ImDrawList& DrawList, const ImRect& bounds, bool vert, bool reversed,
+                                 bool continuous);
 
 //-----------------------------------------------------------------------------
 // [SECTION] Item Utils
