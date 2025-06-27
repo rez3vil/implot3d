@@ -3588,7 +3588,7 @@ void ImPlot3D::ShowMetricsWindow(bool* p_popen) {
             // Go through each axis and then face to display the face index
             for (int a = 0; a < 3; a++) {
                 for (int f = 0; f < 2; f++) {
-                    if ((plane_2d == -1 || a == plane_2d) && (f == active_faces[a] || show_plot_box)) {
+                    if ((plane_2d == -1 || a == plane_2d) && (f == int(active_faces[a]) || show_plot_box)) {
                         const int face_idx = a + 3 * f;
                         const int* face_indexes = faces[face_idx];
                         // Display the text in the middle of the square by determining the point between two of opposite corner pixels
