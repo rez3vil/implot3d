@@ -133,7 +133,7 @@ jobs:
           });
           console.log('Added status:done label to PR');
 
-          const linkedIssues = context.payload.pull_request.body?.match(/(?:Fixes|Closes) #\d+/g) || [];
+          const linkedIssues = context.payload.pull_request.body?.match(/(?:Fixes|Closes|Implements|Resolves) #\d+/g) || [];
           console.log(`Linked Issues: ${linkedIssues}`);
           for (const issueRef of linkedIssues) {
             const issueNumber = parseInt(issueRef.split('#')[1]);
